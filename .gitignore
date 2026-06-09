@@ -4,3 +4,8 @@ __pycache__/
 .streamlit/
 *.ibt
 data/
+
+# Exceção: as amostras de telemetria em samples/ VÃO para o GitHub
+# (usadas para desenvolvimento em outra máquina, ex.: Mac sem iRacing).
+!samples/
+!samples/*.ibt

@@ -33,8 +33,14 @@ import track_model as TM
 # --------------------------------------------------------------------------- #
 st.set_page_config(page_title="PitWall", page_icon="🏁", layout="wide")
 
-TELEMETRY_DIR = Path(os.path.expanduser("~")) / "Documents" / "iRacing" / "telemetry"
+# Pasta da telemetria real (PC com iRacing). Pode ser trocada pela variavel de
+# ambiente PITWALL_TELEMETRY_DIR (util ao rodar de outra maquina/servidor).
+TELEMETRY_DIR = Path(os.environ.get("PITWALL_TELEMETRY_DIR")
+                     or Path(os.path.expanduser("~")) / "Documents" / "iRacing" / "telemetry")
 PROJ_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # raiz do projeto
+# Amostras versionadas (vao no GitHub): usadas quando nao ha telemetria real
+# (ex.: Mac em desenvolvimento, sem a pasta do iRacing).
+SAMPLES_DIR = Path(PROJ_DIR) / "samples"
 
 # Paleta por VOLTA (nao por canal), igual ao Garage61:
 # sua volta / BEST / voce = VERMELHO; media / referencia = AZUL.
@@ -77,10 +83,16 @@ st.sidebar.title("🏁 PitWall")
 st.sidebar.caption("Debriefing de telemetria — Fase 1")
 
 arquivos = listar_ibt(TELEMETRY_DIR)
+dir_usado = TELEMETRY_DIR
+if not arquivos:
+    amostras = listar_ibt(SAMPLES_DIR)
+    if amostras:
+        arquivos, dir_usado = amostras, SAMPLES_DIR
+        st.sidebar.info("Sem telemetria real aqui — usando as amostras de exemplo (samples/).")
 if arquivos:
     nomes = [p.name for p in arquivos]
     escolha = st.sidebar.selectbox("Sessao (.ibt)", nomes, index=0)
-    path = str(TELEMETRY_DIR / escolha)
+    path = str(dir_usado / escolha)
 else:
     st.sidebar.warning(f"Nenhum .ibt em {TELEMETRY_DIR}")
     path = st.sidebar.text_input("Caminho do arquivo .ibt", value="")

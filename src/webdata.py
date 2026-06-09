@@ -17,8 +17,11 @@ import ibt_reader
 import signatures as S
 import track_model as TM
 
-# Pasta padrao dos .ibt do iRacing.
-TELEMETRY_DIR = os.path.join(os.path.expanduser("~"), "Documents", "iRacing", "telemetry")
+# Pasta padrao dos .ibt do iRacing (trocavel por PITWALL_TELEMETRY_DIR).
+TELEMETRY_DIR = os.environ.get("PITWALL_TELEMETRY_DIR") or os.path.join(
+    os.path.expanduser("~"), "Documents", "iRacing", "telemetry")
+# Amostras versionadas (GitHub), usadas quando nao ha telemetria real.
+_SAMPLES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "samples")
 
 
 def _arr(a, dec=2):
@@ -28,8 +31,7 @@ def _arr(a, dec=2):
     return [round(float(v), dec) if np.isfinite(v) else None for v in np.asarray(a)]
 
 
-def list_sessions(dir_: str = TELEMETRY_DIR) -> list[dict]:
-    """Lista os .ibt disponiveis (mais recentes primeiro)."""
+def _scan_ibt(dir_: str) -> list[dict]:
     if not os.path.isdir(dir_):
         return []
     out = []
@@ -38,6 +40,18 @@ def list_sessions(dir_: str = TELEMETRY_DIR) -> list[dict]:
             fp = os.path.join(dir_, fn)
             out.append({"file": fn, "path": fp, "mtime": os.path.getmtime(fp)})
     return sorted(out, key=lambda x: x["mtime"], reverse=True)
+
+
+def list_sessions(dir_: str = TELEMETRY_DIR) -> list[dict]:
+    """Lista os .ibt disponiveis (mais recentes primeiro).
+
+    Se nao houver telemetria real na pasta padrao, cai para as amostras
+    versionadas em samples/ (ex.: rodando de outra maquina, sem iRacing).
+    """
+    res = _scan_ibt(dir_)
+    if not res and os.path.abspath(dir_) == os.path.abspath(TELEMETRY_DIR):
+        res = _scan_ibt(_SAMPLES_DIR)
+    return res
 
 
 def _project_xy(lat, lon):
