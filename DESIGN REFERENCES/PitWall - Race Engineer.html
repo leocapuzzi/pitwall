@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PitWall — Race Engineer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#000000;
+  --panel:#0d0d0e;
+  --panel-2:#141416;
+  --panel-3:#1a1a1d;
+  --line:rgba(255,255,255,.07);
+  --line-strong:rgba(255,255,255,.13);
+  --txt:#f4f5f6;
+  --muted:#9a9ca1;
+  --muted-2:#6c6e74;
+  --green:#1fd760;
+  --green-dim:#138a3f;
+  --red:#e8412a;     /* você / melhor */
+  --blue:#2e86ff;    /* referência */
+  --cyan:#39c6e6;    /* speed */
+  --purple:#b57bff;  /* recorde */
+  --radius:16px;
+  font-synthesis:none;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  color:var(--txt);
+  font-family:'Manrope',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+.app{display:flex;flex-direction:column;height:100vh;min-height:640px}
+
+/* ---------- TOP BAR ---------- */
+.topbar{display:flex;align-items:center;gap:18px;padding:14px 22px 8px}
+.brand{display:flex;align-items:center;gap:11px;padding-right:8px}
+.brand .logo{
+  width:38px;height:38px;border-radius:50%;
+  background:radial-gradient(circle at 30% 28%, #2bf07a, #0b8a3a 70%);
+  display:grid;place-items:center;font-weight:800;color:#04130a;font-size:20px;
+  box-shadow:0 0 18px rgba(31,215,96,.35), inset 0 0 0 2px rgba(0,0,0,.25);
+}
+.brand .name{font-weight:800;letter-spacing:.14em;font-size:15px}
+.brand .name b{color:var(--green)}
+.nav{
+  flex:1;display:flex;justify-content:center;gap:6px;
+  background:linear-gradient(180deg,#141416,#0c0c0d);
+  border:1px solid var(--line);border-radius:40px;padding:7px;max-width:760px;margin:0 auto;
+}
+.nav a{
+  padding:9px 26px;border-radius:30px;color:var(--muted);font-size:14.5px;font-weight:600;
+  text-decoration:none;transition:.18s;white-space:nowrap;
+}
+.nav a:hover{color:#dfe0e2}
+.nav a.active{color:var(--green);background:rgba(31,215,96,.08)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.icon-btn{
+  width:42px;height:42px;border-radius:50%;background:#161618;border:1px solid var(--line);
+  display:grid;place-items:center;color:var(--muted);transition:.18s;position:relative;
+}
+.icon-btn:hover{color:#fff;border-color:var(--line-strong)}
+.icon-btn .dot{position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--red)}
+.user{display:flex;align-items:center;gap:10px;padding-left:6px}
+.avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;background:#2a2a2e}
+.user .meta{line-height:1.15}
+.user .meta .n{font-weight:700;font-size:14px}
+.user .meta .r{font-size:12px;color:var(--green)}
+.caret{color:var(--muted)}
+
+/* ---------- SESSION TAB STRIP ---------- */
+.tabstrip{display:flex;align-items:center;gap:4px;padding:6px 22px 0;border-bottom:1px solid var(--line)}
+.tabstrip .waiting{color:var(--muted-2);font-size:13px;font-weight:600;padding:10px 16px}
+.stab{
+  display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13.5px;font-weight:600;
+  color:var(--muted);border-radius:10px 10px 0 0;position:relative;cursor:pointer;
+}
+.stab.active{color:#fff;background:linear-gradient(180deg,#161618,#0e0e10)}
+.stab.active::after{content:"";position:absolute;left:14px;right:14px;bottom:-1px;height:2px;background:var(--green)}
+.stab .x{color:var(--muted-2);font-size:15px;display:grid;place-items:center;width:18px;height:18px;border-radius:5px}
+.stab .x:hover{background:rgba(255,255,255,.08);color:#fff}
+.tab-add{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--muted);border:1px solid var(--line)}
+.tab-add:hover{color:#fff;border-color:var(--line-strong)}
+.tabstrip .spacer{flex:1}
+.view-toggle{display:flex;gap:14px;padding-right:6px}
+.view-toggle button{color:var(--muted-2);width:30px;height:30px;display:grid;place-items:center;border-radius:8px}
+.view-toggle button.on{color:var(--green)}
+.view-toggle button:hover{color:#fff}
+
+/* ---------- MAIN ---------- */
+.main{flex:1;display:flex;min-height:0;position:relative}
+.left{position:relative;flex:1.18;min-width:0;overflow:hidden;border-right:1px solid var(--line)}
+.right{flex:1;min-width:560px;display:flex;flex-direction:column;padding:16px 20px 8px;min-height:0}
+
+/* track canvas */
+#track{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+/* left top toggle */
+.seg-toggle{
+  position:absolute;top:16px;left:18px;z-index:6;display:flex;background:#0e0e10;
+  border:1px solid var(--line);border-radius:12px;padding:5px;gap:4px;
+}
+.seg-toggle button{padding:8px 22px;border-radius:9px;font-size:13.5px;font-weight:700;color:var(--muted)}
+.seg-toggle button.on{background:#f3f3f3;color:#111}
+
+/* left rail icons */
+.rail{position:absolute;left:18px;top:248px;z-index:6;display:flex;flex-direction:column;gap:14px;
+  background:#0c0c0e;border:1px solid var(--line);border-radius:14px;padding:14px 12px}
+.rail button{color:var(--muted);width:30px;height:30px;display:grid;place-items:center;position:relative}
+.rail button:hover{color:#fff}
+.rail .leaf{position:absolute;top:-4px;right:-4px;color:var(--green);font-size:10px}
+
+/* leaderboard / comparison floating list */
+.flist{position:absolute;left:18px;top:120px;z-index:6;width:300px;
+  background:rgba(10,10,12,.72);backdrop-filter:blur(7px);border:1px solid var(--line);border-radius:14px;padding:6px}
+.flist .row{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px}
+.flist .row + .row{border-top:1px solid var(--line)}
+.flist .pos{width:16px;color:var(--muted);font-weight:700;font-size:14px}
+.flist .pa{width:28px;height:28px;border-radius:50%;background:#26262b;display:grid;place-items:center;font-size:12px;color:#cfd0d2}
+.flist .nm{flex:1;font-weight:700;font-size:14px}
+.flist .tm{font-weight:700;font-size:14px}
+.flist .tm.lead{color:var(--purple)}
+.flist .tm.gap{color:var(--green)}
+
+/* sector comparison card */
+.sectorcard{position:absolute;left:18px;bottom:96px;z-index:6;width:236px;
+  background:#0c0c0e;border:1px solid var(--line);border-radius:14px;padding:14px 15px}
+.sectorcard h4{font-size:14px;display:flex;align-items:center;justify-content:space-between}
+.sectorcard h4 .ex{color:var(--muted);font-size:13px}
+.sectorcard table{width:100%;border-collapse:collapse;margin-top:10px}
+.sectorcard th{font-weight:600;color:var(--muted);text-align:right;padding:5px 0;font-size:12px}
+.sectorcard th:first-child{text-align:left}
+.sectorcard td{padding:6px 0;font-size:13.5px;text-align:right}
+.sectorcard td:first-child{text-align:left;color:var(--muted);font-weight:700}
+.sectorcard .you{color:#fff;font-weight:600}
+.sectorcard .ref{color:var(--muted-2)}
+.sectorcard .hd-ico{color:var(--green);font-size:13px}
+.sectorcard .hd-ico.ghost{color:var(--muted-2)}
+
+/* mini map */
+.minimap{position:absolute;right:20px;bottom:96px;z-index:6;width:262px;
+  background:#0b0b0d;border:1px solid var(--line);border-radius:16px;padding:16px}
+.minimap svg{width:100%;height:150px;display:block}
+.minimap .turn{fill:#0e0e10;stroke:rgba(255,255,255,.5);stroke-width:1.4}
+.minimap .turn-t{fill:#e9eaec;font-size:11px;font-weight:700;font-family:'JetBrains Mono'}
+.minimap .turn.act{fill:var(--green);stroke:none}
+.minimap .turn.act + text{fill:#04130a}
+.minimap .cap{margin-top:8px;font-weight:700;font-size:14px}
+
+/* zoom control bottom center */
+.zoom{position:absolute;left:50%;bottom:104px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:12px;
+  background:#0c0c0e;border:1px solid var(--line);border-radius:30px;padding:7px 14px}
+.zoom button{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:var(--muted);font-size:16px}
+.zoom input{width:150px;accent-color:var(--green)}
+
+/* ---------- RIGHT: DRIVER HEADER ---------- */
+.driver-row{display:flex;gap:14px;margin-bottom:14px}
+.driver{flex:1;background:linear-gradient(180deg,#141417,#0e0e10);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.driver .top{display:flex;align-items:center;gap:12px}
+.gauge{width:42px;height:42px;border-radius:50%;border:2px solid var(--green);display:grid;place-items:center;color:var(--green);box-shadow:0 0 14px rgba(31,215,96,.25)}
+.driver .nm{font-weight:800;color:var(--green);font-size:16px}
+.driver .chips{margin-left:auto;display:flex;align-items:center;gap:16px;color:var(--muted);font-size:13px;font-weight:600}
+.driver .chips b{color:#fff}
+.driver .jump{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted)}
+.driver .bottom{display:flex;align-items:center;gap:18px;margin-top:12px}
+.tbar{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700}
+.tbar .track{width:108px;height:6px;border-radius:3px;background:#222}
+.tbar .fill{height:100%;border-radius:3px}
+.metric{display:flex;align-items:baseline;gap:5px;color:var(--muted);font-size:12px;font-weight:600}
+.metric b{color:#fff;font-size:16px;font-family:'JetBrains Mono'}
+.addcomp{background:linear-gradient(180deg,#141417,#0e0e10);border:1px solid var(--line);border-radius:16px;
+  padding:0 22px;font-weight:800;font-size:14px;white-space:nowrap;transition:.18s;display:grid;place-items:center;text-align:center;line-height:1.2}
+.addcomp:hover{border-color:var(--green);color:var(--green)}
+.addcomp.on{border-color:var(--blue);color:var(--blue)}
+
+/* tabs */
+.rtabs{display:flex;align-items:center;border-bottom:1px solid var(--line);margin-bottom:12px;gap:4px}
+.rtabs button{padding:11px 4px;margin-right:26px;font-weight:700;font-size:15px;color:var(--muted);position:relative}
+.rtabs button.on{color:#fff}
+.rtabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--green)}
+.rtabs .pit{color:var(--green)}
+.rtabs .right-ico{margin-left:auto;display:flex;gap:14px;color:var(--muted-2)}
+.rtabs .right-ico button:hover{color:#fff}
+
+.rbody{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+
+/* charts */
+.charts{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
+.chart{position:relative;flex:1;min-height:0;background:#0c0c0e;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.chart canvas{position:absolute;inset:0;width:100%;height:100%}
+.chart .lab{position:absolute;left:14px;top:12px;font-size:11.5px;font-weight:800;letter-spacing:.08em;color:var(--muted);z-index:3;
+  background:rgba(0,0,0,.35);padding:3px 7px;border-radius:6px}
+.chart .cur{position:absolute;top:11px;left:104px;z-index:3;font-family:'JetBrains Mono';font-weight:700;font-size:13px}
+.chart .ax{position:absolute;right:12px;z-index:3;font-size:11px;color:var(--muted-2);font-family:'JetBrains Mono'}
+.chart .ax.t{top:9px}.chart .ax.m{top:50%;transform:translateY(-50%)}.chart .ax.b{bottom:9px}
+
+/* coaching panel */
+.coach{flex:1;min-height:0;overflow-y:auto;padding-right:6px;display:flex;flex-direction:column;gap:14px}
+.coach::-webkit-scrollbar{width:8px}.coach::-webkit-scrollbar-thumb{background:#26262b;border-radius:4px}
+.coach .head{display:flex;align-items:center;justify-content:space-between}
+.coach .head h3{font-size:17px;font-weight:800}
+.coach .head .delta{font-family:'JetBrains Mono';font-weight:700;color:var(--red);font-size:15px}
+.score{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.score .g{background:#0c0c0e;border:1px solid var(--line);border-radius:13px;padding:12px 8px;text-align:center}
+.score .ring{width:62px;height:62px;margin:0 auto 8px}
+.score .gl{font-size:11px;color:var(--muted);font-weight:700;line-height:1.2}
+.score .gv{font-family:'JetBrains Mono';font-weight:700;font-size:14px;margin-top:3px}
+.ins{background:#0c0c0e;border:1px solid var(--line);border-radius:14px;padding:14px 16px;position:relative;overflow:hidden}
+.ins::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red)}
+.ins .t{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.ins .pill{font-size:11px;font-weight:800;padding:4px 9px;border-radius:20px;background:rgba(232,65,42,.14);color:var(--red)}
+.ins .t h4{font-size:15.5px;font-weight:800;flex:1}
+.ins .t .cost{font-family:'JetBrains Mono';font-weight:700;color:var(--red);font-size:15px}
+.ins .grid{display:grid;grid-template-columns:auto 1fr;gap:7px 12px;font-size:13.5px;line-height:1.45}
+.ins .grid .k{color:var(--muted);font-weight:700;white-space:nowrap}
+.ins .grid .fix{color:var(--green)}
+.upsell{background:radial-gradient(120% 140% at 50% 0%, rgba(31,215,96,.12), rgba(31,215,96,.02) 60%);
+  border:1px solid var(--line);border-radius:14px;padding:18px;text-align:center}
+.upsell .di{color:var(--green);font-size:22px}
+.upsell h4{color:var(--green);font-weight:800;margin:6px 0 3px}
+.upsell p{color:var(--muted);font-size:13px}
+.upsell .cta{margin-top:9px;font-weight:800;color:#fff}
+
+/* ---------- FOOTER SCRUBBER ---------- */
+.scrub{display:flex;align-items:center;gap:16px;padding:14px 26px;border-top:1px solid var(--line);background:#08080a}
+.play{width:40px;height:40px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center;font-size:17px;flex-shrink:0}
+.play:hover{background:var(--green)}
+.scrub .time{font-family:'JetBrains Mono';font-weight:700;font-size:18px;min-width:108px}
+.scrub .barwrap{flex:1;position:relative;height:18px;display:flex;align-items:center;cursor:pointer}
+.scrub .bar{height:5px;width:100%;border-radius:3px;background:#1d1d20;overflow:hidden}
+.scrub .barfill{height:100%;background:var(--green);width:8%}
+.scrub .knob{position:absolute;width:13px;height:13px;border-radius:50%;background:var(--green);box-shadow:0 0 10px rgba(31,215,96,.6);transform:translateX(-50%);left:8%}
+.scrub .step{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.scrub .step:hover{color:#fff}
+
+/* ---------- STATUS BAR ---------- */
+.status{display:flex;align-items:center;justify-content:center;gap:10px;padding:11px;border-top:1px solid var(--line);
+  background:#060607;font-size:13.5px;font-weight:700}
+.status .w{color:var(--muted-2);display:flex;align-items:center;gap:7px;font-weight:600}
+.status .ring{width:13px;height:13px;border-radius:50%;border:2px solid var(--muted-2);border-top-color:var(--green);animation:spin 1.1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app" data-screen-label="Race Engineer">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">P</div>
+      <div class="name">PIT<b>WALL</b></div>
+    </div>
+    <nav class="nav">
+      <a href="#">Dashboard</a>
+      <a href="#">Setups</a>
+      <a href="#" class="active">Race Engineer</a>
+      <a href="#">Leaderboard</a>
+    </nav>
+    <div class="topbar-right">
+      <button class="icon-btn" title="Configurações"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="icon-btn" title="Notificações"><span class="dot"></span><svg class="i" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+      <button class="icon-btn" title="Sobre"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></button>
+      <div class="user">
+        <img class="avatar" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23394452'/><stop offset='1' stop-color='%23171a1f'/></linearGradient></defs><rect width='80' height='80' fill='url(%23g)'/><circle cx='40' cy='32' r='15' fill='%23596170'/><path d='M14 74c0-16 12-24 26-24s26 8 26 24z' fill='%23596170'/></svg>" />
+        <div class="meta"><div class="n">L. Capuzzi</div><div class="r">Customer</div></div>
+        <span class="caret">▾</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- SESSION TABS -->
+  <div class="tabstrip">
+    <span class="waiting">Aguardando sessão</span>
+    <div class="stab active">
+      Mazda MX5 C… | Winton Mot…
+      <span class="x">✕</span>
+    </div>
+    <button class="tab-add">+</button>
+    <div class="spacer"></div>
+    <div class="view-toggle">
+      <button title="Sessões"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></button>
+      <button class="on" title="Telemetria"><svg class="i" viewBox="0 0 24 24"><path d="M3 13c3 0 3-5 6-5s3 8 6 8 3-6 6-6"/></svg></button>
+      <button title="Tempos"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- LEFT: track perspective -->
+    <div class="left">
+      <canvas id="track"></canvas>
+
+      <div class="seg-toggle">
+        <button data-seg="segments">Segments</button>
+        <button data-seg="sectors" class="on">Sectors</button>
+      </div>
+
+      <!-- comparison list (visible when comparison ON) -->
+      <div class="flist hidden" id="flist">
+        <div class="row"><span class="pos">1</span><span class="pa">AD</span><span class="nm">Attila Dankos</span><span class="tm lead mono">01:30.800</span></div>
+        <div class="row"><span class="pos">2</span><span class="pa">SH</span><span class="nm">SteveH</span><span class="tm gap mono">+00.166</span></div>
+      </div>
+
+      <div class="rail">
+        <button title="Voltas"><svg class="i" viewBox="0 0 24 24"><path d="M5 3v18M5 4h11l-2 4 2 4H5"/></svg></button>
+        <button title="Setup"><span class="leaf">❋</span><svg class="i" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.4"/><circle cx="8" cy="17" r="2.4"/></svg></button>
+        <button title="Combustível"><svg class="i" viewBox="0 0 24 24"><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M4 21h12M15 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/></svg></button>
+      </div>
+
+      <!-- sector comparison card -->
+      <div class="sectorcard">
+        <h4>Comparação <span class="ex">⤢</span></h4>
+        <table>
+          <thead><tr><th></th><th><span class="hd-ico">◧</span></th><th><span class="hd-ico ghost">◨</span></th></tr></thead>
+          <tbody id="sectorBody"></tbody>
+        </table>
+      </div>
+
+      <!-- mini map -->
+      <div class="minimap">
+        <svg id="minimap" viewBox="0 0 260 150"></svg>
+        <div class="cap" id="minicap">Setor 1</div>
+      </div>
+
+      <!-- zoom -->
+      <div class="zoom">
+        <button id="zout">–</button>
+        <input id="zoom" type="range" min="0.6" max="1.8" step="0.01" value="1" />
+        <button id="zin">+</button>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+      <div class="driver-row">
+        <div class="driver">
+          <div class="top">
+            <div class="gauge"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M5 17a7 7 0 1 1 14 0M12 17l4-5"/></svg></div>
+            <div>
+              <div class="nm">Attila Dankos</div>
+            </div>
+            <div class="chips">
+              <span>☀ Stint 1</span><span>Volta 1</span>
+              <span>⦿ <b class="mono">01:30.800</b></span>
+              <button class="jump">⤴</button>
+            </div>
+          </div>
+          <div class="bottom">
+            <div class="tbar"><span style="color:var(--green)" id="thNum">100%</span><div class="track"><div class="fill" id="thFill" style="width:100%;background:var(--green)"></div></div></div>
+            <div class="tbar"><div class="track"><div class="fill" id="brFill" style="width:0%;background:var(--red);float:right"></div></div><span style="color:var(--muted)" id="brNum">0%</span></div>
+            <div class="metric"><b id="spdNum">118</b> km/h</div>
+            <div class="metric">⊞ <b id="gearNum">2</b></div>
+            <div class="metric">RPM <b id="rpmNum">6627</b></div>
+          </div>
+        </div>
+        <button class="addcomp" id="addcomp">Adicionar<br>Comparação</button>
+      </div>
+
+      <div class="rtabs">
+        <button class="on" data-rtab="tele">Telemetry</button>
+        <button data-rtab="tyres">Tyres</button>
+        <button class="pit" data-rtab="coach">Coaching ◆</button>
+        <div class="right-ico">
+          <button title="Sincronizar"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-8-5M3 12a9 9 0 0 1 9-9 9 9 0 0 1 8 5"/><path d="M21 4v4h-4M3 20v-4h4"/></svg></button>
+          <button title="Canais"><svg class="i" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></button>
+        </div>
+      </div>
+
+      <div class="rbody">
+        <!-- TELEMETRY -->
+        <div class="charts" id="paneTele">
+          <div class="chart">
+            <div class="lab">THROTTLE</div><div class="cur" id="curTh" style="color:var(--green)">100</div>
+            <span class="ax t">100</span><span class="ax m">50</span><span class="ax b">0</span>
+            <canvas data-ch="throttle"></canvas>
+          </div>
+          <div class="chart">
+            <div class="lab">BRAKE</div><div class="cur" id="curBr" style="color:var(--red)">0</div>
+            <span class="ax t">100</span><span class="ax m">50</span><span class="ax b">0</span>
+            <canvas data-ch="brake"></canvas>
+          </div>
+          <div class="chart">
+            <div class="lab">SPEED</div><div class="cur" id="curSp" style="color:var(--cyan)">118</div>
+            <span class="ax t">169</span><span class="ax m">117</span><span class="ax b">61</span>
+            <canvas data-ch="speed"></canvas>
+          </div>
+        </div>
+
+        <!-- TYRES (simple placeholder) -->
+        <div class="charts hidden" id="paneTyres">
+          <div class="chart" style="display:grid;place-items:center;color:var(--muted)">
+            <div style="text-align:center"><div style="font-size:40px">◷</div><div style="margin-top:8px;font-weight:700">Dados de pneus em breve</div></div>
+          </div>
+        </div>
+
+        <!-- COACHING (PitWall differential) -->
+        <div class="coach hidden" id="paneCoach">
+          <div class="head">
+            <h3>Insights da Volta</h3>
+            <div>Delta total <span class="delta" id="deltaTot">+0.89s</span></div>
+          </div>
+          <div class="score" id="score"></div>
+          <div id="insList"></div>
+          <div class="upsell">
+            <div class="di">◆</div>
+            <h4>Upgrade para Pro</h4>
+            <p>Desbloqueie mais canais de dados e coaching ilimitado.</p>
+            <div class="cta">Fazer upgrade</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER SCRUBBER -->
+  <div class="scrub">
+    <button class="play" id="play">▶</button>
+    <div class="time mono" id="timeLbl">00:00.000</div>
+    <div class="barwrap" id="barwrap">
+      <div class="bar"><div class="barfill" id="barfill"></div></div>
+      <div class="knob" id="knob"></div>
+    </div>
+    <button class="step" id="stepb">⏮</button>
+    <button class="step" id="stepf">⏭</button>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status">
+    Race Engineer <span class="w"><span class="ring"></span> Aguardando sessão…</span>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DADOS DE EXEMPLO (reais, do brief PitWall)
+   ============================================================ */
+const DATA = {
+  contexto: { carro:"Mazda MX-5 Cup", pista:"Winton Motor Raceway - National",
+              suaMelhor:"1:33.100", referencia:"média (7 voltas)", deltaTotal:"+0.89s" },
+  setores: [ {s:"S1", t:"20.126"}, {s:"S2", t:"21.784"}, {s:"S3", t:"26.858"}, {s:"S4", t:"22.030"} ],
+  scorecard: { agressaoFreio:0.82, trailBraking:0.34, usoDoGrip:0.50, rotacao:0.50, tempoMortoS:3.6 },
+  insights: [
+    { curva:"Curva 9", fase:"saída", custoS:0.17, retaSeguinteM:342,
+      oQue:"Perde 0,17s na saída da Curva 9",
+      porque:"linha um pouco fechada e turn-in ~9 m cedo demais, antes de uma reta longa",
+      corrigir:"atrase um tiquinho o turn-in e abra o raio na saída para chegar mais rápido na reta" },
+    { curva:"Curva 6", fase:"saída", custoS:0.17, retaSeguinteM:0,
+      oQue:"Perde 0,17s na saída da Curva 6",
+      porque:"linha ~50 cm mais fechada (raio menor — esfrega o pneu e sai devagar)",
+      corrigir:"entre mais por fora, deixe o carro correr até o apex e use toda a largura na saída" },
+    { curva:"Curva 5", fase:"saída", custoS:0.13, retaSeguinteM:124,
+      oQue:"Perde 0,13s na saída da Curva 5",
+      porque:"linha fechada + pegou a zebra; perdeu velocidade mínima",
+      corrigir:"abra o raio e use a zebra a favor, mantendo velocidade de curva" }
+  ]
+};
+const LAP_TIME = 90.8;            // duração da volta em s
+const SPEED_MIN = 61, SPEED_MAX = 169;
+
+/* ============================================================
+   GERAÇÃO DE TELEMETRIA PLAUSÍVEL (MX-5, ~12 curvas)
+   ============================================================ */
+const N = 900;
+// pontos de freada/curva ao longo da volta (fração 0..1) + intensidade
+const corners = [
+  {p:0.06,b:0.55,minS:88},{p:0.14,b:0.85,minS:70},{p:0.22,b:0.40,minS:104},
+  {p:0.31,b:0.92,minS:64},{p:0.40,b:0.60,minS:92},{p:0.49,b:0.78,minS:78},
+  {p:0.58,b:0.50,minS:100},{p:0.66,b:0.88,minS:68},{p:0.74,b:0.45,minS:108},
+  {p:0.82,b:0.95,minS:62},{p:0.90,b:0.58,minS:90},{p:0.97,b:0.42,minS:112}
+];
+function buildSeries(offset){
+  const th=[],br=[],sp=[];
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    let brake=0, near=99;
+    for(const c of corners){
+      const d=Math.abs(t-(c.p+offset*0.004));
+      near=Math.min(near,d);
+      if(d<0.018){ brake=Math.max(brake, c.b*(1-d/0.018)); }
+    }
+    // velocidade: base alta, cai nas curvas
+    let speed=SPEED_MAX-6;
+    let cornerFactor=0;
+    for(const c of corners){
+      const d=Math.abs(t-(c.p+offset*0.004));
+      if(d<0.05){ const w=1-d/0.05; cornerFactor=Math.max(cornerFactor, w*(1-(c.minS-SPEED_MIN)/(SPEED_MAX-SPEED_MIN))); }
+    }
+    speed = SPEED_MAX-6 - cornerFactor*(SPEED_MAX-SPEED_MIN-2);
+    speed += Math.sin(t*40+offset)*1.4 + (offset?1.5:0);
+    speed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, speed));
+    // acelerador: ~100 quando não freia, modula em transições
+    let thr = brake>0.05 ? Math.max(0, 12-brake*12) : 100;
+    if(near<0.03 && brake<0.05){ thr = 40+ (near/0.03)*60; } // saída progressiva
+    thr += (Math.random()-0.5)*3;
+    thr=Math.max(0,Math.min(100,thr));
+    th.push(thr); br.push(brake*100); sp.push(speed);
+  }
+  // suavização leve
+  const sm=a=>a.map((v,i)=> (a[Math.max(0,i-1)]+v+a[Math.min(N-1,i+1)])/3);
+  return {th:sm(th),br:sm(br),sp:sm(sp)};
+}
+const YOU = buildSeries(0);
+const REF = buildSeries(1.3);
+
+function gearFor(speed){ return Math.max(1, Math.min(6, Math.floor((speed-50)/22)+1)); }
+function rpmFor(speed){ const g=gearFor(speed); const base=4200+((speed-50)%22)/22*2600; return Math.round(base+g*40); }
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let pos = 0;         // 0..1 posição de playback
+let playing = false;
+let compOn = false;
+let segMode = 'sectors';
+let rtab = 'tele';
+let zoom = 1;
+
+/* ============================================================
+   SECTOR CARD
+   ============================================================ */
+function renderSectors(){
+  const tb=document.getElementById('sectorBody');
+  tb.innerHTML = DATA.setores.map(s=>`<tr><td>${s.s}</td><td class="you mono">${s.t}</td><td class="ref mono">-:--.--</td></tr>`).join('');
+}
+renderSectors();
+
+/* ============================================================
+   MINI MAP — traçado estilizado + 12 curvas
+   ============================================================ */
+const TRACK_PATH = "M40 120 C 20 96, 28 60, 56 52 C 86 44, 96 70, 120 64 C 150 56, 150 20, 178 20 C 214 20, 222 50, 206 70 C 192 86, 168 78, 168 96 C 168 116, 196 116, 196 130 C 196 142, 150 140, 120 136 C 84 131, 64 138, 40 120 Z";
+const turnPts = [
+  [44,108],[58,54],[96,66],[128,62],[176,22],[208,58],
+  [186,82],[170,104],[192,128],[150,138],[104,134],[64,128]
+];
+function renderMiniMap(){
+  const svg=document.getElementById('minimap');
+  const activeTurn = Math.floor(pos*12)%12;
+  let s=`<path d="${TRACK_PATH}" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="7"/>`;
+  // progress overlay
+  s+=`<path d="${TRACK_PATH}" fill="none" stroke="var(--green)" stroke-width="3" stroke-dasharray="${pos*640} 640" stroke-linecap="round" opacity=".9"/>`;
+  turnPts.forEach((p,i)=>{
+    const act = i===activeTurn;
+    s+=`<circle class="turn ${act?'act':''}" cx="${p[0]}" cy="${p[1]}" r="9"/>`;
+    s+=`<text class="turn-t" x="${p[0]}" y="${p[1]+4}" text-anchor="middle" ${act?'fill="#04130a"':''}>${i+1}</text>`;
+  });
+  svg.innerHTML=s;
+  document.getElementById('minicap').textContent = (segMode==='sectors'?'Setor ':'Segmento ')+ (Math.floor(pos*4)%4+1);
+}
+
+/* ============================================================
+   PISTA EM PERSPECTIVA (canvas)
+   ============================================================ */
+const tcv=document.getElementById('track');
+const tctx=tcv.getContext('2d');
+let TW=0,TH=0,DPR=Math.min(2,window.devicePixelRatio||1);
+function sizeTrack(){
+  const r=tcv.getBoundingClientRect(); TW=r.width; TH=r.height;
+  tcv.width=TW*DPR; tcv.height=TH*DPR; tctx.setTransform(DPR,0,0,DPR,0,0);
+}
+function drawTrack(){
+  tctx.clearRect(0,0,TW,TH);
+  // fundo: faixas diagonais sutis
+  tctx.save();
+  tctx.fillStyle='#050506'; tctx.fillRect(0,0,TW,TH);
+  tctx.translate(TW/2,TH/2); tctx.rotate(-0.62); tctx.translate(-TW/2,-TH/2);
+  const bandG=tctx.createLinearGradient(0,0,TW,0);
+  bandG.addColorStop(0,'rgba(255,255,255,0)');bandG.addColorStop(.5,'rgba(255,255,255,.025)');bandG.addColorStop(1,'rgba(255,255,255,0)');
+  tctx.fillStyle=bandG; tctx.fillRect(-TW,TH*0.18,TW*3,TH*0.5);
+  tctx.restore();
+
+  // estrada diagonal recuando: do canto inf-esq (vermelho/atrás) ao sup-dir (verde/à frente)
+  const ang=-0.62; const cx=TW*0.5, cy=TH*0.52;
+  const dirx=Math.cos(ang), diry=Math.sin(ang);
+  const nx=-diry, ny=dirx;
+  const len=Math.hypot(TW,TH)*1.15;
+  // largura varia com perspectiva (mais estreito à frente=verde)
+  function roadW(u){ return (1-u)*150*zoom + 26; } // u:0 atrás(perto), 1 frente(longe)
+  // construir contornos
+  tctx.save();
+  const segs=60; const left=[],right=[];
+  for(let i=0;i<=segs;i++){
+    const u=i/segs;
+    const px=cx + dirx*(u-0.42)*len;
+    const py=cy + diry*(u-0.42)*len;
+    const w=roadW(u)/2;
+    left.push([px+nx*w, py+ny*w]); right.push([px-nx*w, py-ny*w]);
+  }
+  // asfalto
+  tctx.beginPath();
+  left.forEach((p,i)=> i? tctx.lineTo(p[0],p[1]):tctx.moveTo(p[0],p[1]));
+  for(let i=right.length-1;i>=0;i--) tctx.lineTo(right[i][0],right[i][1]);
+  tctx.closePath();
+  const grd=tctx.createLinearGradient(cx-dirx*len*0.42,cy-diry*len*0.42, cx+dirx*len*0.58,cy+diry*len*0.58);
+  grd.addColorStop(0,'#1a1a1d'); grd.addColorStop(1,'#161618');
+  tctx.fillStyle=grd; tctx.fill();
+
+  // bordas coloridas (delta): vermelho atrás -> verde frente
+  function edge(side,offset){
+    tctx.beginPath();
+    const pts= side.map((p,i)=>[p[0]+nx*offset*(side===left?1:-1), p[1]+ny*offset*(side===left?1:-1)]);
+    side.forEach((p,i)=> i?tctx.lineTo(p[0],p[1]):tctx.moveTo(p[0],p[1]));
+    const eg=tctx.createLinearGradient(cx-dirx*len*0.42,cy-diry*len*0.42, cx+dirx*len*0.58,cy+diry*len*0.58);
+    eg.addColorStop(0,'#e8412a'); eg.addColorStop(0.45,'#e8a02a'); eg.addColorStop(0.62,'#9fd13a'); eg.addColorStop(1,'#1fd760');
+    tctx.strokeStyle=eg; tctx.lineWidth=3; tctx.shadowColor='rgba(31,215,96,.5)'; tctx.shadowBlur=14; tctx.stroke();
+    tctx.shadowBlur=0;
+  }
+  edge(left); edge(right);
+
+  // linha central tracejada (perspectiva)
+  tctx.strokeStyle='rgba(255,255,255,.18)'; tctx.lineWidth=2; tctx.setLineDash([16,22]); tctx.lineDashOffset=-pos*400;
+  tctx.beginPath();
+  for(let i=0;i<=segs;i++){ const u=i/segs; const px=cx+dirx*(u-0.42)*len, py=cy+diry*(u-0.42)*len; i?tctx.lineTo(px,py):tctx.moveTo(px,py);}
+  tctx.stroke(); tctx.setLineDash([]);
+  tctx.restore();
+
+  // carro wireframe na posição do carro (mapeado de pos)
+  const u=0.34; // posição fixa do carro na via (câmera segue)
+  const px=cx+dirx*(u-0.42)*len, py=cy+diry*(u-0.42)*len;
+  drawCar(px,py, ang, roadW(u)/150);
+}
+function drawCar(x,y,ang,scale){
+  scale=Math.max(0.7,scale)*1.0*zoom;
+  tctx.save(); tctx.translate(x,y); tctx.rotate(ang+Math.PI/2);
+  tctx.scale(scale,scale);
+  tctx.strokeStyle='var(--green)'; tctx.strokeStyle='#37e87a';
+  tctx.shadowColor='rgba(31,215,96,.7)'; tctx.shadowBlur=16; tctx.lineWidth=2.2; tctx.lineJoin='round';
+  // corpo
+  rr(-30,-58,60,116,20); tctx.stroke();
+  // cabine
+  tctx.beginPath(); rr(-20,-20,40,46,8); tctx.stroke();
+  // para-brisa
+  tctx.beginPath(); tctx.moveTo(-18,-20); tctx.lineTo(-12,-36); tctx.lineTo(12,-36); tctx.lineTo(18,-20); tctx.stroke();
+  // splitter dianteiro
+  tctx.beginPath(); tctx.moveTo(-26,-58); tctx.lineTo(-30,-66); tctx.lineTo(30,-66); tctx.lineTo(26,-58); tctx.stroke();
+  // asa traseira
+  tctx.beginPath(); tctx.moveTo(-30,54); tctx.lineTo(-34,62); tctx.lineTo(34,62); tctx.lineTo(30,54); tctx.stroke();
+  // rodas
+  tctx.shadowBlur=8;
+  [[-34,-38],[34,-38],[-34,40],[34,40]].forEach(w=>{ tctx.beginPath(); rr(w[0]-7,w[1]-13,14,26,5); tctx.stroke(); });
+  // detalhes internos
+  tctx.shadowBlur=0; tctx.strokeStyle='rgba(55,232,122,.5)'; tctx.lineWidth=1.4;
+  tctx.beginPath(); tctx.moveTo(-30,0); tctx.lineTo(30,0); tctx.moveTo(0,-58); tctx.lineTo(0,62); tctx.stroke();
+  tctx.restore();
+}
+function rr(x,y,w,h,r){ tctx.beginPath(); tctx.moveTo(x+r,y); tctx.arcTo(x+w,y,x+w,y+h,r); tctx.arcTo(x+w,y+h,x,y+h,r); tctx.arcTo(x,y+h,x,y,r); tctx.arcTo(x,y,x+w,y,r); tctx.closePath(); }
+
+/* ============================================================
+   CHARTS
+   ============================================================ */
+const charts={};
+document.querySelectorAll('.chart canvas').forEach(c=>{
+  charts[c.dataset.ch]={cv:c,ctx:c.getContext('2d')};
+});
+function sizeCharts(){
+  for(const k in charts){ const o=charts[k]; const r=o.cv.getBoundingClientRect();
+    o.w=r.width;o.h=r.height; o.cv.width=r.width*DPR; o.cv.height=r.height*DPR; o.ctx.setTransform(DPR,0,0,DPR,0,0); }
+}
+function drawChart(key, series, color, fillTop, fillBot, refSeries){
+  const o=charts[key]; if(!o) return; const {ctx,w,h}=o;
+  ctx.clearRect(0,0,w,h);
+  const pad=2;
+  const yv = key==='speed' ? (v)=> h-pad-((v-SPEED_MIN)/(SPEED_MAX-SPEED_MIN))*(h-2*pad)
+                           : (v)=> h-pad-(v/100)*(h-2*pad);
+  const xx = i=> (i/(N-1))*w;
+  // grid leve
+  ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1;
+  [0.25,0.5,0.75].forEach(f=>{ctx.beginPath();ctx.moveTo(0,h*f);ctx.lineTo(w,h*f);ctx.stroke();});
+  // ref ghost
+  if(refSeries){
+    ctx.beginPath(); refSeries.forEach((v,i)=> i?ctx.lineTo(xx(i),yv(v)):ctx.moveTo(xx(i),yv(v)));
+    ctx.strokeStyle='rgba(46,134,255,.7)'; ctx.lineWidth=1.6; ctx.stroke();
+  }
+  // área preenchida
+  ctx.beginPath(); series.forEach((v,i)=> i?ctx.lineTo(xx(i),yv(v)):ctx.moveTo(xx(i),yv(v)));
+  ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,fillTop); g.addColorStop(1,fillBot);
+  ctx.fillStyle=g; ctx.fill();
+  // linha
+  ctx.beginPath(); series.forEach((v,i)=> i?ctx.lineTo(xx(i),yv(v)):ctx.moveTo(xx(i),yv(v)));
+  ctx.strokeStyle=color; ctx.lineWidth=2; ctx.shadowColor=color; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0;
+  // cursor
+  const cx=pos*w;
+  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,h); ctx.stroke();
+  const idx=Math.min(N-1,Math.round(pos*(N-1)));
+  ctx.fillStyle=color; ctx.beginPath(); ctx.arc(cx,yv(series[idx]),3.5,0,7); ctx.fill();
+}
+function drawAllCharts(){
+  drawChart('throttle',YOU.th,'#1fd760','rgba(31,215,96,.30)','rgba(31,215,96,.02)', compOn?REF.th:null);
+  drawChart('brake',YOU.br,'#e8412a','rgba(232,65,42,.28)','rgba(232,65,42,.02)', compOn?REF.br:null);
+  drawChart('speed',YOU.sp,'#39c6e6','rgba(57,198,230,.26)','rgba(57,198,230,.02)', compOn?REF.sp:null);
+}
+
+/* ============================================================
+   COACHING
+   ============================================================ */
+function ring(val,label){
+  const pct=Math.round(val*100); const c=2*Math.PI*26;
+  const col = val>=0.7?'#1fd760': val>=0.45?'#e8a02a':'#e8412a';
+  return `<div class="g"><svg class="ring" viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="26" fill="none" stroke="#222" stroke-width="6"/>
+    <circle cx="32" cy="32" r="26" fill="none" stroke="${col}" stroke-width="6" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${c*(1-val)}" transform="rotate(-90 32 32)"/>
+    <text x="32" y="37" text-anchor="middle" fill="#fff" font-size="15" font-family="JetBrains Mono" font-weight="700">${pct}</text>
+  </svg><div class="gl">${label}</div></div>`;
+}
+function renderCoach(){
+  const s=DATA.scorecard;
+  document.getElementById('score').innerHTML =
+    ring(s.agressaoFreio,'Agressão<br>freio') +
+    ring(s.trailBraking,'Trail<br>braking') +
+    ring(s.usoDoGrip,'Uso do<br>grip') +
+    ring(s.rotacao,'Rotação') +
+    `<div class="g"><svg class="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="#222" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="#e8412a" stroke-width="6" stroke-linecap="round" stroke-dasharray="${2*Math.PI*26}" stroke-dashoffset="${2*Math.PI*26*0.4}" transform="rotate(-90 32 32)"/><text x="32" y="37" text-anchor="middle" fill="#fff" font-size="13" font-family="JetBrains Mono" font-weight="700">${s.tempoMortoS}s</text></svg><div class="gl">Tempo<br>morto</div></div>`;
+  document.getElementById('deltaTot').textContent = DATA.contexto.deltaTotal;
+  document.getElementById('insList').innerHTML = DATA.insights.map(it=>`
+    <div class="ins" style="margin-bottom:14px">
+      <div class="t">
+        <span class="pill">${it.fase}</span>
+        <h4>${it.curva}</h4>
+        <span class="cost">+${it.custoS.toFixed(2)}s</span>
+      </div>
+      <div class="grid">
+        <span class="k">O quê</span><span>${it.oQue}</span>
+        <span class="k">Por quê</span><span>${it.porque}</span>
+        <span class="k">Corrigir</span><span class="fix">${it.corrigir}</span>
+      </div>
+      ${it.retaSeguinteM?`<div style="margin-top:9px;font-size:12px;color:var(--muted)">Reta seguinte: <b style="color:#fff">${it.retaSeguinteM} m</b> — ganho potencial alto</div>`:''}
+    </div>`).join('');
+}
+renderCoach();
+
+/* ============================================================
+   HUD update (live values) + footer
+   ============================================================ */
+function fmtTime(sec){ const m=Math.floor(sec/60); const s=(sec%60); return `${String(m).padStart(2,'0')}:${s.toFixed(3).padStart(6,'0')}`; }
+function updateHUD(){
+  const idx=Math.min(N-1,Math.round(pos*(N-1)));
+  const th=YOU.th[idx], br=YOU.br[idx], sp=YOU.sp[idx];
+  document.getElementById('thNum').textContent=Math.round(th)+'%';
+  document.getElementById('thFill').style.width=Math.round(th)+'%';
+  document.getElementById('brNum').textContent=Math.round(br)+'%';
+  document.getElementById('brFill').style.width=Math.round(br)+'%';
+  document.getElementById('spdNum').textContent=Math.round(sp);
+  document.getElementById('gearNum').textContent=gearFor(sp);
+  document.getElementById('rpmNum').textContent=rpmFor(sp);
+  document.getElementById('curTh').textContent=Math.round(th);
+  document.getElementById('curBr').textContent=Math.round(br);
+  document.getElementById('curSp').textContent=Math.round(sp);
+  document.getElementById('timeLbl').textContent=fmtTime(pos*LAP_TIME);
+  document.getElementById('barfill').style.width=(pos*100)+'%';
+  document.getElementById('knob').style.left=(pos*100)+'%';
+}
+
+/* ============================================================
+   RENDER LOOP
+   ============================================================ */
+function renderAll(){ drawTrack(); if(rtab==='tele') drawAllCharts(); renderMiniMap(); updateHUD(); }
+let last=performance.now();
+function loop(now){
+  const dt=(now-last)/1000; last=now;
+  if(playing){ pos+=dt/LAP_TIME; if(pos>=1){pos=0;} }
+  renderAll();
+  requestAnimationFrame(loop);
+}
+
+/* ============================================================
+   EVENTOS
+   ============================================================ */
+document.getElementById('play').addEventListener('click',e=>{ playing=!playing; e.target.textContent=playing?'⏸':'▶'; });
+document.getElementById('stepb').addEventListener('click',()=>{ pos=Math.max(0,pos-0.02); });
+document.getElementById('stepf').addEventListener('click',()=>{ pos=Math.min(1,pos+0.02); });
+const barwrap=document.getElementById('barwrap');
+let dragging=false;
+function setPosFromX(clientX){ const r=barwrap.getBoundingClientRect(); pos=Math.max(0,Math.min(1,(clientX-r.left)/r.width)); }
+barwrap.addEventListener('pointerdown',e=>{dragging=true;setPosFromX(e.clientX);barwrap.setPointerCapture(e.pointerId);});
+barwrap.addEventListener('pointermove',e=>{if(dragging)setPosFromX(e.clientX);});
+barwrap.addEventListener('pointerup',()=>dragging=false);
+
+document.getElementById('addcomp').addEventListener('click',e=>{
+  compOn=!compOn; e.currentTarget.classList.toggle('on',compOn);
+  e.currentTarget.innerHTML = compOn?'Comparando<br>Attila × Steve':'Adicionar<br>Comparação';
+  document.getElementById('flist').classList.toggle('hidden',!compOn);
+  // segunda coluna do sector card
+  const refTimes=['20.292','21.690','27.040','21.990'];
+  document.querySelectorAll('#sectorBody tr').forEach((tr,i)=>{ tr.children[2].textContent=compOn?refTimes[i]:'-:--.--'; tr.children[2].className= compOn?'mono':'ref mono'; if(compOn)tr.children[2].style.color='var(--blue)'; else tr.children[2].style.color=''; });
+  document.querySelector('.sectorcard .hd-ico.ghost').classList.toggle('ghost',!compOn);
+});
+
+document.querySelectorAll('.seg-toggle button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.seg-toggle button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); segMode=b.dataset.seg;
+}));
+
+document.querySelectorAll('.rtabs [data-rtab]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.rtabs [data-rtab]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); rtab=b.dataset.rtab;
+  document.getElementById('paneTele').classList.toggle('hidden',rtab!=='tele');
+  document.getElementById('paneTyres').classList.toggle('hidden',rtab!=='tyres');
+  document.getElementById('paneCoach').classList.toggle('hidden',rtab!=='coach');
+  if(rtab==='tele'){ sizeCharts(); }
+}));
+
+const zEl=document.getElementById('zoom');
+zEl.addEventListener('input',()=>{zoom=parseFloat(zEl.value);});
+document.getElementById('zin').addEventListener('click',()=>{zEl.value=Math.min(1.8,zoom+0.1);zoom=parseFloat(zEl.value);});
+document.getElementById('zout').addEventListener('click',()=>{zEl.value=Math.max(0.6,zoom-0.1);zoom=parseFloat(zEl.value);});
+
+/* ============================================================
+   RESIZE + START
+   ============================================================ */
+function sizeAll(){ sizeTrack(); sizeCharts(); }
+window.addEventListener('resize',sizeAll);
+window.addEventListener('load',()=>{ sizeAll(); requestAnimationFrame(loop); });
+sizeAll(); requestAnimationFrame(loop);
+</script>
+</body>
+</html>

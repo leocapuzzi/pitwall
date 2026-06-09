@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:garage61.net)",
+      "Bash(py --version)",
+      "Bash(pip --version)",
+      "PowerShell(& \"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\.venv\\\\Scripts\\\\python.exe\" -m pip install --upgrade pip --quiet)",
+      "PowerShell(& \"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\.venv\\\\Scripts\\\\pip.exe\" install -r \"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\requirements.txt\")",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(cat)",
+      "Bash(\"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\.venv\\\\Scripts\\\\python.exe\" /tmp/test_analysis.py)",
+      "Bash(\"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\.venv\\\\Scripts\\\\python.exe\" /tmp/debug_laps.py)",
+      "Bash(\"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\.venv\\\\Scripts\\\\python.exe\" -m py_compile \"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\src\\\\ibt_reader.py\" \"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\src\\\\analysis.py\" \"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\src\\\\app.py\")",
+      "PowerShell($env:STREAMLIT_SERVER_HEADLESS = \"true\"; $env:STREAMLIT_BROWSER_GATHERUSAGESTATS = \"false\"; & \"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\.venv\\\\Scripts\\\\streamlit.exe\" run \"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\src\\\\app.py\" --server.port 8501 --server.headless true)",
+      "PowerShell(Start-Sleep -Seconds 6; Get-Content \"C:\\\\Users\\\\leoca\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-leoca-iCloudDrive-Claude-PItWall\\\\612a7f1c-a460-495d-803c-e53780fd98e2\\\\tasks\\\\b4j6g1gy2.output\"; Write-Output \"--- HTTP CHECK ---\"; try { \\(Invoke-WebRequest -Uri \"http://localhost:8501/_stcore/health\" -UseBasicParsing -TimeoutSec 5\\).Content } catch { \"Health falhou: $_\" })",
+      "Bash(\"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\.venv\\\\Scripts\\\\python.exe\" /tmp/test_app.py)",
+      "Bash(\"C:\\\\Users\\\\leoca\\\\iCloudDrive\\\\Claude\\\\PItWall\\\\.venv\\\\Scripts\\\\python.exe\" /tmp/test_app.py 2>/tmp/stderr.txt; echo \"=== STDERR \\(warnings\\) ===\"; cat /tmp/stderr.txt | grep -i \"use_container_width\\\\|deprecat\" | head -3 || echo \"\\(sem avisos de depreciacao\\)\")",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}

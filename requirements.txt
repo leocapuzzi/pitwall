@@ -1,0 +1,11 @@
+pyirsdk
+pandas
+numpy
+streamlit
+plotly
+iracingdataapi
+garage61api
+toml
+pydantic
+fastapi
+uvicorn

@@ -1,0 +1,24 @@
+{
+  "track_id": 439,
+  "track_name": "Winton Motor Raceway - National",
+  "config": "National",
+  "length_m": 2945,
+  "n_corners": 12,
+  "source": "Posicoes (apex_pct = fracao 0..1 da volta) derivadas da geometria Lat/Lon de uma volta de referencia (MX-5). Numeracao na ordem da volta. Refinavel.",
+  "corners": [
+    {"n": 1,  "apex_pct": 0.085},
+    {"n": 2,  "apex_pct": 0.116},
+    {"n": 3,  "apex_pct": 0.218},
+    {"n": 4,  "apex_pct": 0.270},
+    {"n": 5,  "apex_pct": 0.408},
+    {"n": 6,  "apex_pct": 0.487},
+    {"n": 7,  "apex_pct": 0.539},
+    {"n": 8,  "apex_pct": 0.584},
+    {"n": 9,  "apex_pct": 0.706},
+    {"n": 10, "apex_pct": 0.856},
+    {"n": 11, "apex_pct": 0.892},
+    {"n": 12, "apex_pct": 0.996}
+  ],
+  "sectors": [],
+  "sectors_status": "pendente — os 3 setores reais nao estao no .ibt (nem em corrida oficial; iRacing grava quartos genericos). Cadastrar quando a API do Garage61/iRacing estiver disponivel."
+}
