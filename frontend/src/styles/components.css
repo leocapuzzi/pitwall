@@ -547,9 +547,13 @@ body.fullmap #root{pointer-events:none}
 .pw-seglabel{font-family:var(--font-display); font-size:14px}
 .pw-segrows{margin-top:9px; display:flex; flex-direction:column; gap:6px; font-size:12px}
 
-/* minimapa + slider centrados na área visível do mapa (painel ocupa a direita) */
-.pw-maplayer .pw-minimap.pw-mm-tel{top:auto; right:auto; left:21%; bottom:206px; transform:translateX(-50%); width:190px}
-.pw-maplayer.pw-tel .pw-zoompill{left:21%; bottom:152px}
+/* DOCK do mapa (Telemetry/Comparison): minimapa + slider numa coluna única,
+   ancorada à borda esquerda do painel e alinhada por largura (como o GO Fast) */
+.pw-maplayer .pw-minimap.pw-mm-tel{top:auto; left:auto; transform:none;
+  right:calc(min(58%, 830px) + 46px); bottom:152px; width:180px; padding:9px 10px}
+.pw-maplayer.pw-tel .pw-zoompill{left:auto; transform:none;
+  right:calc(min(58%, 830px) + 46px); bottom:98px; width:180px; justify-content:center}
+.pw-maplayer.pw-tel .pw-zoompill input[type=range]{flex:1; min-width:0; width:auto}
 
 /* bandeirinhas de freada em ESPAÇO DE TELA (tamanho fixo em qualquer zoom) */
 .pw-flagwrap{position:absolute; left:0; top:0; width:14px; height:14px; will-change:transform; pointer-events:none}

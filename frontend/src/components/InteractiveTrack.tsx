@@ -40,7 +40,8 @@ const InteractiveTrack = forwardRef<TrackHandle, {
   initialZoom?: number                              // abre já aproximado no carro (GO Fast)
   markers?: { x: number; y: number; ang: number }[] // bandeirinhas de freada (vermelhas)
   zoomSlider?: boolean                              // pílula − slider + central (GO Fast)
-}>(function InteractiveTrack({ trackGeom, racingGeom, racingGeomB, initialT = 0, corners, activeCorner, onPickCorner, height = 300, racingSegments, focusCorner, children, edges, unitPerM, follow, hideCorners, initialZoom, markers, zoomSlider }, ref) {
+  followX?: number                                  // âncora horizontal da câmera (fração do palco; 0.5 = centro). Telas com painel à direita usam ~0.22
+}>(function InteractiveTrack({ trackGeom, racingGeom, racingGeomB, initialT = 0, corners, activeCorner, onPickCorner, height = 300, racingSegments, focusCorner, children, edges, unitPerM, follow, hideCorners, initialZoom, markers, zoomSlider, followX = 0.5 }, ref) {
   const carRef = useRef<HTMLDivElement>(null), ghostRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null), gRef = useRef<SVGGElement>(null), stageRef = useRef<HTMLDivElement>(null)
   const dotsWrapRef = useRef<HTMLDivElement>(null), marksWrapRef = useRef<HTMLDivElement>(null)
@@ -91,8 +92,14 @@ const InteractiveTrack = forwardRef<TrackHandle, {
     const car = carRef.current
     if (!w || !h || ptsA.length < 2) { if (car) car.style.visibility = 'hidden'; return }
     const a = lerpPt(ptsA, tLast.current)
-    // câmera fixa no carro (sem clamp — fundo é escuro, como o GO Fast)
-    if (follow && vpr.current.z > 1.02) writeVp({ z: vpr.current.z, x: 500 - vpr.current.z * a.x, y: 320 - vpr.current.z * a.y })
+    // câmera fixa no carro (sem clamp — fundo é escuro, como o GO Fast). A âncora
+    // horizontal é deslocável (followX): telas com painel à direita centram o carro
+    // na ÁREA VISÍVEL do mapa, não no centro da tela.
+    if (follow && vpr.current.z > 1.02) {
+      const sc0 = Math.min(w / 1000, h / 640), ox0 = (w - 1000 * sc0) / 2, oy0 = (h - 640 * sc0) / 2
+      const cx = (followX * w - ox0) / sc0, cy = (0.5 * h - oy0) / sc0
+      writeVp({ z: vpr.current.z, x: cx - vpr.current.z * a.x, y: cy - vpr.current.z * a.y })
+    }
     placeSprite(car, a, carPx)
     if (braking !== undefined && braking !== brakingRef.current) {
       brakingRef.current = braking
@@ -120,7 +127,7 @@ const InteractiveTrack = forwardRef<TrackHandle, {
         el.style.transform = `translate3d(${(ox2 + sc2 * (v2.x + v2.z * mx) - 7).toFixed(1)}px,${(oy2 + sc2 * (v2.y + v2.z * my) - 7).toFixed(1)}px,0)`
       }
     }
-  }, [racingGeom, racingGeomB, unitPerM, follow])
+  }, [racingGeom, racingGeomB, unitPerM, follow, followX])
 
   const setT = useCallback((tv: number, braking?: boolean) => { tLast.current = tv; renderAll(braking) }, [renderAll])
   const setT2 = useCallback((tv: number | null) => {
