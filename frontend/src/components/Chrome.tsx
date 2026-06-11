@@ -7,7 +7,9 @@ const NAV = [
 ]
 function topGroup(view: View) { return view === 'dashboard' ? 'dashboard' : 'engineer' }
 
-export function TopNav({ view, go }: { view: View; go: (v: View) => void }) {
+export function TopNav({ view, go, onSettings, settingsOn }: {
+  view: View; go: (v: View) => void; onSettings?: () => void; settingsOn?: boolean
+}) {
   const grp = topGroup(view)
   return (
     <header className="topnav">
@@ -24,7 +26,8 @@ export function TopNav({ view, go }: { view: View; go: (v: View) => void }) {
         ))}
       </nav>
       <div className="navr">
-        <button className="iconbtn"><Icon n="gear" /></button>
+        <button className={'iconbtn' + (settingsOn ? ' on' : '')} onClick={onSettings}
+          title="Settings" aria-label="Settings"><Icon n="gear" /></button>
         <button className="iconbtn"><Icon n="bell" /><span className="badge"></span></button>
         <button className="iconbtn"><Icon n="info" /></button>
         <div className="userchip">

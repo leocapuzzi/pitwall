@@ -18,16 +18,34 @@ O mapa é o **fundo da tela inteira**; a UI flutua por cima em vidro.
   `pointer-events:auto`. Cliques "atravessam" o shell até o mapa/painéis.
 - Telas sem mapa (Stint/Dashboard/AI) ficam fora do fullmap.
 
-## 2. Liquid glass
+## 2. Liquid glass (FÍSICO — artigo kube.io/blog/liquid-glass-css-svg)
 
-- O efeito REAL (distorção do conteúdo atrás) é um **filtro SVG** em `frontend/index.html`
-  (`#pw-glass`): `feTurbulence → feDisplacementMap → blur → saturate`, aplicado via
-  `backdrop-filter: url(#pw-glass)` (classe `.pw-glass2` e grupo `.pw-glass…` em
-  `components.css`). Só Chromium; há fallback CSS (blur+saturate) declarado antes.
-- **Botões de calibração** (index.html): `feDisplacementMap scale="38"` (intensidade da
-  distorção) e `feGaussianBlur stdDeviation="9"` (desfoque). Aprovados pelo usuário: 38/9.
+> 📘 Referência completa (física, cadeia do filtro, parâmetros, reuso em outro
+> projeto, verificação): **`frontend/LIQUID-GLASS.md`**.
+
+- O efeito é gerado por **`src/lib/liquidGlass.ts`**: UM filtro SVG **por painel**
+  (`backdrop-filter:url(#pw-lg-N)` inline), reconstruído quando o painel muda de tamanho.
+  O motor observa o DOM (MutationObserver) pelos seletores `.pw-glass2`, `.pw-glass`,
+  `.pw-maplayer .pw-minimap/.pw-lapdetail`, `.pw-scrubfloat .tp-scrub` — basta usar a
+  classe que o vidro "pega" sozinho. Só Chromium; o CSS mantém o fallback blur/saturate.
+- **Física** (não é mais ruído/turbulence): perfil squircle no bezel da borda →
+  Lei de Snell (n=1.5) → displacement map por canvas (R=X, G=Y, 128=neutro, deslocando
+  p/ DENTRO = lente convexa). Encadeado: refração → blur progressivo na borda (máscara
+  ramp) → saturate/brightness → **especular** (rim light que herda a cor do fundo
+  desfocado super-saturado, screen-blend; contra-luz a 45%).
+- **Calibração AGORA É DO USUÁRIO**: menu Settings (engrenagem do TopNav →
+  `components/SettingsMenu.tsx`) com os sliders do artigo (specular opacity/saturation,
+  refraction, blur, progressive blur, glass bg opacity) + física (bezel, espessura,
+  índice, ângulo da luz, saturação). Persistem em `localStorage('pw_glass_v1')`;
+  defaults em `GLASS_DEFAULTS` (liquidGlass.ts). Opacidade do tinte = var `--pw-glassbg`
+  (consumida no background das classes de vidro em components.css).
+- Sliders "principais" mudam só ATRIBUTOS do filtro (tempo real, barato); os de física
+  reconstroem os canvases (debounce 250ms). Resize de painel → rebuild (120ms).
 - O vidro só "aparece" quando algo passa por baixo (pista/linhas). Painel parado sobre
   fundo vazio fica escuro mesmo — é esperado.
+- ⚠️ Pegadinha: elemento de vidro que nasce SEM layout fica registrado como unidade
+  nula até o ResizeObserver vê-lo com tamanho — guards `if (!u)` no applyLiveParams/
+  scheduleRebuildAll são necessários.
 
 ## 3. Câmera e carro (`InteractiveTrack.tsx`)
 

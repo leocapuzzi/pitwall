@@ -36,6 +36,8 @@
   --ink-2: #9AA1AB;
   --ink-3: #5C636E;
 
+  --pw-glassbg: .33; /* opacidade do tinte do liquid glass (slider no Settings) */
+
   --r-xs: 7px;  --r-sm: 10px; --r: 14px; --r-lg: 18px; --r-xl: 24px; --r-pill: 999px;
   --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 18px 40px -22px rgba(0,0,0,.8);
   --shadow-pop: 0 24px 60px -20px rgba(0,0,0,.85), 0 0 0 1px var(--hair);

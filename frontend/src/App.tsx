@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ComponentType } from 'react'
 import { TopNav, SessionStrip, StatusBar } from './components/Chrome'
+import SettingsMenu from './components/SettingsMenu'
 import type { View } from './lib/api'
 import Dashboard from './screens/Dashboard'
 import Telemetry from './screens/Telemetry'
@@ -39,6 +40,8 @@ export default function App() {
     return () => window.removeEventListener('pw:go', onGo)
   }, [])
 
+  const [settings, setSettings] = useState(false)
+
   const Screen = SCREENS[view]
   // modo FULLMAP (estilo GO Fast): o mapa vive atrás de TUDO e a UI flutua em vidro.
   // A classe também vai no <body> p/ liberar o mouse do #root (CSS body.fullmap #root).
@@ -49,7 +52,7 @@ export default function App() {
   }, [fullmap])
   return (
     <div className={'app' + (fullmap ? ' fullmap' : '')}>
-      <TopNav view={view} go={setView} />
+      <TopNav view={view} go={setView} onSettings={() => setSettings(s => !s)} settingsOn={settings} />
       {view !== 'dashboard' && <SessionStrip view={view} go={setView} />}
       <main className="stage">
         <div className="screen on">
@@ -65,6 +68,7 @@ export default function App() {
         </div>
       </main>
       <StatusBar />
+      <SettingsMenu open={settings} onClose={() => setSettings(false)} />
     </div>
   )
 }

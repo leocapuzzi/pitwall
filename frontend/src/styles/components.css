@@ -439,14 +439,14 @@ body.fullmap #root{pointer-events:none}
   backdrop-filter:blur(26px) saturate(1.4) brightness(1.08);
   border-color:rgba(255,255,255,.07)}
 
-/* LIQUID GLASS real: o filtro SVG #pw-glass (index.html) DISTORCE + desfoca + satura
-   o que passa por baixo (feDisplacementMap). Fallback: blur/saturate puros. */
+/* LIQUID GLASS real (artigo kube.io): lib/liquidGlass.ts gera UM filtro SVG por painel
+   (refração física por displacement map + blur progressivo + especular) e aplica
+   backdrop-filter:url(#pw-lg-N) INLINE. Aqui fica só o fallback (blur/saturate puros)
+   e o tinte — cuja opacidade é o slider "Glass bg opacity" (var --pw-glassbg). */
 .pw-glass, .pw-maplayer .pw-minimap, .pw-maplayer .pw-lapdetail, .pw-scrubfloat .tp-scrub{
-  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0) 45%), rgba(13,16,20,.38)!important;
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0) 45%), rgba(13,16,20,var(--pw-glassbg,.33))!important;
   -webkit-backdrop-filter:blur(28px) saturate(1.5) brightness(1.12);
   backdrop-filter:blur(28px) saturate(1.5) brightness(1.12);
-  -webkit-backdrop-filter:url(#pw-glass);
-  backdrop-filter:url(#pw-glass);
   border:1px solid rgba(255,255,255,.10); border-radius:16px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 24px 60px -28px rgba(0,0,0,.95)}
 .pw-maplayer .pw-minimap{top:196px; right:22px; width:268px; border-radius:16px}
@@ -460,11 +460,9 @@ body.fullmap #root{pointer-events:none}
 
 /* ---- réplica GO Fast (Lap v3) ---- */
 .pw-glass2{
-  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0) 45%), rgba(13,16,20,.38);
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0) 45%), rgba(13,16,20,var(--pw-glassbg,.33));
   -webkit-backdrop-filter:blur(28px) saturate(1.5) brightness(1.12);
   backdrop-filter:blur(28px) saturate(1.5) brightness(1.12);
-  -webkit-backdrop-filter:url(#pw-glass);
-  backdrop-filter:url(#pw-glass);
   border:1px solid rgba(255,255,255,.10); border-radius:16px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 24px 60px -28px rgba(0,0,0,.95)}
 /* coluna esquerda = FLEX entre topo e player (overlap impossível por construção):
@@ -1014,3 +1012,67 @@ body.fullmap #root{pointer-events:none}
 .ap-hero-meta{display:flex; align-items:center; gap:22px; flex:none}
 .ap-hero-meta>div{text-align:right}
 .ap-hero-meta b{display:block; font-size:18px; margin-top:3px}
+
+/* ============================================================
+   SETTINGS (engrenagem do topo) — menu flutuante em liquid glass
+   com os sliders do efeito (parâmetros do artigo kube.io)
+   ============================================================ */
+.pw-set-veil{position:fixed; inset:0; z-index:58; pointer-events:auto; background:transparent}
+.pw-settings{position:fixed; top:70px; right:14px; z-index:60; width:378px;
+  max-height:calc(100vh - 128px); overflow:auto; overscroll-behavior:contain;
+  padding:15px 18px 13px; pointer-events:auto;
+  transform-origin:calc(100% - 30px) -10px;
+  opacity:0; transform:translateY(-10px) scale(.94); visibility:hidden;
+  transition:opacity .2s var(--ease), transform .24s var(--ease), visibility 0s .24s}
+.pw-settings.open{opacity:1; transform:none; visibility:visible;
+  transition:opacity .24s var(--ease), transform .32s var(--ease)}
+.pw-settings::-webkit-scrollbar{width:8px}
+.pw-settings::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12); border-radius:4px}
+
+.pw-set-head{display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:4px}
+.pw-set-title{font-family:var(--font-display); font-weight:800; font-size:14px; letter-spacing:.06em}
+.pw-set-sub{font-size:11px; color:var(--ink-3); margin-top:2px}
+.pw-set-x{width:26px; height:26px; border-radius:8px; border:1px solid var(--hair);
+  background:rgba(255,255,255,.04); color:var(--ink-2); display:grid; place-items:center;
+  cursor:pointer; padding:0}
+.pw-set-x:hover{color:var(--ink); border-color:var(--hair-2); background:rgba(255,255,255,.08)}
+
+.pw-set-sec{display:flex; align-items:center; gap:10px; margin:13px 0 7px}
+.pw-set-sec span{font-size:9.5px; font-weight:800; letter-spacing:.14em; color:var(--ink-3)}
+.pw-set-sec i{flex:1; height:1px; background:var(--hair)}
+
+/* linha: label | valor | slider (layout do demo do artigo) */
+.pw-set-row{display:grid; grid-template-columns:118px 50px 1fr; align-items:center;
+  gap:10px; padding:4px 0}
+.pw-set-row label{font-size:9.5px; font-weight:700; letter-spacing:.08em; color:var(--ink-2);
+  text-transform:uppercase; line-height:1.25}
+.pw-set-row .val{font-size:11px; color:var(--ink); text-align:right; white-space:nowrap}
+
+.pw-set-row input[type=range]{-webkit-appearance:none; appearance:none; width:100%;
+  height:20px; margin:0; background:transparent; cursor:pointer}
+.pw-set-row input[type=range]::-webkit-slider-runnable-track{height:3px; border-radius:2px;
+  background:linear-gradient(90deg, var(--accent) calc(var(--p,0)*100%), rgba(255,255,255,.16) calc(var(--p,0)*100%))}
+.pw-set-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:13px; height:13px;
+  border-radius:50%; background:#fff; border:none; margin-top:-5px;
+  box-shadow:0 1px 6px rgba(0,0,0,.55); transition:transform .15s var(--ease)}
+.pw-set-row input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
+.pw-set-row input[type=range]:active::-webkit-slider-thumb{transform:scale(1.3); background:var(--accent)}
+
+/* entrada em cascata das linhas quando o menu abre */
+.pw-settings .pw-set-row, .pw-settings .pw-set-sec, .pw-settings .pw-set-foot{opacity:0}
+.pw-settings.open .pw-set-row, .pw-settings.open .pw-set-sec, .pw-settings.open .pw-set-foot{
+  animation:pwSetRow .34s var(--ease) both; animation-delay:calc(30ms + var(--i,0)*22ms)}
+@keyframes pwSetRow{from{opacity:0; transform:translateY(-7px)} to{opacity:1; transform:none}}
+
+.pw-set-foot{display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-top:13px; padding-top:11px; border-top:1px solid var(--hair)}
+.pw-set-reset{height:28px; padding:0 13px; border-radius:8px; border:1px solid var(--hair-2);
+  background:rgba(255,255,255,.05); color:var(--ink-2); font:600 11px var(--font-ui);
+  letter-spacing:.02em; cursor:pointer}
+.pw-set-reset:hover:not(:disabled){color:var(--ink); background:rgba(255,255,255,.1)}
+.pw-set-reset:disabled{opacity:.4; cursor:default}
+.pw-set-note{font-size:10px; color:var(--ink-3)}
+
+/* engrenagem ativa */
+.iconbtn.on{color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft)}
+.iconbtn.on:hover{color:var(--accent)}
