@@ -133,6 +133,18 @@ carro parecia SEMPRE no meio da pista. Solução implementada:
   App: fullmap = lap|telemetry|comparison. Stint/Dashboard/AI sem mapa → fora do fullmap (passe
   de estilo próprio futuro). Verificado: hits nas 3 telas, bolhas 13, path re-amostrado, zero
   overlap rightcol×pods, carro 34px @z5.
+- **11ª rodada (commit 7b339a8):** câmera com âncora deslocável — `followX` no InteractiveTrack
+  (Telemetry/Comparison usam 0.22: carro centra na ÁREA VISÍVEL do mapa, nunca sob o painel;
+  verificado px-exato) + **dock** minimapa/slider: coluna única alinhada ancorada à borda do
+  painel (`right:calc(min(58%,830px)+46px)`, largura 180, bottom 152/98) — fim das posições
+  soltas por % de tela.
+- **12ª rodada (fechamento):** fix da âncora no ZOOM OUT MÁXIMO — o recentro do follow era
+  condicionado a `z>1.02` e em z=1 soltava a âncora (mapa voltava pro centro da tela) → agora
+  recentra em QUALQUER zoom (verificado: carro em x=352/352 em z=1, z=5 e z≈6.9).
+  **📘 DOCUMENTAÇÃO DE MANUTENÇÃO criada em `frontend/DESIGN-UI.md`** — arquitetura fullmap,
+  knobs do liquid glass (scale/blur), câmera/followX/CAR_M, regra de ouro dos gráficos (nunca
+  esticar viewBox), contrato [data-f] dos pods, posições do dock, checklist de verificação
+  (oclusão + hit-test) e pegadinhas. LER ANTES de mexer na UI das telas de mapa.
 - **8ª rodada (polimento pós-feedback "grosseiro"):** (a) pods compactos 418×75 e com o **VOLANTE
   GIRANDO** pelo canal de direção real (span `data-f="wheel"`, rotate por frame; iRacing + =
   esquerda ⇒ rotate(−steer)). PEGADINHA: a classe `bars` colidiu com o `.bars` do gráfico semanal

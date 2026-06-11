@@ -94,8 +94,10 @@ const InteractiveTrack = forwardRef<TrackHandle, {
     const a = lerpPt(ptsA, tLast.current)
     // câmera fixa no carro (sem clamp — fundo é escuro, como o GO Fast). A âncora
     // horizontal é deslocável (followX): telas com painel à direita centram o carro
-    // na ÁREA VISÍVEL do mapa, não no centro da tela.
-    if (follow && vpr.current.z > 1.02) {
+    // na ÁREA VISÍVEL do mapa, não no centro da tela. Vale em QUALQUER zoom —
+    // inclusive no zoom out máximo (z=1), senão o mapa "solta" a âncora e volta
+    // pro centro da tela (debaixo do painel).
+    if (follow) {
       const sc0 = Math.min(w / 1000, h / 640), ox0 = (w - 1000 * sc0) / 2, oy0 = (h - 640 * sc0) / 2
       const cx = (followX * w - ox0) / sc0, cy = (0.5 * h - oy0) / sc0
       writeVp({ z: vpr.current.z, x: cx - vpr.current.z * a.x, y: cy - vpr.current.z * a.y })
