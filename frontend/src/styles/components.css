@@ -411,6 +411,174 @@
 .pw-nav{width:24px; height:24px; border-radius:8px; border:1px solid var(--hair-2); background:var(--surface-2);
   color:var(--ink-2); display:grid; place-items:center; cursor:pointer; padding:0}
 .pw-nav:hover{background:var(--surface-3); color:var(--ink)}
+
+/* ============================================================
+   FULLMAP (estilo GO Fast): o mapa É o fundo da tela inteira;
+   nav/strip/painéis flutuam por cima em liquid glass
+   ============================================================ */
+/* mapa em z:0 e #root em z:1 (nada de z negativo — o body "roubava" o hit-test) */
+.pw-maplayer{position:fixed; inset:0; z-index:0; display:flex}
+body.fullmap #root{position:relative; z-index:1}
+.pw-maplayer .trackstage{margin-top:0!important; border:0; border-radius:0; background:var(--bg)}
+
+/* o shell fica 100% TRANSPARENTE — visual E ao MOUSE: o mapa (atrás, z -1) aparece
+   e recebe os eventos através do app; só o chrome (nav/abas/status) volta a capturar.
+   O #root também precisa soltar o mouse (senão o hit-test morre nele, não no mapa). */
+body.fullmap #root{pointer-events:none}
+.app.fullmap{background:transparent; pointer-events:none}
+.app.fullmap .topnav, .app.fullmap .tabstrip, .app.fullmap .statusbar{pointer-events:auto}
+.app.fullmap .stage{pointer-events:none; background:transparent}
+.app.fullmap .scr-head{display:none}
+.app.fullmap .screen{padding:0}
+.app.fullmap .topnav,
+.app.fullmap .tabstrip,
+.app.fullmap .statusbar{
+  background:rgba(10,13,16,.42);
+  -webkit-backdrop-filter:blur(26px) saturate(1.4) brightness(1.08);
+  backdrop-filter:blur(26px) saturate(1.4) brightness(1.08);
+  border-color:rgba(255,255,255,.07)}
+
+/* LIQUID GLASS real: o filtro SVG #pw-glass (index.html) DISTORCE + desfoca + satura
+   o que passa por baixo (feDisplacementMap). Fallback: blur/saturate puros. */
+.pw-glass, .pw-maplayer .pw-minimap, .pw-maplayer .pw-lapdetail, .pw-scrubfloat .tp-scrub{
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0) 45%), rgba(13,16,20,.38)!important;
+  -webkit-backdrop-filter:blur(28px) saturate(1.5) brightness(1.12);
+  backdrop-filter:blur(28px) saturate(1.5) brightness(1.12);
+  -webkit-backdrop-filter:url(#pw-glass);
+  backdrop-filter:url(#pw-glass);
+  border:1px solid rgba(255,255,255,.10); border-radius:16px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 24px 60px -28px rgba(0,0,0,.95)}
+.pw-maplayer .pw-minimap{top:196px; right:22px; width:268px; border-radius:16px}
+.pw-maplayer .pw-lapdetail{left:22px; bottom:122px; border-radius:16px}
+.pw-topleft{position:absolute; left:22px; top:122px; z-index:3; display:flex; align-items:center; gap:10px}
+.pw-topleft .chip{background:rgba(10,12,15,.55); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px)}
+.pw-scrubfloat{position:absolute; left:22px; right:22px; bottom:56px; z-index:4}
+.pw-scrubfloat .tp-scrub{border-radius:16px}
+.pw-maplayer .tp-zoom{top:auto; bottom:130px; right:22px; flex-direction:row}
+.pw-maplayer .tp-zoomhint{bottom:132px; left:auto; right:130px; transform:none}
+
+/* ---- réplica GO Fast (Lap v3) ---- */
+.pw-glass2{
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0) 45%), rgba(13,16,20,.38);
+  -webkit-backdrop-filter:blur(28px) saturate(1.5) brightness(1.12);
+  backdrop-filter:blur(28px) saturate(1.5) brightness(1.12);
+  -webkit-backdrop-filter:url(#pw-glass);
+  backdrop-filter:url(#pw-glass);
+  border:1px solid rgba(255,255,255,.10); border-radius:16px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 24px 60px -28px rgba(0,0,0,.95)}
+/* coluna esquerda = FLEX entre topo e player (overlap impossível por construção):
+   [info do carro] [ranking] [rail centrado pelo auto-margin] [sector comparison] */
+.pw-leftcol{position:absolute; left:22px; top:118px; bottom:132px; z-index:3;
+  display:flex; flex-direction:column; align-items:flex-start; gap:12px; pointer-events:none}
+.pw-leftcol > *{pointer-events:auto}
+.pw-carmeta{display:flex; gap:15px; margin-top:8px; font-size:11.5px; color:var(--ink-2); align-items:center; flex-wrap:wrap}
+.pw-carmeta span{display:inline-flex; gap:5px; align-items:center; white-space:nowrap}
+.pw-leader{padding:9px 14px; min-width:236px}
+.pw-leadrow{display:flex; align-items:center; gap:10px; padding:5px 0}
+.pw-leadrow .pos{width:13px; color:var(--ink-3); font-weight:700; font-size:12px}
+.pw-leadrow .av{width:24px; height:24px; border-radius:50%; background:var(--surface-2); display:grid; place-items:center; color:var(--ink-2); flex:none}
+.pw-leadrow .nm{font-size:12.5px; font-weight:600}
+.pw-leadrow .tm{margin-left:auto; font-size:12.5px}
+.pw-rail{margin:auto 0; display:flex; flex-direction:column; gap:5px; padding:9px 7px; border-radius:999px}
+.pw-rail button{width:36px; height:36px; border-radius:50%; border:0; background:transparent;
+  color:var(--ink-2); display:grid; place-items:center; cursor:pointer; transition:.15s var(--ease)}
+.pw-rail button:hover{background:var(--surface-2); color:var(--ink)}
+.pw-fuelchip{display:inline-flex; align-items:center; gap:7px; padding:8px 13px; font-size:12px;
+  color:var(--ink-2); border-radius:999px; white-space:nowrap}
+.pw-seccmp{padding:13px 16px; width:248px}
+/* prioridade em telas baixas: ranking sai primeiro, depois o rail (sem overlap nunca) */
+@media (max-height:780px){ .pw-leftcol .pw-leader{display:none} }
+@media (max-height:640px){ .pw-leftcol .pw-rail{display:none} }
+.pw-secgrid{display:grid; grid-template-columns:36px 1fr 1fr; gap:8px 10px; align-items:center}
+.pw-secgrid .ic{display:grid; place-items:center; color:var(--ink-3)}
+.pw-secgrid .ic.green{color:var(--accent)}
+.pw-secgrid .sn{color:var(--ink-3); font-size:11.5px; font-weight:700}
+.pw-secgrid b{font-size:12.5px; font-weight:600}
+.pw-pods{position:absolute; right:22px; top:118px; z-index:3; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:flex-start}
+/* pod = [coluna do volante] + [corpo com 2 linhas] — anatomia da referência */
+.pw-pod{display:flex; flex-direction:row; align-items:center; gap:12px; padding:9px 15px; width:430px; min-width:0; flex:none}
+.pw-pod.on{border-color:var(--accent-line); box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 0 0 1px var(--accent-line), 0 24px 60px -28px rgba(0,0,0,.95)}
+.pw-podbody{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px}
+.pw-wheelicon{width:38px; height:38px; flex:none; color:var(--ink-2); display:grid; place-items:center}
+.pw-pod.on .pw-wheelicon{color:var(--accent)}
+.pw-wheelicon [data-f="wheel"]{will-change:transform}
+.pw-pod .nm{font-size:13px; white-space:nowrap}
+.pw-pod.on .nm{color:var(--accent)}
+.pw-pod .meta{margin-left:auto; display:inline-flex; gap:5px; align-items:center; color:var(--ink-2); font-size:11.5px; white-space:nowrap}
+.pw-pod .pw-bars{display:flex; align-items:center; gap:9px; font-size:11px; color:var(--ink-2); white-space:nowrap; height:auto}
+.pw-pod .pw-bars .un{font-style:normal; font-size:10px; color:var(--ink-3)}
+.pw-pod .pct{width:33px; text-align:right; flex:none}
+.pw-pod .bar{flex:1 1 auto; max-width:78px; height:4px; border-radius:99px; background:var(--surface-3); overflow:hidden}
+.pw-pod .bar i{display:block; height:100%; transform-origin:left; transform:scaleX(0); will-change:transform}
+.pw-pod .bar .t{background:var(--accent)}
+.pw-pod .bar .b{background:var(--red)}
+
+/* coluna direita da Lap: minimapa + insight */
+.pw-rightcol{position:absolute; right:22px; top:196px; bottom:132px; z-index:3; width:268px;
+  display:flex; flex-direction:column; gap:12px; align-items:stretch; pointer-events:none}
+.pw-rightcol > *{pointer-events:auto}
+.pw-minimap.pw-inflow{position:static; width:100%}
+.pw-insight{padding:12px 14px; flex:0 1 auto; overflow:auto; min-height:0; animation:proFade .3s var(--ease)}
+.pw-insight p{margin:8px 0 9px; font-size:12px; line-height:1.5; color:var(--ink-2)}
+
+/* ---- Telemetry fullmap (painel direito de canais, estilo GO Fast) ---- */
+.pw-telpanel{position:absolute; right:22px; top:188px; bottom:56px; width:min(58%, 830px); z-index:3;
+  display:flex; flex-direction:column; padding:12px 14px 10px}
+.pw-telhead{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex:none}
+.pw-chstack{flex:1; min-height:0; display:flex; flex-direction:column; gap:7px; overflow-y:auto; padding-right:2px}
+.pw-ch{position:relative; flex:1 0 56px; min-height:56px; cursor:crosshair; border-radius:10px; overflow:hidden;
+  background:rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.04)}
+.pw-chlabel{position:absolute; left:8px; top:6px; font-size:9.5px; letter-spacing:.08em; font-weight:800;
+  color:var(--ink-2); background:rgba(10,13,16,.72); padding:2px 7px; border-radius:6px; border:1px solid var(--hair); pointer-events:none}
+.pw-axis{position:absolute; right:7px; top:4px; bottom:4px; display:flex; flex-direction:column; justify-content:space-between;
+  font-family:var(--font-mono); font-size:9.5px; color:var(--ink-3); text-align:right; pointer-events:none}
+.pw-ghostline{fill:none; stroke:rgba(255,255,255,.72); stroke-width:1.1; stroke-dasharray:2 3; vector-effect:non-scaling-stroke}
+.pw-bub{position:absolute; left:0; top:0; transform:translate3d(-200px,0,0); padding:1px 7px; border-radius:6px;
+  background:rgba(10,13,16,.9); border:1px solid currentColor; font-size:10.5px; pointer-events:none;
+  will-change:transform; white-space:nowrap; z-index:2}
+.pw-bub b{color:var(--ink); font-size:10.5px}
+.pw-bub.ghost{color:var(--ink-3); z-index:1}
+.pw-telscrub{flex:none; padding-top:6px}
+.pw-telscrub .pw-progress{position:relative; top:auto; left:0; right:0; margin:0 2px}
+.pw-telctrl{display:flex; align-items:center; gap:12px; padding-top:9px}
+
+/* navegador de segmentos (canto inferior esquerdo da Telemetry) */
+.pw-segnav{padding:11px 13px; width:250px}
+.pw-seglabel{font-family:var(--font-display); font-size:14px}
+.pw-segrows{margin-top:9px; display:flex; flex-direction:column; gap:6px; font-size:12px}
+
+/* minimapa + slider centrados na área visível do mapa (painel ocupa a direita) */
+.pw-maplayer .pw-minimap.pw-mm-tel{top:auto; right:auto; left:21%; bottom:206px; transform:translateX(-50%); width:190px}
+.pw-maplayer.pw-tel .pw-zoompill{left:21%; bottom:152px}
+
+/* bandeirinhas de freada em ESPAÇO DE TELA (tamanho fixo em qualquer zoom) */
+.pw-flagwrap{position:absolute; left:0; top:0; width:14px; height:14px; will-change:transform; pointer-events:none}
+.pw-flagwrap i{display:block; width:0; height:0; margin:1px auto 0;
+  border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:11px solid var(--red);
+  filter:drop-shadow(0 0 3px rgba(255,92,77,.55))}
+.pw-zoompill{position:absolute; left:50%; bottom:132px; transform:translateX(-50%); z-index:4;
+  display:flex; align-items:center; gap:10px; padding:8px 13px; border-radius:999px}
+.pw-zoompill button{width:22px; height:22px; border-radius:50%; border:1px solid var(--hair-2);
+  background:var(--surface-2); color:var(--ink-2); display:grid; place-items:center; cursor:pointer;
+  font-size:14px; line-height:1; padding:0}
+.pw-zoompill button:hover{color:var(--ink)}
+.pw-zoompill input[type=range]{width:130px; height:4px; accent-color:var(--accent); cursor:pointer}
+.pw-scrub2{position:relative; padding-top:16px}
+.pw-progress{position:absolute; top:0; left:16px; right:16px; height:16px; display:flex; align-items:center; cursor:pointer; touch-action:none}
+.pw-progress::before{content:""; position:absolute; left:0; right:0; height:3px; border-radius:2px; background:var(--surface-3)}
+.pw-progress .tp-fill{height:3px; box-shadow:none}
+.pw-progress .tp-knob{width:11px; height:11px; border-width:2.5px}
+.pw-progress .tp-tick{height:9px; margin-top:-4.5px; width:1.5px}
+.pw-delta{margin:0 auto; display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-2)}
+.pw-delta b{font-size:13px}
+.pw-replay{width:30px; height:30px; border-radius:50%; border:1px solid var(--hair-2); background:transparent;
+  color:var(--ink-2); display:grid; place-items:center; cursor:pointer; flex:none}
+.pw-replay:hover{color:var(--ink); background:var(--surface-2)}
+.pw-switch{position:relative; width:42px; height:23px; border-radius:99px; background:var(--surface-3);
+  border:1px solid var(--hair-2); cursor:pointer; flex:none; padding:0; transition:.16s var(--ease)}
+.pw-switch i{position:absolute; top:2px; left:2px; width:17px; height:17px; border-radius:50%; background:#fff; transition:.16s var(--ease)}
+.pw-switch.on{background:var(--accent); border-color:var(--accent)}
+.pw-switch.on i{left:21px}
 .tp-zoom{position:absolute; top:14px; right:14px; display:flex; flex-direction:column; gap:6px; z-index:3}
 .tp-zoom button{width:32px; height:32px; border-radius:9px; border:1px solid var(--hair-2); display:grid; place-items:center;
   background:rgba(12,14,17,.72); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); color:var(--ink-2);

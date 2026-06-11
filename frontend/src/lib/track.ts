@@ -43,6 +43,36 @@ export function projectTrackPair(track: XY, racing: XY, edges?: EdgesXY, racingB
 }
 
 export interface LineSegment { d: string; color: string }
+
+// Linha estilo GO Fast: GRADIENTE contínuo vermelho→branco→verde pelo delta local
+// (segmentos curtos com cor interpolada — visualmente um degradê ao longo da volta).
+export function deltaGradientSegments(pts: { x: number; y: number }[], delta: number[], step = 6): LineSegment[] {
+  const M = pts.length, N = delta.length
+  if (M < 2 || N < 8) return []
+  const w = Math.max(2, Math.round(N * 0.01))
+  const g = new Array<number>(M)
+  for (let k = 0; k < M; k++) {
+    const i = Math.round(k / (M - 1) * (N - 1))
+    const a = Math.max(0, i - w), b = Math.min(N - 1, i + w)
+    g[k] = (delta[b] - delta[a]) / (b - a)
+  }
+  const sd = Math.sqrt(g.reduce((s, v) => s + v * v, 0) / M) || 1e-9
+  const mix = (a: number, b: number, f: number) => Math.round(a + (b - a) * f)
+  const col = (v: number) => {
+    const t = Math.max(-1, Math.min(1, v / (1.6 * sd)))
+    // neutro #E8ECEB → perde #FF5C4D / ganha #1FDE7E
+    if (t >= 0) return `rgb(${mix(232, 255, t)},${mix(236, 92, t)},${mix(235, 77, t)})`
+    const f = -t
+    return `rgb(${mix(232, 31, f)},${mix(236, 222, f)},${mix(235, 126, f)})`
+  }
+  const segs: LineSegment[] = []
+  for (let k = 0; k < M - 1; k += step) {
+    const end = Math.min(M - 1, k + step)
+    const span = pts.slice(k, end + 1)
+    segs.push({ color: col(g[Math.min(M - 1, k + (step >> 1))]), d: span.map((p, i) => (i ? 'L' : 'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') })
+  }
+  return segs
+}
 // Colore a linha da sessão pelo DELTA local (média vs melhor): vermelho onde a média
 // perde tempo (gradiente positivo), accent onde ganha, neutro no resto. Estático —
 // calculado 1x por payload; runs curtos são absorvidos p/ não picotar a linha.

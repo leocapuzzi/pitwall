@@ -81,6 +81,80 @@ carro parecia SEMPRE no meio da pista. Solução implementada:
   pista = 0.457 vs 0.455 teórico), linha do traçado **1.8px constante** (non-scaling-stroke;
   segmentos delta 2px), balões de curva em **espaço de TELA** (svg overlay, raio fixo ~8.5px,
   clique mantido), **teto de zoom 24×** (close-ups tipo GO Fast; foco-na-curva usa z=8).
+- **6ª rodada — FULLMAP/liquid glass (2026-06-11, validação na Lap):** o usuário quer o layout
+  EXATO do GO Fast: mapa = FUNDO DA TELA INTEIRA (atravessa atrás da nav), UI flutuando em vidro.
+  Implementado como modo `fullmap`: LapAnalysis renderiza o mapa num **PORTAL no `<body>`**
+  (`.pw-maplayer` fixed inset-0; evita containing-blocks de transform/filter dos ancestrais).
+  `.app.fullmap` transparente, `.scr-head` some, topnav/tabstrip/statusbar em **vidro** (rgba .55
+  + blur 18). Painéis (toggle, detalhe, minimapa, scrubber `.pw-scrubfloat`) com `.pw-glass`
+  (blur 20), posicionados p/ viewport. App.tsx: `fullmap = view==='lap'` + classe no `<body>`.
+  **Abre com a câmera no carro: `initialZoom={7}`** (prop nova; o follow centra sozinho).
+  **3 PEGADINHAS RESOLVIDAS (não repetir):**
+  1. `.app` precisa de `background:transparent` (deixei var(--bg) e o app OPACO cobria o mapa —
+     o usuário viu tela vazia).
+  2. **Hit-test**: `pointer-events:none` no `.app` NÃO basta — o clique cai no ancestral `#root`
+     e depois no `body` (com z-index:-1 o body "rouba" o hit dos filhos negativos). Solução:
+     `.pw-maplayer{z-index:0}` + `body.fullmap #root{position:relative; z-index:1;
+     pointer-events:none}` + chrome re-habilitado com `pointer-events:auto`.
+  3. O efeito de `focusCorner` resetava a câmera no MOUNT (focusCorner=null) e matava o
+     initialZoom → agora só reseta quando o foco É DESFEITO (ref `hadFocus`).
+  **LIÇÃO DE VERIFICAÇÃO (headless, janela oculta):** posições/`el.click()` programático NÃO
+  detectam oclusão nem hit-test — SEMPRE validar com `getComputedStyle().backgroundColor` da
+  cadeia de ancestrais (opacidade) e `document.elementFromPoint()` nas coords reais dos botões.
+  **PRÓXIMO: estender o fullmap às outras telas** (Telemetry = mapa fundo + canais flutuando à
+  direita como o GO Fast; Stint/Comparison/Dashboard idem) após o OK visual do usuário na Lap.
+- **7ª rodada — RÉPLICA 1:1 do GO Fast na Lap (usuário pediu "EXATAMENTE igual"):** Lap v3 =
+  espelho da referência com dados reais: info do carro topo-esq (sem card), mini-ranking (2
+  melhores voltas), rail vertical de ações (largada/abrir-trecho/combustível), card **Sector
+  Comparison** (melhor verde × média roxa), **2 pods ao vivo** topo-dir (thr/brk barras + km/h +
+  marcha + RPM, imperativos a 10 Hz), minimapa com rodapé "Segmento Tn ±s", **slider de zoom**
+  central (log até 24x, prop `zoomSlider`), scrubber com progresso fino no topo + **"Delta: ±s ↔
+  ±m"** central + **switch do fantasma** + Time/Distance (Time default). Linha virou **GRADIENTE
+  contínuo** vermelho→branco→verde (`deltaGradientSegments` em track.ts, ~167 segmentos),
+  **bordas quadriculadas** físicas (dash 2.6 un) e **bandeirinhas de freada** reais (prop
+  `markers`; onsets do canal brake da melhor volta — 6 em Winton). Card de coach REMOVIDO da Lap
+  (coaching abre via minimapa→Telemetry). Verificado: presença, hit-test real em 8 controles,
+  ghost toggle, slider 7→24, delta central "+0.032 ↔ +1 m".
+- **10ª rodada — fullmap em TODAS as telas de mapa + fixes (aprovado o vidro c/ scale 38/blur 9):**
+  (a) **carro maior**: CAR_M 5→7.5 (proporção da ref GO Fast a 50% de zoom), piso 11px, **Z_MAX
+  24→48**. (b) **Lap**: coluna direita `.pw-rightcol` = minimapa (`.pw-inflow`, em fluxo) +
+  **card de Insight** da curva ativa (coach + vmin/entrada/saída + abrir trecho). (c)
+  **TELEMETRY reescrita fullmap** (réplica da ref): leftcol (carinfo + Segments/Sectors + rail +
+  **navegador de segmentos** ‹All/Tn/Sn› que recorta os gráficos + tempos A/B), pods, minimapa
+  `.pw-mm-tel` + slider em left:21% (classe `pw-tel` no maplayer), **painel direito**
+  `.pw-telpanel` com 7 canais `.pw-ch` (label-chip, EIXOS à direita, **bolhas de valor no
+  cursor** main+ghost `.pw-bub`, ghost pontilhado `.pw-ghostline`) e **player embutido**
+  (`.pw-telscrub` + `.pw-telctrl` c/ Delta↔m, switch fantasma, Time/Distance). **FIX
+  serrilhado/distorção: paths RE-AMOSTRADOS por janela de zoom** (memo `charts` — viewBox SEMPRE
+  "0 0 600 100"; nunca esticar viewBox; verificado: path muda no zoom). (d) **COMPARISON
+  fullmap**: leftcol (carinfo + resumo A/Δ/B + setores clicáveis→foco no mapa), pods, painel
+  (delta acumulado + 3 canais c/ vals A/B + player), gradiente na linha
+  (`deltaGradientSegments`). (e) `DriverPod.tsx` compartilhado (volante+anel via [data-f]).
+  App: fullmap = lap|telemetry|comparison. Stint/Dashboard/AI sem mapa → fora do fullmap (passe
+  de estilo próprio futuro). Verificado: hits nas 3 telas, bolhas 13, path re-amostrado, zero
+  overlap rightcol×pods, carro 34px @z5.
+- **8ª rodada (polimento pós-feedback "grosseiro"):** (a) pods compactos 418×75 e com o **VOLANTE
+  GIRANDO** pelo canal de direção real (span `data-f="wheel"`, rotate por frame; iRacing + =
+  esquerda ⇒ rotate(−steer)). PEGADINHA: a classe `bars` colidiu com o `.bars` do gráfico semanal
+  do design system (height fixa esticava o pod p/ 177px) → renomeada `pw-bars`. (b) o tracejado
+  da referência NÃO é borda da pista — é a LINHA DA VOLTA DE COMPARAÇÃO: bordas quadriculadas
+  REMOVIDAS; fantasma agora é tracejado branco 2.6px "5 6" non-scaling sobre o asfalto. (c)
+  **liquid glass real**: rgba(13,16,20,.38) + blur(28) saturate(1.5) brightness(1.12) + sheen
+  (gradiente branco no topo) + inset highlight + sombra funda — em painéis E chrome (.42/blur 26).
+  Verificado: pod 75px, zero sobreposições, volante −13°→+5° entre pontos da volta, hits ok.
+- **9ª rodada (lado a lado com a referência):** (a) **LIQUID GLASS COM DISTORÇÃO**: filtro SVG
+  `#pw-glass` no index.html (feTurbulence→feDisplacementMap scale 24→blur 13→saturate 1.45→
+  brightness) aplicado via `backdrop-filter:url(#pw-glass)` nos painéis (fallback blur/saturate
+  na linha anterior; Chromium ACEITOU — computed mostra url). O que passa por baixo ENTORTA.
+  (b) **pod anatomia exata**: ícone vira coluna esquerda (38px, atravessa as 2 linhas) com
+  VOLANTE DE CORRIDA novo (aro + 3 raios + MARCADOR central = ângulo legível) + **ANEL externo**
+  (circle pathLength=100) que cresce ∝ |steer| e ESPELHA p/ o lado da curva (transform scale(-1)
+  qdo steer>0/esquerda) — tudo imperativo por frame. Pod 430×63. (c) **coluna esquerda =
+  .pw-leftcol flex** (top:118/bottom:132): carinfo→leader→rail(margin:auto)→seccmp; overlap
+  impossível; @media max-height 780/640 esconde leader/rail (prioridade GO Fast). (d)
+  **bandeirinhas em ESPAÇO DE TELA** (14px fixos em qualquer zoom; overlay posicionado no
+  renderAll como os balões). Verificado em 1366×700 e 1600×900: zero overlaps, hits ok,
+  anel 3.5→7.4 entre pontos, url(#pw-glass) ativo.
 - **5ª rodada (feedback c/ prints GO Fast) — InteractiveTrack v3 + Lap full-map:**
   - **Sem bordas**: asfalto = só o polígono (fill .075), como o GO Fast.
   - **CARRO-FANTASMA da média** (sprite cinza, linha pontilhada `racing_line_b` do backend) +

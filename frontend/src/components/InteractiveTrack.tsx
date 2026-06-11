@@ -16,9 +16,9 @@ export interface TrackHandle {
 //   há zoom (sem pan manual — zoom in/out apenas, como o GO Fast).
 // - BALÕES de curva: divs HTML posicionadas imperativamente (acompanham a câmera).
 const CAR = 66    // fallback (pistas sem geometria real): box em unidades do viewBox
-const CAR_M = 5.0 // com escala real: box do sprite ≈ 5 m (carro ~4.6 m + margem da arte)
-const CAR_MIN_PX = 9 // piso de visibilidade na visão geral (escala exata ao dar zoom)
-const Z_MAX = 24
+const CAR_M = 7.5 // sprite ~1.7x o tamanho físico — proporção carro×pista da referência GO Fast
+const CAR_MIN_PX = 11 // piso de visibilidade na visão geral
+const Z_MAX = 48
 const markURL = (color: string) => {
   const g = String((window as any).PORSCHE_MARK || '').replace(/currentColor/g, color)
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">${g}</svg>`)
@@ -37,10 +37,13 @@ const InteractiveTrack = forwardRef<TrackHandle, {
   unitPerM?: number                                 // escala (unidades/m) p/ carro em tamanho real
   follow?: boolean                                  // câmera fixa no carro quando há zoom
   hideCorners?: boolean                             // mapa limpo (balões só no minimapa)
-}>(function InteractiveTrack({ trackGeom, racingGeom, racingGeomB, initialT = 0, corners, activeCorner, onPickCorner, height = 300, racingSegments, focusCorner, children, edges, unitPerM, follow, hideCorners }, ref) {
+  initialZoom?: number                              // abre já aproximado no carro (GO Fast)
+  markers?: { x: number; y: number; ang: number }[] // bandeirinhas de freada (vermelhas)
+  zoomSlider?: boolean                              // pílula − slider + central (GO Fast)
+}>(function InteractiveTrack({ trackGeom, racingGeom, racingGeomB, initialT = 0, corners, activeCorner, onPickCorner, height = 300, racingSegments, focusCorner, children, edges, unitPerM, follow, hideCorners, initialZoom, markers, zoomSlider }, ref) {
   const carRef = useRef<HTMLDivElement>(null), ghostRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null), gRef = useRef<SVGGElement>(null), stageRef = useRef<HTMLDivElement>(null)
-  const dotsWrapRef = useRef<HTMLDivElement>(null)
+  const dotsWrapRef = useRef<HTMLDivElement>(null), marksWrapRef = useRef<HTMLDivElement>(null)
   const vpr = useRef<VP>({ z: 1, x: 0, y: 0 })
   const [vpUi, setVpUi] = useState<VP>(vpr.current)  // espelho p/ UI discreta (botões/classe)
   const sizeRef = useRef({ w: 0, h: 0 })
@@ -101,13 +104,20 @@ const InteractiveTrack = forwardRef<TrackHandle, {
       if (tBLast.current == null || ptsB.length < 2) ghost.style.visibility = 'hidden'
       else placeSprite(ghost, lerpPt(ptsB, tBLast.current), ghostPx)
     }
+    const v2 = vpr.current
+    const sc2 = Math.min(w / 1000, h / 640), ox2 = (w - 1000 * sc2) / 2, oy2 = (h - 640 * sc2) / 2
     const wrap = dotsWrapRef.current
     if (wrap) {
-      const v = vpr.current
-      const sc = Math.min(w / 1000, h / 640), ox = (w - 1000 * sc) / 2, oy = (h - 640 * sc) / 2
       for (const el of Array.from(wrap.children) as HTMLElement[]) {
         const bx = parseFloat(el.dataset.bx || '0'), by = parseFloat(el.dataset.by || '0')
-        el.style.transform = `translate3d(${(ox + sc * (v.x + v.z * bx) - 8.5).toFixed(1)}px,${(oy + sc * (v.y + v.z * by) - 8.5).toFixed(1)}px,0)`
+        el.style.transform = `translate3d(${(ox2 + sc2 * (v2.x + v2.z * bx) - 8.5).toFixed(1)}px,${(oy2 + sc2 * (v2.y + v2.z * by) - 8.5).toFixed(1)}px,0)`
+      }
+    }
+    const marks = marksWrapRef.current
+    if (marks) {
+      for (const el of Array.from(marks.children) as HTMLElement[]) {
+        const mx = parseFloat(el.dataset.mx || '0'), my = parseFloat(el.dataset.my || '0')
+        el.style.transform = `translate3d(${(ox2 + sc2 * (v2.x + v2.z * mx) - 7).toFixed(1)}px,${(oy2 + sc2 * (v2.y + v2.z * my) - 7).toFixed(1)}px,0)`
       }
     }
   }, [racingGeom, racingGeomB, unitPerM, follow])
@@ -133,12 +143,27 @@ const InteractiveTrack = forwardRef<TrackHandle, {
   // cobre o primeiro mount e re-renders do React (g não é controlado)
   useLayoutEffect(() => { writeVp(vpr.current); renderAll() })
 
-  // zoom programático numa curva: centra o ápice (o follow assume se o carro estiver lá)
+  // abre já com a câmera no carro (o follow centra assim que z>1)
+  const initZoomDone = useRef(false)
   useLayoutEffect(() => {
-    if (focusCorner === undefined) return
-    if (focusCorner === null) { applyVp({ z: 1, x: 0, y: 0 }); renderAll(); return }
+    if (initZoomDone.current || !initialZoom || initialZoom <= 1) return
+    initZoomDone.current = true
+    const v = { z: Math.min(Z_MAX, initialZoom), x: vpr.current.x, y: vpr.current.y }
+    applyVp(v)
+    renderAll()
+  }, [initialZoom, renderAll])
+
+  // zoom programático numa curva: centra o ápice (o follow assume se o carro estiver lá).
+  // Só RESETA quando o foco é desfeito (não no mount, senão mataria o initialZoom).
+  const hadFocus = useRef(false)
+  useLayoutEffect(() => {
+    if (focusCorner == null) {
+      if (hadFocus.current) { hadFocus.current = false; applyVp({ z: 1, x: 0, y: 0 }); renderAll() }
+      return
+    }
     const c = (corners || []).find(k => k.n === focusCorner); const tp = trackGeom.pts
     if (!c || tp.length < 2) return
+    hadFocus.current = true
     const p = tp[Math.min(tp.length - 1, Math.max(0, Math.round(c.apex_pct * (tp.length - 1))))]
     const z = 8
     applyVp({ z, x: 500 - z * p.x, y: 320 - z * p.y })
@@ -191,15 +216,25 @@ const InteractiveTrack = forwardRef<TrackHandle, {
               <path d={trackGeom.d} fill="none" stroke="rgba(255,255,255,.16)" strokeWidth={1.4} strokeDasharray="2 9" />
             </>
           )}
-          {/* linha do FANTASMA (média): pontilhada, discreta */}
-          {racingGeomB && <path d={racingGeomB.d} fill="none" stroke="rgba(255,255,255,.5)" strokeWidth={1.3} strokeDasharray="3 5" vectorEffect="non-scaling-stroke" />}
-          {/* LINHA da sessão: inteira (accent) ou segmentada por delta (Lap) — fina e
-              constante em px */}
+          {/* linha do FANTASMA (volta de comparação): tracejada branca sobre o asfalto,
+              como na referência GO Fast (não é borda da pista) */}
+          {racingGeomB && <path d={racingGeomB.d} fill="none" stroke="rgba(244,247,246,.8)" strokeWidth={2.6} strokeDasharray="5 6" strokeLinecap="butt" vectorEffect="non-scaling-stroke" />}
+          {/* LINHA da sessão: gradiente por delta (Lap) ou inteira (accent) */}
           {racingSegments?.length
-            ? racingSegments.map((s, i) => <path key={i} d={s.d} fill="none" stroke={s.color} strokeWidth={edges ? 2 : 3.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect={edges ? 'non-scaling-stroke' : undefined} />)
+            ? racingSegments.map((s, i) => <path key={i} d={s.d} fill="none" stroke={s.color} strokeWidth={edges ? 4 : 3.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect={edges ? 'non-scaling-stroke' : undefined} />)
             : <path d={racingGeom.d} fill="none" stroke="var(--accent)" strokeWidth={edges ? 1.8 : 3.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect={edges ? 'non-scaling-stroke' : undefined} style={{ filter: 'drop-shadow(0 0 6px var(--accent-glow))' }} />}
         </g>
       </svg>
+      {/* bandeirinhas de freada em espaço de TELA (tamanho fixo; seguem a câmera) */}
+      {markers && markers.length > 0 && (
+        <div ref={marksWrapRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          {markers.map((mk, i) => (
+            <span key={i} className="pw-flagwrap" data-mx={mk.x} data-my={mk.y}>
+              <i style={{ transform: `rotate(${(mk.ang + 90).toFixed(1)}deg)` }} />
+            </span>
+          ))}
+        </div>
+      )}
       {/* BALÕES das curvas: divs em espaço de tela, posicionadas por frame (seguem a câmera) */}
       {!hideCorners && dots.length > 0 && (
         <div ref={dotsWrapRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
@@ -219,12 +254,28 @@ const InteractiveTrack = forwardRef<TrackHandle, {
         <img ref={imgBRef} src={sprites.braking} alt="" draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0 }} />
       </div>
       {children}
-      <div className="tp-zoom">
-        <button onClick={() => zoomAt(1.4, 500, 320)} aria-label="Zoom in"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></button>
-        <button onClick={() => zoomAt(1 / 1.4, 500, 320)} aria-label="Zoom out"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M5 12h14" /></svg></button>
-        <button className={'tp-zreset' + (zoomed ? ' show' : '')} onClick={() => { applyVp({ z: 1, x: 0, y: 0 }); renderAll(); onPickCorner && onPickCorner(null) }} aria-label="Reset view"><Icon n="refresh" s={13} /></button>
-      </div>
-      <div className="tp-zoomhint">{follow ? 'Zoom aproxima no carro · roda do mouse' : 'Scroll to zoom · drag to pan'}</div>
+      {zoomSlider ? (
+        <div className="pw-zoompill pw-glass2">
+          <button onClick={() => zoomAt(1 / 1.35, 500, 320)} aria-label="Zoom out">−</button>
+          <input type="range" min={0} max={100} value={Math.round(Math.log(Math.max(1, vpUi.z)) / Math.log(Z_MAX) * 100)}
+            onChange={(e) => {
+              const z = Math.exp(+e.target.value / 100 * Math.log(Z_MAX))
+              const s = vpr.current
+              applyVp(z <= 1.001 ? { z: 1, x: 0, y: 0 } : { z, x: s.x, y: s.y })
+              renderAll()
+            }} aria-label="Zoom" />
+          <button onClick={() => zoomAt(1.35, 500, 320)} aria-label="Zoom in">+</button>
+        </div>
+      ) : (
+        <>
+          <div className="tp-zoom">
+            <button onClick={() => zoomAt(1.4, 500, 320)} aria-label="Zoom in"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></button>
+            <button onClick={() => zoomAt(1 / 1.4, 500, 320)} aria-label="Zoom out"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M5 12h14" /></svg></button>
+            <button className={'tp-zreset' + (zoomed ? ' show' : '')} onClick={() => { applyVp({ z: 1, x: 0, y: 0 }); renderAll(); onPickCorner && onPickCorner(null) }} aria-label="Reset view"><Icon n="refresh" s={13} /></button>
+          </div>
+          <div className="tp-zoomhint">{follow ? 'Zoom aproxima no carro · roda do mouse' : 'Scroll to zoom · drag to pan'}</div>
+        </>
+      )}
     </div>
   )
 })

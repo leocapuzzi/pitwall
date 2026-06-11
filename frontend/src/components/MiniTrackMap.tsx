@@ -6,13 +6,14 @@ import type { TrackPair } from '../lib/track'
 // clique dispara onPick (abre o trecho na Telemetry). Posição do carro = ponto claro.
 export interface MiniCorner { n: number; apex: number; d: number }
 
-export default function MiniTrackMap({ pair, corners, active, onPick, carDotRef, title }: {
+export default function MiniTrackMap({ pair, corners, active, onPick, carDotRef, footer, className }: {
   pair: TrackPair
   corners: MiniCorner[]
   active?: number | null
   onPick: (n: number) => void
   carDotRef?: (el: SVGCircleElement | null) => void
-  title?: string
+  footer?: { label: string; value: string; danger?: boolean }
+  className?: string
 }) {
   const [hover, setHover] = useState<(MiniCorner & { x: number; y: number }) | null>(null)
   // sonar nas 3 maiores perdas relevantes (> 0.05s)
@@ -26,7 +27,7 @@ export default function MiniTrackMap({ pair, corners, active, onPick, carDotRef,
   }, [pair, corners])
 
   return (
-    <div className="pw-minimap">
+    <div className={className || 'pw-minimap'}>
       <div className="pw-mmstage" style={{ aspectRatio: '1000 / 640' }}>
         <svg viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
           {pair.edges
@@ -53,10 +54,12 @@ export default function MiniTrackMap({ pair, corners, active, onPick, carDotRef,
           </div>
         )}
       </div>
-      <div className="row between center" style={{ marginTop: 8 }}>
-        <span className="lbl">{title || 'Circuito'}</span>
-        <span className="muted" style={{ fontSize: 10.5 }}>clique p/ abrir o trecho</span>
-      </div>
+      {footer && (
+        <div className="row between center" style={{ marginTop: 9 }}>
+          <b style={{ fontFamily: 'var(--font-display)', fontSize: 13.5 }}>{footer.label}</b>
+          <b className={'num ' + (footer.danger ? 'redt' : 'green')} style={{ fontSize: 13 }}>{footer.value}</b>
+        </div>
+      )}
     </div>
   )
 }

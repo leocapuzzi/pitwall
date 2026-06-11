@@ -38,8 +38,15 @@ export default function App() {
   }, [])
 
   const Screen = SCREENS[view]
+  // modo FULLMAP (estilo GO Fast): o mapa vive atrás de TUDO e a UI flutua em vidro.
+  // A classe também vai no <body> p/ liberar o mouse do #root (CSS body.fullmap #root).
+  const fullmap = view === 'lap' || view === 'telemetry' || view === 'comparison'
+  useEffect(() => {
+    document.body.classList.toggle('fullmap', fullmap)
+    return () => document.body.classList.remove('fullmap')
+  }, [fullmap])
   return (
-    <div className="app">
+    <div className={'app' + (fullmap ? ' fullmap' : '')}>
       <TopNav view={view} go={setView} />
       {view !== 'dashboard' && <SessionStrip view={view} go={setView} />}
       <main className="stage">
