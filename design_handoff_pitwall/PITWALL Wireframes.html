@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PITWALL — Wireframes</title>
+<link rel="stylesheet" href="wire.css">
+</head>
+<body>
+
+<!-- ============ TOP CONTROL BAR ============ -->
+<div class="bar">
+  <div class="brand">▦ <b>PITWALL</b></div>
+  <div class="tag">iRacing companion · lo-fi wireframes</div>
+  <div class="spacer"></div>
+  <div class="tabs" id="screenTabs"></div>
+  <div class="spacer"></div>
+  <button class="toggle on" id="tNotes">✎ notas</button>
+  <button class="toggle" id="tColor">cor</button>
+</div>
+
+<!-- ============ VARIATION SUB BAR ============ -->
+<div class="subbar">
+  <div class="vtabs" id="varTabs"></div>
+  <div class="vdesc" id="varDesc"></div>
+</div>
+
+<div class="canvas">
+<div class="win">
+  <div class="titlebar">
+    <span class="wdot"></span><span class="wt">PITWALL — desktop app (1360×860)</span>
+    <span class="wdot"></span><span class="wdot"></span><span class="wdot"></span>
+  </div>
+
+  <!-- ================= DASHBOARD ================= -->
+  <section class="screen" data-screen="dashboard" data-label="Dashboard">
+    <!-- A: hero + cards -->
+    <div class="variation" data-var="a" data-vlabel="A · Hero + cards" data-vdesc="Próximo da ref: <b>hero do carro</b> + cards de resumo à direita">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span class="on">Dashboard</span><span>Setups</span><span>Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="row" style="gap:18px">
+        <div class="col grow" style="flex:46">
+          <div><span class="tiny">Welcome,</span><div class="h2">Ready to GO Fast?</div></div>
+          <div class="big" style="font-size:46px;margin:4px 0">PERFORMANCE<br>TOOLS</div>
+          <span class="ph d w60"></span>
+          <div class="noteWrap">
+            <div class="sk fill pad grow" style="min-height:300px;display:grid;place-items:center;color:var(--ink3)">[ render 3D do carro / hero ]</div>
+            <div class="note" style="top:10px;left:12px">Imagem hero — placeholder até hi-fi</div>
+          </div>
+        </div>
+        <div class="col" style="flex:54">
+          <div class="grid3">
+            <div class="sk pad"><span class="lbl">Monthly laps</span><div class="big num">20</div></div>
+            <div class="sk pad"><span class="lbl">Time driven</span><div class="big num">00:31</div></div>
+            <div class="sk pad noteWrap"><span class="lbl">Best lap</span><div class="big num">1:34.241</div><div class="note" style="bottom:-6px;right:-6px">P12 no leaderboard</div></div>
+          </div>
+          <div class="row">
+            <div class="sk pad grow"><span class="lbl">Latest session</span>
+              <div class="row center" style="margin:8px 0"><span class="dot"></span><div><div class="h2">Mazda MX5 Cup</div><span class="tiny">Winton Motor Raceway</span></div></div>
+              <div class="sk dash r3" data-g="track" style="height:90px"></div>
+              <div class="row between" style="margin-top:8px"><span class="tiny">Best Lap</span><b class="num">1:34.241</b></div>
+              <div class="row between"><span class="tiny">Leaderboard</span><b class="num">P12</b></div>
+            </div>
+            <div class="sk pad grow noteWrap"><span class="lbl">Most used car</span>
+              <div style="display:grid;place-items:center;margin:14px 0"><div class="ring"><b>100%</b></div></div>
+              <div class="row center gap8"><span class="dot sm"></span><span>Mazda MX5 Cup</span></div>
+              <div class="note" style="top:6px;right:-8px">donut</div>
+            </div>
+          </div>
+          <div class="sk pad"><span class="lbl">My weekly activity</span>
+            <div class="bars" style="margin-top:10px"><i style="height:30%"></i><i style="height:20%"></i><i style="height:45%"></i><i style="height:25%"></i><i style="height:15%"></i><i style="height:35%"></i><i class="on" style="height:95%"></i></div>
+            <div class="row between tiny" style="margin-top:6px"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- B: data-dense career -->
+    <div class="variation" data-var="b" data-vlabel="B · Carreira densa" data-vdesc="Sem hero — foco em <b>estatísticas de carreira</b>, progressão e consistência">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span class="on">Dashboard</span><span>Setups</span><span>Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="grid4" style="margin-bottom:14px">
+        <div class="sk pad"><span class="lbl">Career laps</span><div class="big num">1,284</div></div>
+        <div class="sk pad"><span class="lbl">Hours driven</span><div class="big num">86h</div></div>
+        <div class="sk pad"><span class="lbl">Best finish</span><div class="big num">P2</div></div>
+        <div class="sk pad noteWrap"><span class="lbl">iRating</span><div class="big num">2.1k</div><div class="note" style="bottom:-6px;right:-6px">tendência ↑</div></div>
+      </div>
+      <div class="row">
+        <div class="sk pad grow noteWrap" style="flex:2"><span class="lbl">Personal best progression</span>
+          <div class="graph" data-g="prog" style="height:200px;margin-top:8px"></div>
+          <div class="note" style="top:6px;right:8px">linha de evolução do PB ao longo do tempo</div>
+        </div>
+        <div class="col" style="flex:1">
+          <div class="sk pad"><span class="lbl">Consistency</span>
+            <div style="display:grid;place-items:center;margin:8px 0"><div class="ring"><b>92%</b></div></div>
+            <span class="ph w70"></span></div>
+          <div class="sk pad grow"><span class="lbl">Car usage</span>
+            <div class="col gap8" style="margin-top:10px">
+              <div><div class="row between tiny"><span>Mazda MX5</span><span>62%</span></div><div class="barline"><div class="f" style="width:62%"></div></div></div>
+              <div><div class="row between tiny"><span>Porsche Cup</span><span>28%</span></div><div class="barline"><div class="f" style="width:28%"></div></div></div>
+              <div><div class="row between tiny"><span>GT3</span><span>10%</span></div><div class="barline"><div class="f" style="width:10%"></div></div></div>
+            </div></div>
+        </div>
+      </div>
+      <div class="sk pad" style="margin-top:14px"><span class="lbl">Recent sessions</span>
+        <table class="wt"><thead><tr><th>Car / Track</th><th>Date</th><th>Type</th><th>Best lap</th><th>Finish</th></tr></thead>
+        <tbody>
+          <tr><td>Mazda MX5 · Winton</td><td>06-06 15:10</td><td>Race</td><td class="num">1:34.241</td><td>P12</td></tr>
+          <tr><td>Mazda MX5 · Winton</td><td>06-06 15:04</td><td>Qual</td><td class="num">1:32.584</td><td>—</td></tr>
+          <tr><td>Mazda MX5 · Winton</td><td>06-06 14:40</td><td>Practice</td><td class="num">1:31.990</td><td>—</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STINT OVERVIEW ================= -->
+  <section class="screen" data-screen="stint" data-label="Stint Overview">
+    <div class="variation" data-var="a" data-vlabel="A · Tipo ref" data-vdesc="Barras dos pilotos no topo, <b>KPIs</b> + gráfico de laptime + tabela de voltas">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span>Dashboard</span><span>Setups</span><span class="on">Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <!-- session header + driver bars -->
+      <div class="row" style="margin-bottom:14px">
+        <div class="sk pad" style="flex:1.1"><div class="row center gap8"><span class="dot"></span><div><div class="h2">Mazda MX5 Cup</div><span class="tiny">Winton — National · 19°C · 65%</span></div></div></div>
+        <div class="sk pad noteWrap" style="flex:1"><div class="row between center"><div class="row center gap6"><span class="dot sm" style="border-color:var(--acc)"></span><b>L. Capuzzi</b></div><span class="tiny">Lap 4 · 1:31.990</span></div>
+          <div class="barline" style="margin-top:8px"><div class="f" style="width:100%"></div></div><div class="row between tiny"><span>throttle 100%</span><span>RPM 7300</span></div>
+          <div class="note" style="top:-10px;right:8px">telemetria ao vivo do piloto</div></div>
+        <div class="sk pad" style="flex:1"><div class="row between center"><div class="row center gap6"><span class="dot sm"></span><b>C. Webster</b></div><span class="tiny">Lap 1 · 1:30.149</span></div>
+          <div class="barline" style="margin-top:8px"><div class="f" style="width:37%"></div></div><div class="row between tiny"><span>throttle 37%</span><span>RPM 5869</span></div></div>
+      </div>
+      <div class="row between center" style="margin-bottom:10px"><div class="h2">Stint 1</div><div class="row gap8"><span class="chip">Race</span><span class="chip">8 laps</span><span class="chip">4.7L · 0.67L/lap</span></div></div>
+      <div class="grid3" style="margin-bottom:14px">
+        <div class="sk pad"><span class="lbl">Fastest lap</span><div class="big num green">1:31.990</div></div>
+        <div class="sk pad"><span class="lbl">Optimal lap</span><div class="big num purple">1:31.830</div></div>
+        <div class="sk pad fill noteWrap"><span class="lbl">Avg fuel usage</span><div class="big num">0.67 L</div><div class="note" style="bottom:-6px;right:-6px">card destacado</div></div>
+      </div>
+      <div class="sk pad" style="margin-bottom:14px"><span class="lbl">Average laptime</span><div class="graph" data-g="spark" style="height:120px;margin-top:6px"></div></div>
+      <div class="sk pad"><table class="wt"><thead><tr><th>Lap</th><th>Time</th><th>Delta</th><th>Fuel</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="num">1:39.610</td><td class="redt num">+7.620</td><td>0 L</td><td class="num">26.286</td><td class="num">22.579</td><td class="num">28.107</td><td class="num">22.637</td></tr>
+          <tr><td>2</td><td class="num">1:32.901</td><td class="redt num">+0.911</td><td>0.66</td><td class="num">20.529</td><td class="num">22.421</td><td class="num">27.468</td><td class="num">22.482</td></tr>
+          <tr><td>4</td><td class="num green">1:31.990</td><td class="num">0.000</td><td>0.67</td><td class="num green">20.380</td><td class="num">22.137</td><td class="num green">27.191</td><td class="num purple">22.280</td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="variation" data-var="b" data-vlabel="B · Tabela + insights" data-vdesc="Tabela de voltas dominante à esquerda, <b>trilho de insights</b> rápidos à direita">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span>Dashboard</span><span>Setups</span><span class="on">Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="row between center" style="margin-bottom:12px"><div><div class="h2">Stint 1 · Mazda MX5 · Winton</div><span class="tiny">Race · 8 laps · 1:31.990 best</span></div><div class="row gap8"><span class="chip">Time</span><span class="chip acc">Sectors</span></div></div>
+      <div class="row">
+        <div class="sk pad" style="flex:2.2"><span class="lbl">All laps</span>
+          <table class="wt" style="margin-top:6px"><thead><tr><th>Lap</th><th>Time</th><th>Δ</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>Fuel</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td class="num">1:39.610</td><td class="redt num">+7.6</td><td class="num">26.2</td><td class="num">22.5</td><td class="num">28.1</td><td class="num">22.6</td><td>0</td></tr>
+            <tr><td>2</td><td class="num">1:32.901</td><td class="redt num">+0.9</td><td class="num">20.5</td><td class="num">22.4</td><td class="num">27.4</td><td class="num">22.4</td><td>0.66</td></tr>
+            <tr><td>3</td><td class="num">1:32.454</td><td class="redt num">+0.4</td><td class="num">20.6</td><td class="num purple">21.9</td><td class="num">27.4</td><td class="num">22.4</td><td>0.68</td></tr>
+            <tr><td>4</td><td class="num green">1:31.990</td><td class="num">0.0</td><td class="num green">20.3</td><td class="num">22.1</td><td class="num green">27.1</td><td class="num purple">22.2</td><td>0.67</td></tr>
+            <tr><td>5</td><td class="num">1:32.572</td><td class="redt num">+0.5</td><td class="num">20.6</td><td class="num">22.1</td><td class="num">27.2</td><td class="num">22.5</td><td>0.68</td></tr>
+          </tbody></table>
+        </div>
+        <div class="col noteWrap" style="flex:1">
+          <div class="sk pad fill"><span class="lbl">Theoretical best</span><div class="big num purple">1:31.830</div><span class="tiny">−0.16 vs your best</span></div>
+          <div class="sk pad"><span class="lbl">Most lost time</span><div class="h2">Sector 3</div><span class="ph w80"></span><span class="ph w50"></span></div>
+          <div class="sk pad"><span class="lbl">Fuel to finish</span><div class="h2 num">+2 laps</div><span class="tiny">0.67 L/lap · margin OK</span></div>
+          <div class="note" style="top:0;right:-8px">insights resumidos do stint</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TELEMETRY ================= -->
+  <section class="screen" data-screen="telemetry" data-label="Telemetry">
+    <div class="variation" data-var="a" data-vlabel="A · Mapa + canais" data-vdesc="Mapa da volta à esquerda c/ <b>callout do Engineer</b> ancorado na pista · stack de 7 canais à direita (delta/throttle/brake/speed/steering/gear/rpm)">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span>Dashboard</span><span>Setups</span><span class="on">Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="row between center" style="margin-bottom:10px"><div class="row gap8"><span class="chip acc">Segments</span><span class="chip">Sectors</span></div><span class="tiny">L. Capuzzi 1:31.990 · vs C. Webster 1:30.149</span></div>
+      <div class="row" style="gap:12px">
+        <div class="rail"><span class="ri"></span><span class="ri"></span><span class="ri"></span></div>
+        <div class="col" style="flex:1.04">
+          <div class="sk fill r3 noteWrap" style="height:372px;position:relative;overflow:hidden">
+            <div class="graph" data-g="zoom" style="position:absolute;inset:0"></div>
+            <div class="tcall" style="left:16px;bottom:162px"><span class="pin"></span><div class="ttx"><b class="redt">BRAKING</b><div class="tiny">Braked 2.1 m later than reference.</div></div></div>
+            <div class="minimap"><span class="lbl" style="font-size:9px">Track</span><div class="graph" data-g="track" style="height:74px"></div><div class="zoomctl"><span>−</span><div class="zbar"><i></i></div><span>+</span></div></div>
+            <div class="note" style="top:8px;left:10px">vista ampliada da pista + carro · linha verde/vermelha = ganho/perda</div>
+            <div class="note" style="top:8px;right:10px">mini-mapa da pista inteira + zoom, no canto</div>
+          </div>
+          <div class="sk pad"><div class="row between center"><span class="btn" style="padding:4px 10px">‹</span><b>All +1.840</b><span class="btn" style="padding:4px 10px">›</span></div>
+            <div class="row between" style="margin-top:8px"><span class="tiny">L. Capuzzi</span><b class="num">1:31.990</b></div>
+            <div class="row between"><span class="tiny purple">C. Webster</span><b class="num purple">1:30.149</b></div></div>
+        </div>
+        <div class="sk pad" style="flex:0.96">
+          <div class="row between center" style="margin-bottom:8px"><div class="row gap8"><b style="border-bottom:2.5px solid var(--acc)">Telemetry</b><span class="muted">Tyres</span></div><span class="tiny">↻ ⚙</span></div>
+          <div class="chstack col gap6 noteWrap">
+            <div class="chcursor"></div>
+            <div class="ch"><span class="lbl">Delta</span><div class="graph" data-g="delta"></div><span class="num">0.08</span></div>
+            <div class="ch"><span class="lbl">Throttle</span><div class="graph" data-g="throttle"></div><span class="num">73</span></div>
+            <div class="ch"><span class="lbl">Brake</span><div class="graph" data-g="brake"></div><span class="num">78</span></div>
+            <div class="ch"><span class="lbl">Speed</span><div class="graph" data-g="speed"></div><span class="num">145</span></div>
+            <div class="ch"><span class="lbl">Steering</span><div class="graph" data-g="steering"></div><span class="num">-2</span></div>
+            <div class="ch"><span class="lbl">Gear</span><div class="graph" data-g="gear"></div><span class="num">2</span></div>
+            <div class="ch"><span class="lbl">RPM</span><div class="graph" data-g="rpm"></div><span class="num">6.6k</span></div>
+            <div class="note" style="top:-8px;right:6px">7 canais empilhados, eixo X (tempo/dist.) sincronizado + cursor vertical</div>
+          </div>
+        </div>
+      </div>
+      <div class="sk r3 pad" style="margin-top:12px"><div class="scrub"><span class="btn" style="padding:4px 10px">▶</span><b class="num">00:09.865</b><div class="track"><div class="done"></div></div><span class="tiny">Δ +0.166 · +6 m</span><span class="chip">Time</span><span class="chip">Distance</span></div></div>
+    </div>
+    <div class="variation" data-var="b" data-vlabel="B · Canais full-width" data-vdesc="Canais ocupam a <b>largura toda</b>, mini-mapa em inset, legenda de comparação clara">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span>Dashboard</span><span>Setups</span><span class="on">Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="row between center" style="margin-bottom:10px">
+        <div class="row gap8"><span class="chip acc"><span class="dot sm" style="width:12px;height:12px;border-color:var(--acc)"></span>L. Capuzzi</span><span class="chip"><span class="dot sm" style="width:12px;height:12px"></span>C. Webster</span><span class="chip">+ add lap</span></div>
+        <div class="row gap8"><span class="chip">Time</span><span class="chip acc">Distance</span></div>
+      </div>
+      <div class="col gap8 noteWrap">
+        <div class="sk r3 pad"><span class="lbl">Delta</span><div class="graph" data-g="delta" style="height:80px"></div></div>
+        <div class="sk r3 pad"><span class="lbl">Speed</span><div class="graph" data-g="speed" style="height:90px"></div></div>
+        <div class="sk r3 pad"><span class="lbl">Throttle</span><div class="graph" data-g="throttle" style="height:80px"></div></div>
+        <div class="sk r3 pad"><span class="lbl">Brake</span><div class="graph" data-g="brake" style="height:80px"></div></div>
+        <div class="note" style="top:0;right:8px">comparar 2+ voltas sobrepostas, cursor sincronizado</div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div class="sk fill r3" data-g="track" style="flex:1;height:80px"></div>
+        <div class="sk r3 pad grow" style="flex:3"><div class="scrub"><span class="btn" style="padding:4px 10px">▶</span><b class="num">00:09.865</b><div class="track"><div class="done"></div></div><span class="tiny">Δ +0.166 · +6 m</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LAP ANALYSIS / TRACK MAP ================= -->
+  <section class="screen" data-screen="lap" data-label="Lap Analysis">
+    <div class="variation" data-var="a" data-vlabel="A · Tipo ref" data-vdesc="Mapa grande da pista + <b>mini-mapa</b>, toggle Segments/Sectors, comparação de setores">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span>Dashboard</span><span>Setups</span><span class="on">Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="row">
+        <div class="col" style="flex:1.4">
+          <div class="row gap8"><span class="chip acc">Segments</span><span class="chip">Sectors</span></div>
+          <div class="sk fill r3 noteWrap" style="height:330px;position:relative;display:grid;place-items:center;color:var(--ink3)">
+            [ mapa grande da pista — traçado + carro ]
+            <div class="note" style="top:10px;left:10px">cor da linha = ganho/perda por trecho</div>
+          </div>
+          <div class="sk pad"><span class="lbl">Sector comparison</span>
+            <table class="wt" style="margin-top:4px"><tbody>
+              <tr><td>S1</td><td class="num">20.380</td><td class="num purple">19.987</td></tr>
+              <tr><td>S2</td><td class="num">22.137</td><td class="num purple">21.528</td></tr>
+              <tr><td>S3</td><td class="num">27.191</td><td class="num purple">26.771</td></tr>
+              <tr><td>S4</td><td class="num">22.280</td><td class="num purple">21.861</td></tr>
+            </tbody></table></div>
+        </div>
+        <div class="col" style="flex:1">
+          <div class="sk fill r3 noteWrap" style="height:230px;display:grid;place-items:center;color:var(--ink3)">[ mini-mapa com segmentos numerados ①–⑥ ]<div class="note" style="top:8px;right:8px">corner/segment picker</div></div>
+          <div class="sk pad fill"><div class="row between center"><span class="lbl">Segment 5</span><b class="num redt">+0.116</b></div><span class="ph w80"></span><span class="ph w60"></span></div>
+          <div class="sk r3 pad grow"><div class="scrub" style="flex-wrap:wrap"><span class="btn" style="padding:4px 10px">▶</span><b class="num">01:02.032</b></div><div class="row between tiny" style="margin-top:8px"><span>Δ +1.232</span><span>+42 m</span><span class="chip">Time</span><span class="chip">Distance</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="variation" data-var="b" data-vlabel="B · Delta por curva" data-vdesc="Lista de segmentos + <b>tira de barras</b> de delta por curva — onde você ganha/perde">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span>Dashboard</span><span>Setups</span><span class="on">Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="row">
+        <div class="sk fill r3 noteWrap" style="flex:1.3;height:300px;display:grid;place-items:center;color:var(--ink3)">[ mapa da pista com curvas destacadas ]<div class="note" style="top:10px;left:10px">clique numa barra → foca a curva no mapa</div></div>
+        <div class="sk pad" style="flex:1"><span class="lbl">Time gained / lost per corner</span>
+          <div class="col gap8" style="margin-top:12px">
+            <div><div class="row between tiny"><span>T1</span><span class="green">−0.08</span></div><div class="barline" style="background:none"><div class="f" style="width:30%;margin-left:50%"></div></div></div>
+            <div><div class="row between tiny"><span>T2</span><span class="redt">+0.12</span></div><div class="barline" style="background:none"><div class="f" style="width:40%;margin-right:50%;margin-left:auto;background:var(--red)"></div></div></div>
+            <div><div class="row between tiny"><span>T3</span><span class="redt">+0.21</span></div><div class="barline" style="background:none"><div class="f" style="width:60%;margin-left:auto;margin-right:50%;background:var(--red)"></div></div></div>
+            <div><div class="row between tiny"><span>T4</span><span class="green">−0.03</span></div><div class="barline" style="background:none"><div class="f" style="width:14%;margin-left:50%"></div></div></div>
+            <div><div class="row between tiny"><span>T5</span><span class="redt">+0.11</span></div><div class="barline" style="background:none"><div class="f" style="width:36%;margin-left:auto;margin-right:50%;background:var(--red)"></div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="sk r3 pad" style="margin-top:12px"><div class="scrub"><span class="btn" style="padding:4px 10px">▶</span><b class="num">01:02.032</b><div class="track"><div class="done"></div></div><span class="tiny">Δ +1.232 · +42 m</span></div></div>
+    </div>
+  </section>
+
+  <!-- ================= COMPARISON ================= -->
+  <section class="screen" data-screen="comparison" data-label="Comparison">
+    <div class="variation" data-var="a" data-vlabel="A · Lado a lado" data-vdesc="Duas voltas em <b>colunas paralelas</b> com coluna de delta no meio e fontes nos topos">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span>Dashboard</span><span>Setups</span><span class="on">Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="row gap8" style="margin-bottom:14px">
+        <div class="sk pad grow noteWrap"><span class="lbl">Lap A — your best</span><div class="h2 num">1:34.241</div><span class="tiny">Winton · 06-06 15:10 · change ▾</span><div class="note" style="top:-8px;left:8px">picker por fonte: minhas sessões / referência / importada</div></div>
+        <div class="sk pad fill" style="flex:none;width:140px;text-align:center"><span class="lbl">Total Δ</span><div class="big num redt">+2.69</div></div>
+        <div class="sk pad grow"><span class="lbl">Lap B — reference lap</span><div class="h2 num purple">1:31.55</div><span class="tiny">Reference · change ▾</span></div>
+      </div>
+      <div class="grid3"><span class="lbl">Lap A</span><span class="lbl" style="text-align:center">Delta</span><span class="lbl" style="text-align:right">Lap B</span></div>
+      <div class="col gap6" style="margin-top:8px">
+        <div class="grid3 center"><div class="sk r3 pad num">S1 21.173</div><div class="num redt" style="text-align:center">+0.42</div><div class="sk r3 pad num purple" style="text-align:right">20.75 S1</div></div>
+        <div class="grid3 center"><div class="sk r3 pad num">S2 22.225</div><div class="num green" style="text-align:center">−0.10</div><div class="sk r3 pad num" style="text-align:right">22.32 S2</div></div>
+        <div class="grid3 center"><div class="sk r3 pad num">S3 27.798</div><div class="num redt" style="text-align:center">+1.31</div><div class="sk r3 pad num purple" style="text-align:right">26.49 S3</div></div>
+        <div class="grid3 center"><div class="sk r3 pad num">S4 23.044</div><div class="num redt" style="text-align:center">+1.06</div><div class="sk r3 pad num purple" style="text-align:right">21.99 S4</div></div>
+      </div>
+      <div class="sk fill r3" data-g="track" style="height:90px;margin-top:14px"></div>
+    </div>
+    <div class="variation" data-var="b" data-vlabel="B · Fluxo 2 passos" data-vdesc="Próximo da ref: passo a passo <b>selecionar volta 1 → volta 2</b>, depois a tabela">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span>Dashboard</span><span>Setups</span><span class="on">Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="row gap8 center" style="margin-bottom:14px"><span class="rank r1">1</span><b>Select first comparison</b><span class="muted">———</span><span class="rank">2</span><span class="muted">Select second comparison</span></div>
+      <div class="row between center" style="margin-bottom:10px"><div class="row gap8 center"><span class="dot"></span><div><div class="h2">Mazda MX5 Cup — Winton</div><span class="tiny">2026-06-06 15:10</span></div></div>
+        <div class="row gap8"><span class="chip">🔎 search</span><span class="chip">⛃ filter</span><span class="chip acc">Import lap</span></div></div>
+      <div class="row gap8" style="margin-bottom:10px"><span class="chip acc">Past sessions</span><span class="chip">Reference laps</span><span class="chip">Leaderboard</span><span class="chip">Imported</span></div>
+      <div class="sk pad noteWrap"><table class="wt"><thead><tr><th>Lap</th><th>Time</th><th>Delta</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="num">1:40.646</td><td class="redt num">+6.404</td><td class="num">25.283</td><td class="num">23.737</td><td class="num">28.416</td><td class="num">23.208</td></tr>
+          <tr><td>2</td><td class="num">1:41.367</td><td class="redt num">Invalid</td><td class="num">27.495</td><td class="num">23.064</td><td class="num">27.609</td><td class="num">23.197</td></tr>
+          <tr><td>4</td><td class="num purple">1:34.241</td><td class="num">0.000</td><td class="num">21.173</td><td class="num purple">22.225</td><td class="num">27.798</td><td class="num">23.044</td></tr>
+          <tr><td>6</td><td class="num">1:34.548</td><td class="redt num">+0.306</td><td class="num purple">21.118</td><td class="num">22.289</td><td class="num">27.762</td><td class="num">23.378</td></tr>
+        </tbody></table>
+        <div class="note" style="top:6px;right:8px">escolher 1 volta de cada fonte para comparar</div></div>
+    </div>
+  </section>
+
+  <!-- ================= RACE ENGINEER AI ================= -->
+  <section class="screen" data-screen="ai" data-label="Race Engineer AI">
+    <!-- A: report -->
+    <div class="variation" data-var="a" data-vlabel="A · Relatório pós-corrida" data-vdesc="<b>Relatório gerado</b>: resumo + onde melhorar + ações priorizadas (o mais importante p/ você)">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span>Dashboard</span><span>Setups</span><span class="on">Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="row between center" style="margin-bottom:14px"><div class="row gap8 center"><span class="dot" style="border-color:var(--acc)"></span><div><div class="h">Race Engineer report</div><span class="tiny">Mazda MX5 · Winton · 8 laps · analisado pós-sessão</span></div></div><span class="chip acc">Re-analyze</span></div>
+      <div class="row">
+        <div class="col" style="flex:1.5">
+          <div class="sk pad fill noteWrap"><span class="lbl">Summary</span><div class="h2" style="margin:4px 0">You're ~1.6s off your potential — most of it in Sector 3.</div><span class="ph w90"></span><span class="ph w80"></span><div class="note" style="top:-8px;right:8px">linguagem natural, insight digerido</div></div>
+          <div class="sk pad"><span class="lbl">Top opportunities</span>
+            <div class="opp"><span class="rank r1">1</span><div class="grow"><b>T3 — braking too early</b><span class="ph w70"></span></div><b class="num redt">+0.6s</b></div>
+            <div class="opp"><span class="rank">2</span><div class="grow"><b>T5 — early throttle on exit</b><span class="ph w60"></span></div><b class="num redt">+0.4s</b></div>
+            <div class="opp"><span class="rank">3</span><div class="grow"><b>Consistency — lap-to-lap variance</b><span class="ph w50"></span></div><b class="num redt">+0.3s</b></div>
+          </div>
+        </div>
+        <div class="col" style="flex:1">
+          <div class="grid2">
+            <div class="sk pad"><span class="lbl">Braking</span><div class="big">B−</div></div>
+            <div class="sk pad"><span class="lbl">Throttle</span><div class="big">A−</div></div>
+            <div class="sk pad"><span class="lbl">Racing line</span><div class="big">B+</div></div>
+            <div class="sk pad"><span class="lbl">Consistency</span><div class="big">B</div></div>
+          </div>
+          <div class="sk fill r3 noteWrap" style="height:150px;display:grid;place-items:center;color:var(--ink3)">[ mini-mapa: curvas-foco destacadas ]<div class="note" style="bottom:-8px;right:6px">cada ação linka pro segmento</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- B: conversational -->
+    <div class="variation" data-var="b" data-vlabel="B · Conversacional" data-vdesc="Estilo <b>chat</b>: o engenheiro explica os achados e você pergunta; cards fixos ao lado">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span>Dashboard</span><span>Setups</span><span class="on">Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="row">
+        <div class="col" style="flex:1.6">
+          <div class="sk pad" style="min-height:340px;display:flex;flex-direction:column;gap:12px">
+            <div class="row gap8"><span class="dot sm" style="border-color:var(--acc)"></span><div class="sk r3 pad" style="background:var(--accSoft);max-width:78%"><b>Engineer</b><span class="ph w90"></span><span class="ph w80"></span><span class="ph w60"></span></div></div>
+            <div class="row gap8" style="justify-content:flex-end"><div class="sk r3 pad fill" style="max-width:60%"><span class="ph w80"></span><span class="ph w50"></span></div></div>
+            <div class="row gap8"><span class="dot sm" style="border-color:var(--acc)"></span><div class="sk r3 pad" style="background:var(--accSoft);max-width:78%"><span class="ph w90"></span><div class="sk dash r3 noteWrap" style="height:60px;margin-top:8px;display:grid;place-items:center;color:var(--ink3)">[ mini gráfico inline do achado ]<div class="note" style="top:-8px;right:6px">resposta pode incluir telemetria</div></div></div></div>
+            <div class="grow"></div>
+            <div class="sk r3 pad row between center"><span class="muted">Ask about your lap…</span><span class="chip acc">Send</span></div>
+          </div>
+          <div class="row gap8"><span class="chip">Where did I lose time?</span><span class="chip">How to improve T3?</span><span class="chip">Fuel strategy?</span></div>
+        </div>
+        <div class="col noteWrap" style="flex:1">
+          <div class="sk pad fill"><span class="lbl">Pinned insight</span><div class="h2">Brake later into T3</div><span class="ph w90"></span><span class="ph w60"></span></div>
+          <div class="sk pad"><span class="lbl">Session</span><div class="row between"><span class="tiny">Best lap</span><b class="num">1:34.241</b></div><div class="row between"><span class="tiny">Potential</span><b class="num purple">1:32.6</b></div></div>
+          <div class="note" style="top:0;right:-8px">contexto persistente da sessão ao lado do chat</div>
+        </div>
+      </div>
+    </div>
+    <!-- C: coach scorecards -->
+    <div class="variation" data-var="c" data-vlabel="C · Coach / scorecards" data-vdesc="Painel de <b>notas por habilidade</b> + ranking das 3 maiores oportunidades de tempo">
+      <div class="nav">
+        <div class="logo"><span class="g">G</span> PITWALL</div>
+        <div class="navitems"><span>Dashboard</span><span>Setups</span><span class="on">Race Engineer</span><span>Leaderboard</span></div>
+        <div class="navr"><span class="ico"></span><span class="ico"></span><span class="ava"></span></div>
+      </div>
+      <div class="row gap8 center between" style="margin-bottom:14px"><div class="h">Driver coach</div><div class="row gap8"><span class="chip">This stint</span><span class="chip">vs last session</span><span class="chip acc">vs reference</span></div></div>
+      <div class="grid4" style="margin-bottom:14px">
+        <div class="sk pad noteWrap"><span class="lbl">Braking</span><div class="big">72</div><div class="barline" style="margin-top:6px"><div class="f" style="width:72%"></div></div><div class="note" style="bottom:-8px;left:6px">score 0–100 por área</div></div>
+        <div class="sk pad"><span class="lbl">Throttle</span><div class="big">88</div><div class="barline" style="margin-top:6px"><div class="f" style="width:88%"></div></div></div>
+        <div class="sk pad"><span class="lbl">Racing line</span><div class="big">79</div><div class="barline" style="margin-top:6px"><div class="f" style="width:79%"></div></div></div>
+        <div class="sk pad"><span class="lbl">Consistency</span><div class="big">81</div><div class="barline" style="margin-top:6px"><div class="f" style="width:81%"></div></div></div>
+      </div>
+      <div class="row">
+        <div class="sk pad" style="flex:1.4"><span class="lbl">Biggest time gains available</span>
+          <div class="opp"><span class="rank r1">1</span><div class="grow"><b>Sector 3 — corner entry</b><span class="ph w70"></span></div><div style="text-align:right"><b class="num redt">+0.6s</b><div class="tiny">brake +12m later</div></div></div>
+          <div class="opp"><span class="rank">2</span><div class="grow"><b>T5 exit — throttle application</b><span class="ph w60"></span></div><div style="text-align:right"><b class="num redt">+0.4s</b><div class="tiny">smoother on-throttle</div></div></div>
+          <div class="opp"><span class="rank">3</span><div class="grow"><b>Lap consistency</b><span class="ph w50"></span></div><div style="text-align:right"><b class="num redt">+0.3s</b><div class="tiny">σ 0.4s → 0.2s</div></div></div>
+        </div>
+        <div class="sk pad fill noteWrap" style="flex:1"><span class="lbl">Skill trend</span><div class="graph" data-g="prog" style="height:150px;margin-top:8px"></div><div class="note" style="top:6px;right:8px">evolução das notas ao longo das sessões</div></div>
+      </div>
+    </div>
+  </section>
+
+</div><!--/win-->
+</div><!--/canvas-->
+
+<script>
+/* ---------- sketchy SVG generators ---------- */
+function lcg(s){return function(){s=(s*1103515245+12345)&0x7fffffff;return s/0x7fffffff;};}
+function chan(kind,seed){
+  const W=600,H=90,n=64,r=lcg(seed||7);const pts=[];
+  if(kind==='gear')return gearSVG(seed);
+  let v=kind==='delta'?6:(kind==='brake'?6:(kind==='rpm'?48:(kind==='steering'?50:75)));
+  for(let i=0;i<=n;i++){
+    if(kind==='throttle'){v = r()<0.28 ? 6+r()*18 : 78+r()*18; }
+    else if(kind==='brake'){v = r()<0.18 ? 55+r()*30 : 4+r()*8; }
+    else if(kind==='speed'){v = 25+Math.sin(i/4)*22+r()*16; }
+    else if(kind==='steering'){v = 50+26*Math.sin(i/5)+(r()-0.5)*8; }
+    else if(kind==='rpm'){v += 5+r()*2.5; if(v>88)v=44+r()*5; }
+    else { v = Math.min(86, v + r()*2.4); } /* delta rising */
+    pts.push([i/n*W, H-(v/100*H)]);
+  }
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const area=line+` L${W},${H} L0,${H} Z`;
+  const cols={brake:'#d8694e',delta:'#7c4dd6',speed:'#2bb6c4',steering:'#6f6c64',rpm:'#d9a441'};
+  const col=cols[kind]||'#16b364';
+  const fill=col+'1f';
+  const noFill=kind==='steering';
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${noFill?'':`<path d="${area}" fill="${fill}"/>`}<path d="${line}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+}
+function gearSVG(seed){
+  const W=600,H=90,r=lcg(seed||9),n=16;let g=3,d='';
+  for(let i=0;i<n;i++){
+    if(r()<0.5)g+=(r()<0.5?1:-1);g=Math.max(1,Math.min(6,g));
+    const x0=i/n*W,x1=(i+1)/n*W,y=H-(g/6*(H-10))-6;
+    d+=(i?` L${x0.toFixed(1)},${y.toFixed(1)}`:`M${x0.toFixed(1)},${y.toFixed(1)}`)+` L${x1.toFixed(1)},${y.toFixed(1)}`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="#2bb6c4" stroke-width="2.5" stroke-linejoin="miter"/></svg>`;
+}
+function spark(seed){
+  const W=600,H=120,r=lcg(seed||3),n=8,pts=[];
+  for(let i=0;i<n;i++){let y= i===0?14:(40+r()*40); if(i===3)y=86; pts.push([8+i/(n-1)*(W-16),y]);}
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(0)+','+p[1].toFixed(0)).join(' ');
+  const area=line+` L${W-8},${H} L8,${H} Z`;
+  let dots=pts.map(p=>`<circle cx="${p[0].toFixed(0)}" cy="${p[1].toFixed(0)}" r="4" fill="#f1efe9" stroke="#2c2a27" stroke-width="2"/>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${area}" fill="#2c2a2710"/><path d="${line}" fill="none" stroke="#2c2a27" stroke-width="2.5"/>${dots}</svg>`;
+}
+function prog(seed){
+  const W=600,H=200,r=lcg(seed||5),n=14,pts=[];let v=150;
+  for(let i=0;i<n;i++){v=Math.max(40,v-(6+r()*16));pts.push([10+i/(n-1)*(W-20),v]);}
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(0)+','+p[1].toFixed(0)).join(' ');
+  const area=line+` L${W-10},${H} L10,${H} Z`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${area}" fill="#16b36422"/><path d="${line}" fill="none" stroke="#16b364" stroke-width="2.5" stroke-linejoin="round"/></svg>`;
+}
+function zoomTrack(){
+  return `<svg viewBox="0 0 400 372" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%">
+    <path d="M30,372 C120,260 150,150 250,86 C300,54 345,50 392,66" fill="none" stroke="#dcd8ce" stroke-width="52" stroke-linecap="round"/>
+    <path d="M44,372 C132,262 162,156 258,96" fill="none" stroke="#16b364" stroke-width="3"/>
+    <path d="M258,96 C300,66 345,62 392,78" fill="none" stroke="#d8694e" stroke-width="3"/>
+    <path d="M64,372 C146,258 178,150 270,90 C312,60 350,56 394,72" fill="none" stroke="#8f8b81" stroke-width="2" stroke-dasharray="2 6"/>
+    <g transform="translate(150,250) rotate(-44)"><rect x="-12" y="-20" width="24" height="40" rx="6" fill="var(--paper)" stroke="#2c2a27" stroke-width="2.5"/><line x1="-12" y1="-4" x2="12" y2="-4" stroke="#2c2a27" stroke-width="1.5"/></g>
+  </svg>`;
+}
+function track(){
+  return `<svg viewBox="0 0 240 110" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%">
+    <path d="M30,70 C18,38 60,20 96,30 C124,38 120,56 150,52 C188,47 182,16 206,26 C228,35 220,66 196,72 C168,79 150,62 120,72 C92,81 70,96 50,88 C34,82 36,80 30,70 Z"
+      fill="none" stroke="#a9a59b" stroke-width="6" stroke-linecap="round"/>
+    <path d="M30,70 C18,38 60,20 96,30 C124,38 120,56 150,52" fill="none" stroke="#16b364" stroke-width="3"/>
+  </svg>`;
+}
+document.querySelectorAll('[data-g]').forEach((el,i)=>{
+  const k=el.getAttribute('data-g');
+  if(k==='track')el.innerHTML=track();
+  else if(k==='zoom')el.innerHTML=zoomTrack();
+  else if(k==='spark')el.innerHTML=spark(i+2);
+  else if(k==='prog')el.innerHTML=prog(i+4);
+  else el.innerHTML=chan(k,i*13+5);
+});
+
+/* ---------- navigation ---------- */
+const screens=[...document.querySelectorAll('.screen')];
+const screenTabs=document.getElementById('screenTabs');
+const varTabs=document.getElementById('varTabs');
+const varDesc=document.getElementById('varDesc');
+let curScreen=0;
+function buildScreenTabs(){
+  screenTabs.innerHTML='';
+  screens.forEach((s,i)=>{
+    const b=document.createElement('button');b.className='tab'+(i===curScreen?' active':'');
+    b.textContent=s.dataset.label;b.onclick=()=>{curScreen=i;render();};screenTabs.appendChild(b);
+  });
+}
+function render(){
+  screens.forEach((s,i)=>s.classList.toggle('active',i===curScreen));
+  buildScreenTabs();
+  const vars=[...screens[curScreen].querySelectorAll('.variation')];
+  varTabs.innerHTML='';
+  vars.forEach((v,i)=>{
+    const b=document.createElement('button');b.className='vtab'+(i===0?' active':'');
+    b.textContent=v.dataset.vlabel;
+    b.onclick=()=>{vars.forEach((x,j)=>x.classList.toggle('active',i===j));[...varTabs.children].forEach((c,j)=>c.classList.toggle('active',i===j));varDesc.innerHTML=v.dataset.vdesc;};
+    varTabs.appendChild(b);
+  });
+  vars.forEach((v,i)=>v.classList.toggle('active',i===0));
+  varDesc.innerHTML=vars[0].dataset.vdesc;
+  try{localStorage.setItem('pw_screen',curScreen);}catch(e){}
+}
+try{const s=+localStorage.getItem('pw_screen');if(s>=0&&s<screens.length)curScreen=s;}catch(e){}
+render();
+
+/* toggles */
+const tNotes=document.getElementById('tNotes'),tColor=document.getElementById('tColor');
+tNotes.onclick=()=>{document.body.classList.toggle('noNotes');tNotes.classList.toggle('on');};
+tColor.onclick=()=>{document.body.classList.toggle('noColor');tColor.classList.toggle('on');};
+</script>
+
+<!-- ===== Tweaks panel (expressive controls) ===== -->
+<div id="tweaks-root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "linework": "sketch",
+  "theme": "paper",
+  "accent": "#16b364"
+}/*EDITMODE-END*/;
+
+function App(){
+  const [t,setTweak]=useTweaks(TWEAK_DEFAULTS);
+  React.useEffect(()=>{
+    document.body.classList.toggle('theme-dark', t.theme==='dark');
+    document.body.classList.toggle('line-clean', t.linework==='clean');
+    const root=document.documentElement;
+    root.style.setProperty('--acc', t.accent);
+    root.style.setProperty('--accSoft', t.accent+'22');
+  },[t.theme,t.linework,t.accent]);
+  return (
+    <TweaksPanel title="Tweaks">
+      <TweakSection label="Feel" />
+      <TweakRadio label="Linework" value={t.linework} options={['sketch','clean']}
+                  onChange={(v)=>setTweak('linework',v)} />
+      <TweakRadio label="Theme" value={t.theme} options={['paper','dark']}
+                  onChange={(v)=>setTweak('theme',v)} />
+      <TweakSection label="Brand accent" />
+      <TweakColor label="Accent" value={t.accent}
+                  options={['#16b364','#f59e0b','#3b82f6','#e0489e']}
+                  onChange={(v)=>setTweak('accent',v)} />
+    </TweaksPanel>
+  );
+}
+ReactDOM.createRoot(document.getElementById('tweaks-root')).render(<App/>);
+</script>
+</body>
+</html>

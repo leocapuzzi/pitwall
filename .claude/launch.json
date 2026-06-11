@@ -19,5 +19,11 @@
       "runtimeArgs": ["-m", "uvicorn", "server:app", "--app-dir", "src", "--port", "8600"],
       "port": 8600
     }
+  ,{
+      "name": "landing",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8535", "--directory", "."],
+      "port": 8535
+    }
   ]
 }

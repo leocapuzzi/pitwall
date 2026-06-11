@@ -158,7 +158,22 @@ def time_to_distance(seg: pd.DataFrame, grid: np.ndarray = GRID) -> np.ndarray:
     t_sorted = t_rel[order]
     # Remove pcts repetidos mantendo o primeiro tempo.
     uniq_mask = np.concatenate(([True], np.diff(pct_sorted) > 0))
-    return np.interp(grid, pct_sorted[uniq_mask], t_sorted[uniq_mask])
+    base = pct_sorted[uniq_mask]
+    times = t_sorted[uniq_mask]
+    # A 60 Hz o 1o/ultimo sample raramente cai EXATAMENTE na linha (pct 0/1) — sem
+    # extrapolar, o tempo "ate a linha" era cortado (~1 sample por ponta). Extrapola
+    # linearmente as pontas e zera o relogio NA LINHA, nao no 1o sample.
+    if len(base) >= 2:
+        if base[0] > 0.0:
+            slope = (times[1] - times[0]) / max(base[1] - base[0], 1e-9)
+            base = np.concatenate(([0.0], base))
+            times = np.concatenate(([times[0] - slope * base[1]], times))
+        if base[-1] < 1.0:
+            slope = (times[-1] - times[-2]) / max(base[-1] - base[-2], 1e-9)
+            base = np.concatenate((base, [1.0]))
+            times = np.concatenate((times, [times[-1] + slope * (1.0 - base[-2])]))
+        times = times - times[0]
+    return np.interp(grid, base, times)
 
 
 def delta_by_distance(
@@ -270,7 +285,9 @@ def segment_deltas(
     for i in range(len(edges) - 1):
         lo, hi = edges[i], edges[i + 1]
         i_lo = _idx_at(grid, lo, n)
-        i_hi = _idx_at(grid, hi, n) - 1
+        # fecha o setor NO INICIO do proximo (linha a linha) — com "-1" o passo de
+        # grade que cruza a fronteira nao contava em setor nenhum (somas != total)
+        i_hi = n - 1 if i == len(edges) - 2 else _idx_at(grid, hi, n)
         i_hi = max(i_lo, min(i_hi, n - 1))
         gained = float(delta[i_hi] - delta[i_lo])
         rows.append({
@@ -292,7 +309,9 @@ def sector_times(
     out = []
     for i in range(len(edges) - 1):
         i_lo = _idx_at(grid, edges[i], n)
-        i_hi = _idx_at(grid, edges[i + 1], n) - 1
+        # fecha o setor NO INICIO do proximo — assim a soma dos setores telescopa
+        # exatamente para o tempo total (antes perdia 1 passo de grade por setor)
+        i_hi = n - 1 if i == len(edges) - 2 else _idx_at(grid, edges[i + 1], n)
         i_hi = max(i_lo, min(i_hi, n - 1))
         out.append(float(time_to_dist[i_hi] - time_to_dist[i_lo]))
     return np.array(out)
