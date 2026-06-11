@@ -23,6 +23,8 @@ const SCREENS: Record<View, ComponentType> = {
   dashboard: Dashboard, telemetry: Telemetry, lap: LapAnalysis,
   stint: Stint, comparison: Comparison, ai: AIEngineer,
 }
+// telas que renderizam o próprio cabeçalho (padrão GO Fast) — sem scr-head genérico
+const SELF_HEADED = new Set<View>(['stint', 'dashboard', 'ai'])
 
 export default function App() {
   const [view, setView] = useState<View>(() => {
@@ -51,12 +53,14 @@ export default function App() {
       {view !== 'dashboard' && <SessionStrip view={view} go={setView} />}
       <main className="stage">
         <div className="screen on">
-          <div className="scr-head">
-            <div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: '-.01em' }}>{TITLES[view]}</h1>
-              <div className="vt-desc">{SUBS[view]}</div>
+          {!SELF_HEADED.has(view) && (
+            <div className="scr-head">
+              <div>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: '-.01em' }}>{TITLES[view]}</h1>
+                <div className="vt-desc">{SUBS[view]}</div>
+              </div>
             </div>
-          </div>
+          )}
           <Screen />
         </div>
       </main>

@@ -10,7 +10,8 @@
 ## 0. Onde estamos / como rodar
 - **Caminho do projeto:** `C:\Users\leoca\Documents\Claude\PitWall` (a sessão pode abrir com cwd
   no path VELHO do iCloud, vazio — trabalhar SEMPRE no path novo, absoluto).
-  GitHub: `github.com/leocapuzzi/pitwall` (main; tudo pushado até `994804c`).
+  GitHub: `github.com/leocapuzzi/pitwall` (main; tudo pushado — último: passe GO Fast
+  nas telas de cards, 2026-06-11).
 - **Stack:** backend Python/FastAPI (motor de análise intacto) + frontend React+TS+Vite em `frontend/`.
 - **Rodar (dev):**
   - Backend: `.venv/Scripts/python.exe -m uvicorn server:app --app-dir src --port 8600`
@@ -24,7 +25,31 @@
   por DOM com o checklist do DESIGN-UI.md §9 (oclusão + `elementFromPoint`).
 
 ## 1. ✅ CONCLUÍDO (e APROVADO pelo usuário)
-**Produto no padrão GO Fast nas 3 telas de mapa, com dados 100% reais:**
+**Sessão 2026-06-11 — passe GO Fast nas 3 telas de cards (todas aprovadas):**
+- ✅ **Stint**: header de sessão + 2 pods ao vivo (volta de ref em loop; CLIQUE no pod abre o
+  popup "Comparison" com a tabela do stint, réplica do print GO Fast), card principal em vidro
+  com KPIs (Fastest/Optimal/Average/Fuel gradiente), gráfico Average Laptime (inválida em
+  vermelho, melhor em roxo) e tabela com setores (melhor verde, best-sectors roxos, ⓘ com
+  tooltip real); **stints REAIS** (separados pelas voltas de pit) com selector à direita; pods
+  ancorados nas MESMAS coords do fullmap (top 118/right 22, altura 63).
+- ✅ **Dashboard**: saudação + pills de vidro (voltas/sessões 30d), card honesto do iRating
+  (API bloqueada), hero "Performance Tools" com o Porsche #64, última sessão com contorno
+  BRANCO da pista, donut % limpas, atividade semanal em slots; sem tabstrip (= GO Fast).
+- ✅ **AI Engineer (coração do app)**: strip do engenheiro (anel-scanner + typewriter + pills),
+  "Plano de recuperação" (count-up do delta + barra empilhada decompondo a perda nas top-3),
+  **REPLAY fantasma da curva fixada** (melhor vs média por inversão de tempo, gap em metros ao
+  vivo, zoom roda/pan/reset com viewBox IMPERATIVO, inset-minimapa com pins SVG clicáveis),
+  **gauges com EVIDÊNCIA por curva** (pares de barras melhor vs média dos canais reais; pior
+  curva pulsa; curvas com insight linkam ao replay; definições fiéis ao signatures.py), chat
+  com **ANÁLISE LOCAL rotulada** (responde perdas/setores/consistência/potencial/combustível
+  do relatório real) + fallback honesto; deep-link real p/ Telemetry (pendingFocus + zoom).
+- ✅ Compartilhado: chrome (nav/abas/status) em vidro em TODAS as telas; fundo `.pw-pagebg`
+  (gradientes fixed z:-1) p/ o vidro distorcer; telas travadas no viewport
+  (`.screen:has(...)`); `SELF_HEADED` (sem scr-head genérico); DESIGN-UI.md ganhou o §11
+  (padrões + pegadinhas novas: apex_pct 0–100 vs 0–1; CSS animations pausadas na janela
+  oculta; pins dentro do SVG).
+
+**Sessões anteriores — produto no padrão GO Fast nas 3 telas de mapa, com dados 100% reais:**
 - ✅ **6 telas construídas** com dados reais do payload (Telemetry, Lap, Stint, Comparison,
   Dashboard, AI Engineer) — as 3 primeiras no padrão FULLMAP; as outras 3 no layout de cards.
 - ✅ **Framerate do carro** (bug original da sessão 1): causa raiz era posição por ÍNDICE
@@ -49,25 +74,24 @@
 - Commits da época: `1b84515` → `1a9a593` → `7b339a8` → `994804c` (todos pushados).
 
 ## 2. ❌ NÃO CONCLUÍDO (pendências, em ordem de valor)
-1. **Stint, Dashboard e AI Engineer ainda no layout ANTIGO de cards** — não têm mapa (no GO Fast
-   também não), então ficaram fora do fullmap. O usuário pediu "todas as melhorias nas demais
-   páginas": falta um **passe de estilo próprio** nelas (cards em vidro/`.pw-glass2`, tipografia
-   e espaçamentos coerentes com as telas novas). Discutido e adiado — é o próximo natural.
-2. **Comparison: seleção LIVRE de voltas** (volta N vs M, inclusive de outra sessão) — pede
+1. **Comparison: seleção LIVRE de voltas** (volta N vs M, inclusive de outra sessão) — pede
    endpoint por volta no backend (canais de UMA volta arbitrária) + UI de seleção (fluxo B do
    design handoff). Maior valor de produto.
-3. **Selector de SESSÃO na SessionStrip** (hoje fixa na 1ª com ≥2 voltas limpas;
-   `useSession.load()` já existe — falta a UI).
-4. **Telemetry**: aba "Tyres" é stub; canal hide/reorder não implementado; o toggle
+2. **Selector de SESSÃO na SessionStrip** (hoje fixa na 1ª com ≥2 voltas limpas;
+   `useSession.load()` já existe — falta a UI). A aba também poderia mostrar carro|pista
+   reais em vez de "Sessão".
+3. **Telemetry**: aba "Tyres" é stub; canal hide/reorder não implementado; o toggle
    Segments/Sectors hoje só alterna o navegador de segmentos (não muda os gráficos).
-5. **Dashboard**: donut "uso por carro" entre sessões (pede endpoint leve de sumários — ler só o
+4. **Dashboard**: donut "uso por carro" entre sessões (pede endpoint leve de sumários — ler só o
    header YAML de cada .ibt, sem análise completa).
-6. **AI Engineer**: chat liga no coach quando o pool do MAX abrir (~15/06; design pronto — ver
-   memória `pitwall-coach-ia-decisao`). Hoje responde honestamente "em breve".
-7. **Novas pistas**: por circuito novo, rodar o pipeline OSM (Overpass POST com User-Agent +
+5. **AI Engineer**: ligar o chat no coach com IA quando o pool do MAX abrir (~15/06; design
+   pronto — ver memória `pitwall-coach-ia-decisao`). A ANÁLISE LOCAL (templates rotulados sobre
+   o relatório) já cobre perdas/setores/consistência/potencial/combustível; o fallback segue
+   honesto ("IA em breve").
+6. **Novas pistas**: por circuito novo, rodar o pipeline OSM (Overpass POST com User-Agent +
    `tools/build_track_from_osm.py <slug> <width_m>`; precisa de um `.track.json` v1 com uma
    volta de referência — processo no DESIGN-UI.md/HANDOVER antigo no git).
-8. Detalhes GO Fast não replicados (menores): tooltip "BRAKING" ao passar pela zona de freada,
+7. Detalhes GO Fast não replicados (menores): tooltip "BRAKING" ao passar pela zona de freada,
    ícones à direita da tabstrip, conteúdo do painel Tyres.
 
 ## 3. Contrato de dados ATUAL (payload de `/api/session`)
@@ -99,9 +123,10 @@
   confirmar com reload + build verde antes de caçar fantasma.
 
 ## 5. Primeiro passo sugerido na próxima sessão
-1. **Passe de estilo glass em Stint/Dashboard/AI** (pendência nº1 — fecha a consistência visual
-   do app inteiro). Reusar `.pw-glass2`/tokens; sem mapa de fundo, manter o bg atual.
-2. Ou, se o usuário preferir valor de produto: **seleção livre de voltas na Comparison**
-   (backend: endpoint por volta; UI: fluxo B do design handoff).
-3. Validar no preview com o checklist do DESIGN-UI.md §9 e commitar no fluxo
-   `git add -A; git commit; git push` (identidade local já configurada; gh CLI NÃO instalado).
+1. **Seleção livre de voltas na Comparison** (pendência nº1 — maior valor de produto):
+   backend ganha endpoint por volta (canais de UMA volta arbitrária) e a UI o fluxo B do
+   design handoff (escolher volta N vs M, inclusive entre sessões).
+2. Alternativa rápida: **selector de sessão na SessionStrip** (UI sobre `useSession.load()`).
+3. Validar no preview com o checklist do DESIGN-UI.md §9 (incl. item 4: finish() nas CSS
+   animations antes de medir) e commitar no fluxo `git add -A; git commit; git push`
+   (identidade local já configurada; gh CLI NÃO instalado).

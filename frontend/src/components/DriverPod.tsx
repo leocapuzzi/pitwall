@@ -4,15 +4,18 @@ import Icon from './Icon'
 // real; anel externo cresce p/ o lado da esterçada) + 2 linhas (nome/tempo, barras).
 // Os valores são atualizados IMPERATIVAMENTE pela tela via [data-f] (thr/thrbar/brk/
 // brkbar/spd/gear/rpm/wheel/steerarc) — este componente é só o markup.
-export default function DriverPod({ podRef, on, name, time, sub }: {
+// `onOpen` (opcional) torna o card clicável e mostra a seta de expandir (GO Fast).
+export default function DriverPod({ podRef, on, name, time, sub, onOpen }: {
   podRef: React.RefObject<HTMLDivElement | null>
   on?: boolean
   name: string
   time: string
   sub: string
+  onOpen?: () => void
 }) {
   return (
-    <div className={'pw-pod pw-glass2' + (on ? ' on' : '')} ref={podRef}>
+    <div className={'pw-pod pw-glass2' + (on ? ' on' : '') + (onOpen ? ' pw-open' : '')} ref={podRef}
+      onClick={onOpen} role={onOpen ? 'button' : undefined} title={onOpen ? 'Abrir a tabela do stint' : undefined}>
       <span className="pw-wheelicon">
         <svg viewBox="0 0 32 32" width="36" height="36">
           <circle cx="16" cy="16" r="14.2" fill="none" stroke="rgba(255,255,255,.13)" strokeWidth="2.2" />
@@ -29,6 +32,7 @@ export default function DriverPod({ podRef, on, name, time, sub }: {
         <div className="row center gap8">
           <b className="nm">{name}</b>
           <span className="meta">{sub} · <Icon n="clock" s={11} sw={2} /> <b className="num" style={{ color: 'var(--ink)' }}>{time}</b></span>
+          {onOpen && <span className="pw-podexp"><Icon n="ext" s={11} sw={2.2} /></span>}
         </div>
         <div className="row center gap8 pw-bars">
           <span className="num pct" data-f="thr">0%</span>

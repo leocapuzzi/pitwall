@@ -4,10 +4,10 @@ import { useSession } from '../lib/useSession'
 import { projectTrackPair } from '../lib/track'
 import type { Payload, SessionInfo } from '../lib/api'
 
-// Dashboard (screens-dashboard/A do handoff) com o que é REAL localmente:
-// hero do piloto, stats da sessão carregada, mini-mapa, donut de voltas e atividade
-// da semana (mtime dos .ibt). iRating/licenças/leaderboard dependem da API do
-// iRacing (bloqueada) → stub explícito até a API liberar.
+// Dashboard no padrão GO Fast (print de referência 2026-06-11): saudação + pills de
+// stats, card honesto do iRating (API bloqueada), hero "Performance Tools" com o
+// carro da equipe, Última Sessão com o contorno REAL da pista, donut de voltas e
+// atividade semanal real (mtime dos .ibt). Tudo dado local — nada inventado.
 
 function SegDonut({ segments, center, sub, size = 162 }: { segments: [string, number, string][]; center: string; sub: string; size?: number }) {
   const cx = size / 2, R = size * 0.441, sw = size * 0.11, C = 2 * Math.PI * R, gap = size * 0.021
@@ -54,7 +54,9 @@ function buildModel(p: Payload, sessions: SessionInfo[]) {
     ['Válidas (sujas)', Math.max(0, validas - limpas) / total * 100, 'var(--cyan)'],
     ['Descartadas', Math.max(0, total - validas) / total * 100, 'var(--ink-3)'],
   ] : []
-  return { pair, seg, week: buildWeek(sessions), total, validas, limpas }
+  const cut = Date.now() / 1000 - 30 * 86400
+  const n30 = sessions.filter(s => s.mtime >= cut).length
+  return { pair, seg, week: buildWeek(sessions), total, validas, limpas, n30 }
 }
 
 export default function Dashboard() {
@@ -66,98 +68,109 @@ export default function Dashboard() {
 
   const ctx = payload.contexto
   const maxCount = Math.max(1, ...m.week.map(d => d.count))
+  const pctLimpas = m.total ? Math.round(m.limpas / m.total * 100) : 0
 
   return (
-    <div>
-      <div className="row resp" style={{ gap: 20, alignItems: 'stretch' }}>
-        {/* hero */}
-        <div className="col" style={{ flex: '1.05', gap: 14 }}>
-          <div className="hero welcome" style={{ flex: 1, minHeight: 260 }}>
-            <div className="wel-top">
-              <img className="wel-logo" src="/assets/ligma-wordmark.png" alt="LIGMA Racing" />
-              <div className="wel-greet">
-                <span className="wel-hi">Bem-vindo de volta</span>
-                <span className="wel-name">L. Capuzzi</span>
-              </div>
-            </div>
-            <img className="herocar" src="/assets/hero-driver.png" alt="Driver" style={{ objectPosition: 'center bottom' }} />
-            <div className="wel-foot">
-              <div className="wel-car">
-                <span className="wel-no">64</span>
-                <div className="wel-cn"><b>{ctx.carro}</b><span><span className="dot acc" style={{ display: 'inline-block', marginRight: 6, verticalAlign: 'middle' }}></span>{ctx.pista}</span></div>
-              </div>
-            </div>
+    <div className="tp-wrap pw-dash">
+      {/* fundo sutil p/ o vidro (mesma técnica da Stint) */}
+      <div className="pw-pagebg" aria-hidden><i className="g1" /><i className="g2" /><i className="g3" /></div>
+
+      {/* topo: saudação + pills + iRating honesto */}
+      <div className="pw-dashtop">
+        <div className="pw-greet">
+          <span className="lbl">Bem-vindo de volta</span>
+          <b className="pw-greet-h">Pronto para acelerar?</b>
+        </div>
+        <div className="pw-statpill pw-glass2">
+          <span className="pw-kico" style={{ ['--c' as string]: 'var(--accent)' }}><Icon n="flag" s={17} /></span>
+          <div>
+            <span className="kl">Voltas na sessão</span>
+            <b className="kv num">{m.total}</b>
+            <span className="ks">{m.limpas} limpas · {m.validas} válidas</span>
           </div>
-          <div className="card pad">
-            <div className="row between center"><span className="lbl">Atividade da semana</span><span className="chip">{sessions.length} sessões no disco</span></div>
-            <div className="bars" style={{ marginTop: 14, height: 92 }}>
-              {m.week.map((d, i) => <i key={i} className={i === 6 ? 'on' : ''} style={{ height: Math.max(4, d.count / maxCount * 100) + '%' }}></i>)}
-            </div>
-            <div className="row between" style={{ marginTop: 8 }}>{m.week.map((d, i) => <span key={i} className="muted" style={{ fontSize: 11, fontWeight: 600, flex: 1, textAlign: 'center' }}>{d.label}</span>)}</div>
+        </div>
+        <div className="pw-statpill pw-glass2">
+          <span className="pw-kico" style={{ ['--c' as string]: 'var(--accent)' }}><Icon n="clock" s={17} /></span>
+          <div>
+            <span className="kl">Sessões · 30 dias</span>
+            <b className="kv num">{m.n30}</b>
+            <span className="ks">{sessions.length} no disco</span>
+          </div>
+        </div>
+        <div className="pw-iracing pw-glass2">
+          <span className="pw-kico" style={{ ['--c' as string]: 'var(--purple)' }}><Icon n="diamond" s={16} /></span>
+          <div>
+            <b>iRating &amp; Licenças</b>
+            <span>aguardando a API do iRacing — OAuth pausado; os cards ligam quando o acesso abrir</span>
+          </div>
+        </div>
+      </div>
+
+      {/* corpo: hero | coluna direita */}
+      <div className="pw-dashmain">
+        <div className="pw-dashhero pw-glass2">
+          <div className="pw-heroinfo">
+            <span className="kicker">LIGMA Racing · PitWall</span>
+            <h1 className="pw-heroh">Performance Tools</h1>
+            <p className="pw-herosub">Telemetria e análise pós-sessão com dados reais do iRacing — abra o Race Engineer para destrinchar a última sessão.</p>
+            <button className="chip solid" onClick={() => window.dispatchEvent(new CustomEvent('pw:go', { detail: 'telemetry' }))}>
+              Abrir Race Engineer <Icon n="chevR" s={13} />
+            </button>
+          </div>
+          <img className="pw-herocar" src="/assets/ligma-car.png" alt="LIGMA Racing #64" />
+          <div className="pw-herofoot">
+            <span className="wel-no">64</span>
+            <div className="wel-cn"><b>{ctx.carro}</b><span><span className="dot acc" style={{ display: 'inline-block', marginRight: 6, verticalAlign: 'middle' }}></span>{ctx.pista}</span></div>
           </div>
         </div>
 
-        {/* cards */}
-        <div className="col" style={{ flex: '1.15' }}>
-          <div className="grid3">
-            <div className="card pad stat"><div className="row between center"><span className="lbl">Voltas na sessão</span><span className="ico"><Icon n="road" s={18} /></span></div><div className="v">{m.total}</div><span className="muted" style={{ fontSize: 12 }}>{m.limpas} limpas · {m.validas} válidas</span></div>
-            <div className="card pad stat"><div className="row between center"><span className="lbl">Sua melhor</span><span className="ico"><Icon n="clock" s={18} /></span></div><div className="v sm green">{ctx.suaMelhor}</div><span className="muted" style={{ fontSize: 12 }}>{ctx.pista}</span></div>
-            <div className="card pad stat"><div className="row between center"><span className="lbl">Delta p/ média</span><span className="ico"><Icon n="spark" s={18} /></span></div><div className="v sm redt">{ctx.deltaTotal}</div><span className="muted" style={{ fontSize: 12 }}>vs {ctx.referencia}</span></div>
-          </div>
-          <div className="row" style={{ gap: 12 }}>
-            <div className="card pad grow" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="pw-dashright">
+          <div className="pw-dashrow">
+            <div className="pw-dcard pw-glass2" style={{ flex: 1.15 }}>
               <span className="lbl">Última sessão</span>
-              <div className="row center gap10" style={{ margin: '10px 0 8px' }}>
-                <span className="cbadge"><Icon n="car" s={20} /></span>
-                <div><div className="h3">{ctx.carro}</div><span className="muted" style={{ fontSize: 12 }}>{ctx.pista}</span></div>
+              <div className="row center gap10" style={{ margin: '10px 0 2px' }}>
+                <span className="cbadge" style={{ width: 38, height: 38 }}><Icon n="car" s={18} /></span>
+                <div><b style={{ fontSize: 13.5, fontWeight: 800 }}>{ctx.carro}</b><div className="muted" style={{ fontSize: 11.5 }}>{ctx.pista}</div></div>
               </div>
-              <div style={{ flex: 1, minHeight: 150, margin: '4px 0', position: 'relative' }}>
-                <svg viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
-                  {m.pair.edges
-                    ? <path d={m.pair.edges.roadD} fill="rgba(244,247,246,.10)" stroke="none" />
-                    : <path d={m.pair.track.d} fill="none" stroke="rgba(255,255,255,.10)" strokeWidth={30} strokeLinecap="round" strokeLinejoin="round" />}
-                  <path d={m.pair.racing.d} fill="none" stroke="var(--accent)" strokeWidth={m.pair.edges ? 1.6 : 4} strokeLinecap="round" vectorEffect={m.pair.edges ? 'non-scaling-stroke' : undefined} style={{ filter: 'drop-shadow(0 0 6px var(--accent-glow))' }} />
+              <div className="pw-dmap">
+                <svg viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet">
+                  <path d={m.pair.track.d} fill="none" stroke="rgba(255,255,255,.62)" strokeWidth={2.4} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-              <div className="col gap6" style={{ marginTop: 10 }}>
-                <div className="row between"><span className="muted" style={{ fontSize: 12 }}>Melhor volta</span><b className="num">{ctx.suaMelhor}</b></div>
-                <div className="row between"><span className="muted" style={{ fontSize: 12 }}>Leaderboard</span><b className="num dim">— <i style={{ fontStyle: 'normal', fontSize: 10 }}>(API iRacing)</i></b></div>
+              <div className="col" style={{ gap: 7 }}>
+                <div className="row between center"><span className="pw-drlbl">Melhor volta</span><b className="num" style={{ fontSize: 12.5 }}>{ctx.suaMelhor}</b></div>
+                <div className="row between center"><span className="pw-drlbl">Delta p/ média</span><b className="num redt" style={{ fontSize: 12.5 }}>{ctx.deltaTotal}</b></div>
+                <div className="row between center"><span className="pw-drlbl">Leaderboard</span><b className="num dim" style={{ fontSize: 12.5 }}>— <i>API iRacing</i></b></div>
               </div>
             </div>
-            <div className="card pad grow" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="pw-dcard pw-glass2" style={{ flex: 1 }}>
               <span className="lbl">Voltas da sessão</span>
-              <div style={{ display: 'grid', placeItems: 'center', margin: '6px 0', flex: 1 }}>
-                <SegDonut segments={m.seg} center={String(m.total)} sub="VOLTAS" size={162} />
+              <div style={{ display: 'grid', placeItems: 'center', flex: 1, margin: '4px 0' }}>
+                <SegDonut segments={m.seg} center={pctLimpas + '%'} sub="LIMPAS" size={148} />
               </div>
-              <div className="col" style={{ gap: 9 }}>
+              <div className="col" style={{ gap: 8 }}>
                 {m.seg.map(([label, pct, color]) => (
                   <div key={label} className="row between center">
-                    <span className="row center gap8"><span className="dot" style={{ background: color }}></span><span style={{ fontSize: 12.5, fontWeight: 600 }}>{label}</span></span>
-                    <b className="num" style={{ fontSize: 13 }}>{Math.round(pct)}%</b>
+                    <span className="row center gap8"><span className="dot" style={{ background: color }}></span><span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span></span>
+                    <b className="num" style={{ fontSize: 12.5 }}>{Math.round(pct)}%</b>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* licenças & ratings — aguardando a API do iRacing */}
-      <div className="licsec">
-        <div className="row between center" style={{ marginBottom: 13 }}>
-          <div className="row center gap10">
-            <span className="lbl">Licenças &amp; Ratings</span>
-            <span className="muted" style={{ fontSize: 12 }}>iRacing · LIGMA Racing #64</span>
-          </div>
-        </div>
-        <div className="card pad" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '22px 24px' }}>
-          <span className="cbadge" style={{ width: 44, height: 44 }}><Icon n="spark" s={20} /></span>
-          <div>
-            <b style={{ fontFamily: 'var(--font-display)', fontSize: 15 }}>iRating, Safety Rating e leaderboard chegam quando a API do iRacing liberar</b>
-            <p className="muted" style={{ fontSize: 12.5, margin: '4px 0 0', lineHeight: 1.5 }}>
-              O login por senha foi desativado pelo iRacing e os novos cadastros OAuth estão pausados.
-              Assim que o acesso abrir, estes cards mostram suas 4 categorias com iRating, SR e tendência semanal.
-            </p>
+          <div className="pw-dcard pw-glass2 pw-dweek">
+            <div className="row between center" style={{ flex: 'none' }}>
+              <span className="lbl">Minha atividade semanal</span>
+              <span className="chip" style={{ cursor: 'default' }}>últimos 7 dias</span>
+            </div>
+            <div className="pw-wkbars">
+              {m.week.map((d, i) => (
+                <div key={i} className={'wk' + (i === 6 ? ' on' : '')} title={`${d.count} ${d.count === 1 ? 'sessão' : 'sessões'}`}>
+                  <div className="slot"><i style={{ height: Math.max(8, d.count / maxCount * 100) + '%' }} /></div>
+                  <span>{d.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

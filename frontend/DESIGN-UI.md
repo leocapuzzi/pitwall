@@ -1,8 +1,9 @@
 # PitWall — Guia do design FULLMAP / liquid glass (GO Fast)
 
-> Referência de manutenção da UI das telas de mapa (**Lap Analysis, Telemetry,
-> Comparison**). Onde mexer, quais são os "botões de calibração" e as pegadinhas
-> que já nos morderam. Norte visual: GO Fast (prints em `Design Reference/`).
+> Referência de manutenção da UI: telas de mapa (**Lap Analysis, Telemetry,
+> Comparison**) nos §§1–8 e telas de cards (**Stint, Dashboard, AI Engineer**) no §11.
+> Onde mexer, quais são os "botões de calibração" e as pegadinhas que já nos
+> morderam. Norte visual: GO Fast (prints em `Design Reference/`).
 
 ## 1. Arquitetura do FULLMAP
 
@@ -100,6 +101,9 @@ A janela do preview fica `document.hidden` (sem screenshot/rAF; timers ≥1s). P
 2. **Hit-test**: `document.elementFromPoint(cx, cy)` nas coordenadas REAIS de cada controle —
    o retorno deve ser o alvo (ou descendente). `elementsFromPoint` mostra a pilha.
 3. Âncora da câmera: centro do carro ≈ `followX × innerWidth` (±2px) em z=1, z inicial e z médio.
+4. **CSS animations ficam PAUSADAS na janela oculta**: a animação de entrada do `.screen`
+   congela um `transform` no meio (vira containing block p/ `fixed` e desloca tudo ~6px).
+   Rodar `document.getAnimations().forEach(a => a.finish())` ANTES de medir layout/fixed.
 
 ## 10. Pegadinhas conhecidas
 
@@ -111,3 +115,31 @@ A janela do preview fica `document.hidden` (sem screenshot/rAF; timers ≥1s). P
   intermediários de HMR entre duas edições — confirmar com reload + `tsc` verde.
 - uvicorn (8600) roda SEM `--reload`: reiniciar o processo após mudar `src/*.py`.
 - `track.json`/`webdata` são lidos por request — mudança na pista NÃO exige restart.
+
+## 11. Telas de cards (Stint / Dashboard / AI Engineer)
+
+Sem mapa de fundo (como no GO Fast), mas com o MESMO vidro. Padrões e pegadinhas:
+
+- **Fundo p/ o vidro**: `.pw-pagebg` com gradientes radiais suaves, `position:fixed;
+  z-index:-1` DENTRO do stacking context da tela (`.pw-stint/.pw-dash/.pw-ai` têm
+  `position:relative; z-index:0`). Nunca `absolute` com inset negativo (vaza no
+  scrollHeight da stage) e nunca portal no body (o bg do `.app` é opaco e cobriria).
+- **Viewport lock**: `.screen.on:has(> .pw-x){height:100%}` trava a tela; o que rola é
+  interno (tabela do Stint). Padding `10px 22px` alinha carinfo/pods nas MESMAS coords
+  do fullmap (`top:118 / right:22`) — trocar de aba não "pula" nada.
+- **Cabeçalho próprio**: as 3 telas estão em `SELF_HEADED` no `App.tsx` (sem scr-head).
+- **Chrome em vidro é GLOBAL** (nav/abas/status) — regra única em components.css.
+- **Pods no Stint**: mesmos `[data-f]` das telas de mapa, rodando a volta de ref em loop;
+  `onOpen` no DriverPod abre o popup "Comparison" (a seta `.pw-podexp` tem 19px para NÃO
+  crescer a linha — altura do pod deve bater com o fullmap, 63px).
+- **AI · replay da curva**: zoom/pan com **viewBox IMPERATIVO** (`writeVb()`); o React
+  NÃO controla o atributo — senão qualquer re-render (chat!) reseta o enquadramento.
+  Dots/estrada em unidades do mapa (escalam com zoom); traçados `non-scaling-stroke`.
+- **⚠️ `insights[].apex_pct` vem em PORCENTAGEM (0–100)**; `corners[].apex_pct` em
+  fração (0–1). Normalizar (`v > 1.5 ? v/100 : v`) antes de posicionar/zoomar.
+- **Pins sobre SVG `meet`**: nunca posicionar overlay HTML por `%` (letterbox desalinha);
+  desenhar os pins DENTRO do svg (círculos em coordenadas da pista) — ver inset do AI.
+- **Evidência por curva (gauges do AI)**: definições fiéis ao `signatures.py` (freada =
+  pico de desaceleração; trail = % do turn-in com freio; grip = vmin; rotação = volante
+  médio, menor é melhor), calculadas client-side dos canais ref/media por janela
+  `apex ± 0.045`.
