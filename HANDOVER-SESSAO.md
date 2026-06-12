@@ -52,8 +52,10 @@
   manual contra o mapa oficial (numeração é refinável, como foi em Winton).
 - ✅ `tools/garage61_tracks.py` (novo): consulta o catálogo de pistas do Garage61 com IDs do
   iRacing (exige `garage61_token` no secrets.toml — hoje VAZIO; por isso usamos catálogo público).
-- ⏳ **Falta por pista: SÓ o .ibt** — o Leo roda 2+ voltas completas no iRacing (treino vale) e
-  alguém roda `python tools/nova_pista.py okayama` (etc.); conferir mapa/curvas no app depois.
+- ⏳ **Falta por pista: SÓ o .ibt. COMBINADO (decisão do Leo, 2026-06-12): quando ele rodar
+  numa pista nova (2+ voltas completas; treino vale), ELE AVISA na sessão — aí o Claude roda
+  `python tools/nova_pista.py <pista>` e faz a checagem (mapa/curvas no app, numeração vs mapa
+  oficial, width nas bordas).** Sem agendamento automático.
 
 **Sessão 2026-06-12 — selector de sessão, Comparison livre, defaults de abertura e aba Tyres:**
 - ✅ **Selector de sessão** na tabstrip (pista·carro reais + menu em vidro) — ver §2.2.
