@@ -199,16 +199,19 @@
 .cornerbar .cfill.gain{right:50%; background:var(--accent)}
 .cornerbar .cv{width:54px; text-align:right; font-family:var(--font-mono); font-weight:600; font-size:12.5px; flex:none}
 
-/* comparison — sector breakdown with diverging delta bars */
+/* comparison — sector breakdown with diverging delta bars.
+   As linhas têm padding LATERAL (compensado com margem negativa p/ alinhar com o
+   header) para o highlight/anel verde do item ativo envolver o conteúdo com folga. */
 .cmp-wrap{display:flex; flex-direction:column; gap:14px; flex:1; min-height:0}
 .cmp-srow{display:grid; grid-template-columns:30px 60px 1fr 60px 56px; gap:11px; align-items:center;
-  padding:10px 0; border-bottom:1px solid var(--hair)}
+  padding:10px 9px; margin:0 -9px; border-bottom:1px solid var(--hair)}
 .cmp-srow:last-child{border-bottom:0}
-.cmp-srowbtn{appearance:none; background:none; color:var(--ink); cursor:pointer; width:100%; text-align:left;
+.cmp-srowbtn{appearance:none; background:none; color:var(--ink); cursor:pointer;
+  width:calc(100% + 18px); text-align:left;
   border:0; border-bottom:1px solid var(--hair); transition:background .14s var(--ease); border-radius:var(--r-sm)}
 .cmp-srowbtn:hover{background:var(--surface-2)}
 .cmp-srowbtn.on{background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent-line)}
-.cmp-shead{padding:0 0 9px; border-bottom:1px solid var(--hair-2)}
+.cmp-shead{padding:0 9px 9px; border-bottom:1px solid var(--hair-2)}
 .cmp-s{font-family:var(--font-mono); font-weight:700; color:var(--ink-2); font-size:12px}
 .cmp-a{font-size:12.5px; font-weight:600}
 .cmp-b{font-size:12.5px; font-weight:600; text-align:right}

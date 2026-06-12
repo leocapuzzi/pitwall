@@ -237,7 +237,7 @@ export default function Comparison() {
   const modeRef = useRef(mode); modeRef.current = mode
   const ghostRefB = useRef(ghostOn); ghostRefB.current = ghostOn
 
-  const tRef = useRef(0.3), raf = useRef(0)
+  const tRef = useRef(0), raf = useRef(0)
   const modelRef = useRef<Model | null>(model); modelRef.current = model
   const trackRef = useRef<TrackHandle>(null)
   const stackRef = useRef<HTMLDivElement>(null), dplotRef = useRef<HTMLDivElement>(null)
@@ -401,7 +401,7 @@ export default function Comparison() {
     <div className="pw-maplayer pw-tel">
       <InteractiveTrack ref={trackRef} trackGeom={m.pair.track} racingGeom={m.pair.racing} racingGeomB={m.pair.racingB}
         racingSegments={m.segs} edges={m.pair.edges} unitPerM={m.pair.unitPerM}
-        initialT={t0} corners={payload.corners} hideCorners follow followX={0.22} initialZoom={5} zoomSlider
+        initialT={t0} corners={payload.corners} hideCorners follow followX={0.22} zoomSlider
         activeCorner={focusRow?.focusN ?? null} focusCorner={focusRow ? focusRow.focusN : null} height={440}>
 
         {/* COLUNA ESQUERDA */}

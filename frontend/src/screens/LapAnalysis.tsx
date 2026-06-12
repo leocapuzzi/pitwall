@@ -83,7 +83,7 @@ export default function LapAnalysis() {
   const [ghostOn, setGhostOn] = useState(true)
   const [showFuel, setShowFuel] = useState(false)
 
-  const tRef = useRef(0.3), raf = useRef(0)
+  const tRef = useRef(0), raf = useRef(0)
   const modelRef = useRef<Model | null>(model); modelRef.current = model
   const payloadRef = useRef<Payload | null>(payload); payloadRef.current = payload
   const modeRef = useRef(mode); modeRef.current = mode
@@ -171,11 +171,12 @@ export default function LapAnalysis() {
     }
   }, [])
 
-  // pior curva ativa por padrão; carro no ápice dela
+  // pior curva ativa por padrão (card de detalhe) — mas o player fica na LARGADA
+  // (t=0); o carro só pula p/ um trecho quando o usuário CLICA (curva/setor/replay).
   useEffect(() => {
     if (model && active == null && model.rows.length) {
       const worst = model.rows.reduce((a, b) => (b.d > a.d ? b : a), model.rows[0])
-      setActive(worst.n); tRef.current = worst.apex
+      setActive(worst.n)
     }
   }, [model])
 
@@ -238,7 +239,7 @@ export default function LapAnalysis() {
     <div className="pw-maplayer">
       <InteractiveTrack ref={trackRef} trackGeom={m.pair.track} racingGeom={m.pair.racing} racingGeomB={m.pair.racingB}
         racingSegments={m.segs} edges={m.pair.edges} unitPerM={m.pair.unitPerM} markers={m.markers}
-        initialT={t0} corners={payload.corners} hideCorners follow initialZoom={7} zoomSlider
+        initialT={t0} corners={payload.corners} hideCorners follow zoomSlider
         activeCorner={active} height={440}>
 
         {/* COLUNA ESQUERDA em fluxo (sem sobreposições por construção) */}
