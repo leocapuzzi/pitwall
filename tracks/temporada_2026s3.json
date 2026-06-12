@@ -1,0 +1,26 @@
+{
+  "temporada": "Global Mazda MX-5 Cup — 2026 Season 3 (+ Interlagos, fora do calendário)",
+  "criado": "2026-06-12",
+  "fonte_ids": "Catálogo público do iRacing (my-racing-planner, github.com/adrianulima/my-racing-planner). Validado contra Winton National = 439 (igual ao .ibt). O nova_pista.py reconfere o TrackID lido do 1º .ibt de cada pista.",
+  "como_criar_pista": "Rodar 2+ voltas completas na pista no iRacing (gera o .ibt em Documents/iRacing/telemetry) e depois: python tools/nova_pista.py <pedaço do nome do .ibt>",
+  "pistas": [
+    {"semana": 1,  "corrida": "2026-06-20", "track_id": 166, "nome": "Okayama International Circuit",  "config": "Full Course",      "slug": "okayama_full",       "circuito_osm": "okayama",      "width_m": 12.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
+    {"semana": 2,  "corrida": "2026-06-27", "track_id": 180, "nome": "Oulton Park Circuit",            "config": "International",    "slug": "oulton_international", "circuito_osm": "oulton",     "width_m": 10.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
+    {"semana": 3,  "corrida": "2026-07-04", "track_id": 515, "nome": "Circuito de Navarra",            "config": "Speed Circuit",    "slug": "navarra_speed",      "circuito_osm": "navarra",      "width_m": 12.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
+    {"semana": 4,  "corrida": "2026-07-11", "track_id": 9,   "nome": "Summit Point Raceway",           "config": "Summit Point Raceway", "slug": "summitpoint_main", "circuito_osm": "summitpoint", "width_m": 10.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
+    {"semana": 5,  "corrida": "2026-07-18", "track_id": 467, "nome": "Virginia International Raceway", "config": "North Course",     "slug": "vir_north",          "circuito_osm": "vir",          "width_m": 12.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
+    {"semana": 6,  "corrida": "2026-07-25", "track_id": 439, "nome": "Winton Motor Raceway",           "config": "National Circuit", "slug": "winton_national",    "circuito_osm": "winton",       "width_m": 11.0, "status": "criada (modelo completo, 12 curvas)"},
+    {"semana": 7,  "corrida": "2026-08-01", "track_id": 324, "nome": "Tsukuba Circuit",                "config": "2000 Full",        "slug": "tsukuba_2000full",   "circuito_osm": "tsukuba",      "width_m": 10.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
+    {"semana": 8,  "corrida": "2026-08-08", "track_id": 554, "nome": "Charlotte Motor Speedway",       "config": "Roval 2025",       "slug": "charlotte_roval2025", "circuito_osm": "charlotte",   "width_m": 15.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
+    {"semana": 9,  "corrida": "2026-08-15", "track_id": 353, "nome": "Lime Rock Park",                 "config": "Grand Prix",       "slug": "limerock_gp",        "circuito_osm": "limerock",     "width_m": 10.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
+    {"semana": 10, "corrida": "2026-08-22", "track_id": 449, "nome": "Motorsport Arena Oschersleben",  "config": "Grand Prix",       "slug": "oschersleben_gp",    "circuito_osm": "oschersleben", "width_m": 12.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
+    {"semana": 11, "corrida": "2026-08-29", "track_id": 181, "nome": "Oulton Park Circuit",            "config": "Fosters",          "slug": "oulton_fosters",     "circuito_osm": "oulton",       "width_m": 10.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
+    {"semana": 12, "corrida": "2026-09-05", "track_id": 489, "nome": "Circuit de Lédenon",             "config": "",                 "slug": "ledenon",            "circuito_osm": "ledenon",      "width_m": 10.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
+    {"semana": null, "corrida": null,       "track_id": 212, "nome": "Autódromo José Carlos Pace",     "config": "Grand Prix",       "slug": "interlagos_gp",      "circuito_osm": "interlagos",   "width_m": 14.0, "status": "preparada (OSM ok) — aguardando 1º .ibt", "nota": "fora do calendário — pedido do Leo"}
+  ],
+  "observacoes": [
+    "width_m é um chute documentado por pista; o build_track_from_osm.py imprime a validação (offset lateral p5/p95 e % da volta dentro das bordas) — se a volta 'vazar', aumentar width e rodar de novo.",
+    "Oulton International e Fosters compartilham o mesmo raw OSM (_osm_oulton_raw.json); a volta de referência de cada config seleciona sozinha as ways certas.",
+    "Charlotte Roval 2025 mistura o oval com o miolo; conferir visualmente o resultado do build com atenção."
+  ]
+}

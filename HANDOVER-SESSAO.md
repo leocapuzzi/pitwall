@@ -34,6 +34,27 @@
   seguem na raiz (referências vivas).
 
 ## 1. ✅ CONCLUÍDO (e APROVADO pelo usuário)
+**Sessão 2026-06-12 (parte 2) — pistas da temporada 2026 S3 (Global MX-5 Cup) preparadas:**
+- ✅ **Calendário cadastrado** em `tracks/temporada_2026s3.json` (manifesto: 12 semanas + Interlagos;
+  track_id de cada config vindo de catálogo público e validado — Winton=439 bateu com o .ibt;
+  datas das corridas; width_m inicial por pista).
+- ✅ **OSM baixado e validado p/ TODOS os circuitos novos** (11× `tracks/_osm_<circuito>_raw.json`,
+  via `tools/baixar_osm.py` novo: geocodifica no Nominatim com coordenada de segurança e baixa
+  ways highway=raceway no Overpass, POST com User-Agent + validação de cobertura).
+  Oulton International e Fosters compartilham `_osm_oulton_raw.json`.
+- ✅ **`tools/nova_pista.py` (novo) — pista nova em 1 comando** a partir do 1º .ibt: acha o .ibt
+  (mais novo → mais velho até ter volta válida), lê o TrackID e casa com o manifesto, congela a
+  volta de referência (`<slug>.track.json` v1), deriva as curvas por curvatura (regiões contíguas
+  de mesmo lado, R<150 m, MIN_GAP=20 — consolida sweepers e separa esses) e roda o
+  `build_track_from_osm.py` (v2). **Validado contra Winton**: 12 curvas, 11 batendo ±0.009 com o
+  modelo oficial (as 2 divergências são os ajustes manuais conhecidos do original); build com
+  95.8% da volta dentro das bordas (original: 95.7%). Imprime raio/lado por curva p/ o refino
+  manual contra o mapa oficial (numeração é refinável, como foi em Winton).
+- ✅ `tools/garage61_tracks.py` (novo): consulta o catálogo de pistas do Garage61 com IDs do
+  iRacing (exige `garage61_token` no secrets.toml — hoje VAZIO; por isso usamos catálogo público).
+- ⏳ **Falta por pista: SÓ o .ibt** — o Leo roda 2+ voltas completas no iRacing (treino vale) e
+  alguém roda `python tools/nova_pista.py okayama` (etc.); conferir mapa/curvas no app depois.
+
 **Sessão 2026-06-12 — selector de sessão, Comparison livre, defaults de abertura e aba Tyres:**
 - ✅ **Selector de sessão** na tabstrip (pista·carro reais + menu em vidro) — ver §2.2.
 - ✅ **Comparison: seleção livre de voltas** (N vs M, entre sessões; picker fluxo B) — ver §2.1.
@@ -145,9 +166,10 @@
    pronto — ver memória `pitwall-coach-ia-decisao`). A ANÁLISE LOCAL (templates rotulados sobre
    o relatório) já cobre perdas/setores/consistência/potencial/combustível; o fallback segue
    honesto ("IA em breve").
-6. **Novas pistas**: por circuito novo, rodar o pipeline OSM (Overpass POST com User-Agent +
-   `tools/build_track_from_osm.py <slug> <width_m>`; precisa de um `.track.json` v1 com uma
-   volta de referência — processo no DESIGN-UI.md/HANDOVER antigo no git).
+6. **Novas pistas (temporada 2026 S3)**: preparação PRONTA (OSM + manifesto + track IDs +
+   `tools/nova_pista.py`). Por pista, quando existir um .ibt dela com volta válida:
+   `python tools/nova_pista.py <pedaço-do-nome>` → conferir mapa/curvas no app e refinar a
+   numeração se necessário. Fonte da verdade: `tracks/temporada_2026s3.json`.
 7. Detalhes GO Fast não replicados (menores): tooltip "BRAKING" ao passar pela zona de freada,
    ícones à direita da tabstrip, conteúdo do painel Tyres.
 
