@@ -104,8 +104,13 @@
    mini-STORE com subscribers (todas as telas/chrome veem a mesma sessão; boot único; escolha
    lembrada em sessionStorage `pw_session`). `App.tsx` remonta a tela na troca
    (`key={current}`). Verificado por DOM no preview (hit-test, oclusão, remount, console limpo).
-3. **Telemetry**: aba "Tyres" é stub; canal hide/reorder não implementado; o toggle
-   Segments/Sectors hoje só alterna o navegador de segmentos (não muda os gráficos).
+3. **Telemetry**: ~~aba "Tyres" é stub~~ ✅ **Tyres FEITA (2026-06-12):** payload ganhou
+   `tyres{ref,media}` (12 temps por banda + 4 pressões no grid, inteiros; O/M/I já mapeadas
+   pelo LADO da roda no backend — `webdata._tyres`; None p/ carro sem canais → aba
+   desabilitada). Painel: diagrama 2×2 com corpo central, bandas EXT/MEIO/INT com rampa
+   térmica (40°C azul→130°C vermelho) + valores ao vivo no player (10 Hz, cache `[data-ty]`),
+   pressão kPa, Ø da volta por pneu, toggle Melhor/Média. PENDENTE da linha: canal
+   hide/reorder; o toggle Segments/Sectors hoje só alterna o navegador (não muda os gráficos).
 4. **Dashboard**: donut "uso por carro" entre sessões (pede endpoint leve de sumários — ler só o
    header YAML de cada .ibt, sem análise completa).
 5. **AI Engineer**: ligar o chat no coach com IA quando o pool do MAX abrir (~15/06; design

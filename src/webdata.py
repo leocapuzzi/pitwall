@@ -60,6 +60,30 @@ def _series(sig) -> dict:
     }
 
 
+def _tyres(sig) -> dict | None:
+    """Pneus por roda no grid: temps das 3 bandas + pressão (kPa), em inteiros.
+
+    O iRacing nomeia as bandas L/M/R em relação ao CARRO; aqui já convertemos
+    para outer/middle/inner pelo LADO da roda (roda esquerda: R = interno) —
+    confirmado nos dados (banda interna sempre mais quente, pelo câmber).
+    Devolve None se o carro não grava esses canais.
+    """
+    out = {}
+    for w in ("LF", "RF", "LR", "RR"):
+        tl, tm, tr = sig.get(f"{w}tempL"), sig.get(f"{w}tempM"), sig.get(f"{w}tempR")
+        if tl is None or tm is None or tr is None:
+            return None
+        inner_is_r = w.startswith("L")
+        pr = sig.get(f"{w}pressure")
+        out[w.lower()] = {
+            "o": _arr(tl if inner_is_r else tr, 0),
+            "m": _arr(tm, 0),
+            "i": _arr(tr if inner_is_r else tl, 0),
+            "p": _arr(pr, 0) if pr is not None else [],
+        }
+    return out
+
+
 def _scan_ibt(dir_: str) -> list[dict]:
     if not os.path.isdir(dir_):
         return []
@@ -273,6 +297,7 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
         "delta": _arr(delta, 3),        # acumulado media-melhor (>0 = media perde ali)
         "ref": _series(sig_fast),       # sua melhor (linha principal)
         "media": _series(sig_slow),     # sua media (fantasma/comparacao)
+        "tyres": {"ref": _tyres(sig_fast), "media": _tyres(sig_slow)},
         "track": track_xy, "racing_line": racing_xy, "track_fixed": track_fixed,
         "racing_line_b": racing_b_xy,      # linha da MEDIA (carro-fantasma da comparacao)
         "ref_time": _arr(sig_fast["time_to_dist"], 3),  # tempo da MELHOR ate cada ponto (modo Time)

@@ -86,11 +86,26 @@ export default function Telemetry() {
   const [showFuel, setShowFuel] = useState(false)
 
   const model = useMemo(() => (payload ? build(payload) : null), [payload])
+  // aba do painel: canais ou pneus (diagrama ao vivo)
+  const [panel, setPanel] = useState<'tel' | 'tyres'>('tel')
+  const [tySrc, setTySrc] = useState<'Melhor' | 'Média'>('Melhor')
+  // média térmica da volta por pneu (3 bandas), p/ o "Ø volta" do diagrama Tyres
+  const tyAvg = useMemo(() => {
+    const ty = payload?.tyres?.[tySrc === 'Melhor' ? 'ref' : 'media']
+    if (!ty) return null
+    const out = {} as Record<'lf' | 'rf' | 'lr' | 'rr', number>
+    for (const k of ['lf', 'rf', 'lr', 'rr'] as const) {
+      const all = [...(ty[k]?.o || []), ...(ty[k]?.m || []), ...(ty[k]?.i || [])].filter(v => v != null && isFinite(v)) as number[]
+      out[k] = all.length ? all.reduce((a, b) => a + b, 0) / all.length : NaN
+    }
+    return out
+  }, [payload, tySrc])
   // refs imperativos (a animação não passa pelo render do React)
   const tRef = useRef(0), raf = useRef(0), selecting = useRef(false)
   const zoomRef = useRef(zoom); zoomRef.current = zoom
   const modeRef = useRef(mode); modeRef.current = mode
   const ghostRefB = useRef(ghostOn); ghostRefB.current = ghostOn
+  const tySrcRef = useRef(tySrc); tySrcRef.current = tySrc
   const modelRef = useRef<Model | null>(model); modelRef.current = model
   const payloadRef = useRef<Payload | null>(payload); payloadRef.current = payload
   const trackRef = useRef<TrackHandle>(null)
@@ -108,8 +123,21 @@ export default function Telemetry() {
     val: HTMLElement | null; ghostEl: HTMLElement | null
   }
   interface PodEls { s: Channels; els: Record<string, HTMLElement | null> }
+  interface TyreEls {
+    k: 'lf' | 'rf' | 'lr' | 'rr'
+    bands: Array<{ b: 'o' | 'm' | 'i'; val: HTMLElement | null; fill: HTMLElement | null }>
+    press: HTMLElement | null
+  }
   const rows = useRef<RowCache[]>([])
   const pods = useRef<PodEls[]>([])
+  const tyEls = useRef<TyreEls[]>([])
+  const tyRef = useRef<HTMLDivElement>(null)
+  // rampa térmica p/ a banda do pneu: 40°C azul → ~85°C verde → 130°C+ vermelho
+  const tempBg = (c: number | null | undefined): string => {
+    if (c == null || !isFinite(c)) return 'rgba(255,255,255,.04)'
+    const t = Math.max(0, Math.min(1, (c - 40) / 90))
+    return `hsla(${(210 - 210 * t).toFixed(0)},75%,42%,.62)`
+  }
   const lerp = (a: number, b: number, f: number) => a + (b - a) * f
   const invTime = (tau: number, arr: number[]) => {
     const n = arr.length
@@ -188,6 +216,22 @@ export default function Telemetry() {
       if (e.gear) e.gear.textContent = String(Math.round(s.gear[idx] || 0))
       if (e.rpm) e.rpm.textContent = String(Math.round(s.rpm[idx] || 0))
     }
+    // pneus ao vivo (aba Tyres): temps das bandas (texto+cor) e pressão
+    if (tyEls.current.length) {
+      const ty = p.tyres?.[tySrcRef.current === 'Melhor' ? 'ref' : 'media']
+      if (ty) {
+        for (const we of tyEls.current) {
+          const w = ty[we.k]; if (!w) continue
+          for (const bd of we.bands) {
+            const v = w[bd.b]?.[idx]
+            if (bd.val) bd.val.textContent = v != null && isFinite(v) ? String(Math.round(v)) : '—'
+            if (bd.fill) bd.fill.style.background = tempBg(v)
+          }
+          const pv = w.p?.[idx]
+          if (we.press) we.press.textContent = pv != null && isFinite(pv) ? String(Math.round(pv)) : '—'
+        }
+      }
+    }
     if (clockRef.current) clockRef.current.textContent = fmtClock(tv * m.lapSecs)
     const dv = lerp(p.delta[i0], p.delta[i1], fr)
     if (deltaRef.current) {
@@ -220,6 +264,17 @@ export default function Telemetry() {
       return [{ s, els: { thr: q('thr'), thrbar: q('thrbar'), brk: q('brk'), brkbar: q('brkbar'), spd: q('spd'), gear: q('gear'), rpm: q('rpm'), wheel: q('wheel'), steerarc: q('steerarc') } }]
     }
     pods.current = [...podOf(podA.current, p?.ref), ...podOf(podB.current, p?.media)]
+    // cache dos elementos do diagrama de pneus (quando a aba Tyres está montada)
+    const tyRoot = tyRef.current
+    tyEls.current = tyRoot ? (['lf', 'rf', 'lr', 'rr'] as const).map(k => ({
+      k,
+      bands: (['o', 'm', 'i'] as const).map(b => ({
+        b,
+        val: tyRoot.querySelector(`[data-ty="${k}-${b}"]`) as HTMLElement | null,
+        fill: tyRoot.querySelector(`[data-tyb="${k}-${b}"]`) as HTMLElement | null,
+      })),
+      press: tyRoot.querySelector(`[data-typ="${k}"]`) as HTMLElement | null,
+    })) : []
     if (barRef.current) barW.current = barRef.current.clientWidth
     renderFrame(tRef.current, true)
   })
@@ -399,13 +454,47 @@ export default function Telemetry() {
         {/* PAINEL DE CANAIS (vidro, direita) com player embutido */}
         <div className="pw-telpanel pw-glass2">
           <div className="pw-telhead">
-            <div className="utabs" style={{ border: 0, gap: 18 }}><button className="on">Telemetry</button><button>Tyres</button></div>
+            <div className="utabs" style={{ border: 0, gap: 18 }}>
+              <button className={panel === 'tel' ? 'on' : ''} onClick={() => setPanel('tel')}>Telemetry</button>
+              <button className={panel === 'tyres' ? 'on' : ''} onClick={() => setPanel('tyres')}
+                disabled={!payload.tyres?.ref} title={payload.tyres?.ref ? undefined : 'Este carro não grava canais de pneu'}>Tyres</button>
+            </div>
             <div className="row center gap8" style={{ color: 'var(--ink-3)' }}>
-              {zoomed && <button className="chip" style={{ padding: '3px 9px' }} onClick={() => applySeg(null)}><Icon n="refresh" s={11} /> Reset zoom</button>}
-              <span className="tp-leg"><span className="dot acc" />Melhor</span>
-              <span className="tp-leg"><span className="tp-dash" />Média</span>
+              {panel === 'tel' && zoomed && <button className="chip" style={{ padding: '3px 9px' }} onClick={() => applySeg(null)}><Icon n="refresh" s={11} /> Reset zoom</button>}
+              {panel === 'tel' ? (
+                <>
+                  <span className="tp-leg"><span className="dot acc" />Melhor</span>
+                  <span className="tp-leg"><span className="tp-dash" />Média</span>
+                </>
+              ) : (
+                <SlideSeg options={['Melhor', 'Média']} value={tySrc} onChange={v => setTySrc(v as 'Melhor' | 'Média')} />
+              )}
             </div>
           </div>
+          {panel === 'tyres' && payload.tyres?.ref ? (
+            <div className="pw-tyres" ref={tyRef}>
+              <div className="pw-tycar" aria-hidden><i /></div>
+              {(['lf', 'rf', 'lr', 'rr'] as const).map(k => (
+                <div className={'pw-tyre pw-ty-' + k} key={k}>
+                  <div className="pw-tyhead">
+                    <span className="pw-tylabel">{k.toUpperCase()}</span>
+                    <span className="pw-tyavg">Ø volta <b className="num">{tyAvg && isFinite(tyAvg[k]) ? Math.round(tyAvg[k]) + '°C' : '—'}</b></span>
+                  </div>
+                  <div className="pw-tybands">
+                    {(k[0] === 'l' ? (['o', 'm', 'i'] as const) : (['i', 'm', 'o'] as const)).map(b => (
+                      <div className="pw-tyband" key={b}>
+                        <i className="pw-tyfill" data-tyb={`${k}-${b}`} />
+                        <span className="pw-tybl">{b === 'o' ? 'EXT' : b === 'm' ? 'MEIO' : 'INT'}</span>
+                        <b className="num" data-ty={`${k}-${b}`}>—</b>
+                        <span className="pw-tyun">°C</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pw-typress"><span>Pressão</span><b className="num" data-typ={k}>—</b><i>kPa</i></div>
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className="pw-chstack" ref={stackRef}>
             {m.defs.map((d, i) => {
               const ch = charts[i]
@@ -428,6 +517,7 @@ export default function Telemetry() {
               )
             })}
           </div>
+          )}
           <div className="pw-telscrub">
             <div className="pw-progress" ref={barRef} onPointerDown={startDragBar}>
               <div className="tp-fill" ref={fillRef} style={{ width: '100%', transform: `scaleX(${t0})`, transformOrigin: 'left', willChange: 'transform' }} />

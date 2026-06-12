@@ -8,6 +8,10 @@ export interface SessionInfo { file: string; path: string; mtime: number }
 export interface Channels {
   throttle: number[]; brake: number[]; speed: number[]; rpm: number[]; gear: number[]; steer: number[]
 }
+// Pneus: temps por banda (outer/middle/inner, já mapeadas pelo lado da roda)
+// e pressão (kPa), alinhadas ao grid — inteiros
+export interface TyreData { o: number[]; m: number[]; i: number[]; p: number[] }
+export interface TyreSet { lf: TyreData; rf: TyreData; lr: TyreData; rr: TyreData }
 export interface Corner { n: number; name: string; apex_pct: number }
 export interface LapRow {
   n: number; t: number; valid: boolean; pit: boolean; clean: boolean; best: boolean
@@ -30,6 +34,7 @@ export interface Payload {
   track_width_m?: number | null
   racing_line_b?: { x: number[]; y: number[] } | null  // linha da MÉDIA (fantasma)
   ref_time?: number[]                                   // tempo da melhor até cada ponto (s)
+  tyres?: { ref: TyreSet | null; media: TyreSet | null } | null
   corners: Corner[]
   setores: number[]
   sectorTimes: { labels: string[]; ref: number[]; media: number[]; genericos: boolean }
