@@ -233,9 +233,8 @@ export default function Comparison() {
   const [playing, setPlaying] = useState(false)
   const [focusSec, setFocusSec] = useState<string | null>(null)
   const [mode, setMode] = useState('Time')
-  const [ghostOn, setGhostOn] = useState(true)
+  const [camB, setCamB] = useState(false) // lock da câmera: false = volta B (rápida), true = volta A
   const modeRef = useRef(mode); modeRef.current = mode
-  const ghostRefB = useRef(ghostOn); ghostRefB.current = ghostOn
 
   const tRef = useRef(0), raf = useRef(0)
   const modelRef = useRef<Model | null>(model); modelRef.current = model
@@ -275,8 +274,8 @@ export default function Comparison() {
       const tau = lerp(m.tB[i0], m.tB[i1], fr)
       const dB = invTime(tau, m.tA)
       gapM = (tv - dB) * m.lengthM
-      trackRef.current?.setT2(ghostRefB.current ? (modeRef.current === 'Time' ? dB : tv) : null)
-    } else trackRef.current?.setT2(ghostRefB.current && m.hasLineB ? tv : null)
+      trackRef.current?.setT2(modeRef.current === 'Time' ? dB : tv)
+    } else trackRef.current?.setT2(m.hasLineB ? tv : null)
     for (const r of rows.current) {
       const x = (tv * r.w).toFixed(2)
       if (r.cursor) r.cursor.style.transform = `translate3d(${x}px,0,0)`
@@ -401,7 +400,7 @@ export default function Comparison() {
     <div className="pw-maplayer pw-tel">
       <InteractiveTrack ref={trackRef} trackGeom={m.pair.track} racingGeom={m.pair.racing} racingGeomB={m.pair.racingB}
         racingSegments={m.segs} edges={m.pair.edges} unitPerM={m.pair.unitPerM}
-        initialT={t0} corners={payload.corners} hideCorners follow followX={0.22} initialZoom={16} zoomSlider
+        initialT={t0} corners={payload.corners} hideCorners follow followX={0.22} followCar={camB ? 'B' : 'A'} initialZoom={16} zoomSlider
         activeCorner={focusRow?.focusN ?? null} focusCorner={focusRow ? focusRow.focusN : null} height={440}>
 
         {/* COLUNA ESQUERDA */}
@@ -534,7 +533,7 @@ export default function Comparison() {
                 <span className="dim">Delta:</span> <b className="num redt" ref={deltaRef}>+0.000</b>
                 <span className="dim">↔</span> <b className="num" ref={gapRef} style={{ color: 'var(--red)' }}>+0 m</b>
               </div>
-              <button className={'pw-switch' + (ghostOn ? ' on' : '')} title="Carro de comparação" onClick={() => setGhostOn(v => !v)} aria-label="Fantasma"><i /></button>
+              <button className={'pw-switch' + (camB ? ' on' : '')} title="Câmera: alternar entre os dois carros" onClick={() => setCamB(v => !v)} aria-label="Alternar câmera"><i /></button>
               <SlideSeg options={['Time', 'Distance']} value={mode} onChange={setMode} />
             </div>
           </div>

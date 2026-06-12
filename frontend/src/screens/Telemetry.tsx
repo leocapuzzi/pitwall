@@ -81,7 +81,7 @@ export default function Telemetry() {
   const [playing, setPlaying] = useState(false)
   const [view, setView] = useState('Segments')
   const [mode, setMode] = useState('Time')
-  const [ghostOn, setGhostOn] = useState(true)
+  const [camB, setCamB] = useState(false) // lock da câmera: false = sua volta, true = comparação
   const [zoom, setZoom] = useState({ lo: 0, hi: 1 })
   const [sel, setSel] = useState<{ a: number; b: number } | null>(null)
   const [segIdx, setSegIdx] = useState<number | null>(null)
@@ -107,7 +107,6 @@ export default function Telemetry() {
   const tRef = useRef(0), raf = useRef(0), selecting = useRef(false)
   const zoomRef = useRef(zoom); zoomRef.current = zoom
   const modeRef = useRef(mode); modeRef.current = mode
-  const ghostRefB = useRef(ghostOn); ghostRefB.current = ghostOn
   const modelRef = useRef<Model | null>(model); modelRef.current = model
   const payloadRef = useRef<Payload | null>(payload); payloadRef.current = payload
   const trackRef = useRef<TrackHandle>(null)
@@ -164,8 +163,8 @@ export default function Telemetry() {
       const tau = lerp(m.tRef[i0], m.tRef[i1], fr)
       const dB = invTime(tau, m.tMed)
       gapM = (tv - dB) * m.lengthM
-      trackRef.current?.setT2(ghostRefB.current ? (modeRef.current === 'Time' ? dB : tv) : null)
-    } else trackRef.current?.setT2(ghostRefB.current && m.hasLineB ? tv : null)
+      trackRef.current?.setT2(modeRef.current === 'Time' ? dB : tv)
+    } else trackRef.current?.setT2(m.hasLineB ? tv : null)
     // ponto do carro no minimapa
     const dot = mmDot.current
     if (dot) {
@@ -411,7 +410,7 @@ export default function Telemetry() {
     <div className="pw-maplayer pw-tel">
       <InteractiveTrack ref={trackRef} trackGeom={m.pair.track} racingGeom={m.pair.racing} racingGeomB={m.pair.racingB}
         edges={m.pair.edges} unitPerM={m.pair.unitPerM} initialT={t0} corners={payload.corners}
-        hideCorners follow followX={0.22} initialZoom={16} zoomSlider height={440}>
+        hideCorners follow followX={0.22} followCar={camB ? 'B' : 'A'} initialZoom={16} zoomSlider height={440}>
 
         {/* COLUNA ESQUERDA */}
         <div className="pw-leftcol">
@@ -635,7 +634,7 @@ export default function Telemetry() {
                 <span className="dim">Delta:</span> <b className="num redt" ref={deltaRef}>+0.000</b>
                 <span className="dim">↔</span> <b className="num" ref={gapRef} style={{ color: 'var(--red)' }}>+0 m</b>
               </div>
-              <button className={'pw-switch' + (ghostOn ? ' on' : '')} title="Carro de comparação" onClick={() => setGhostOn(v => !v)} aria-label="Fantasma"><i /></button>
+              <button className={'pw-switch' + (camB ? ' on' : '')} title="Câmera: alternar entre os dois carros" onClick={() => setCamB(v => !v)} aria-label="Alternar câmera"><i /></button>
               <SlideSeg options={['Time', 'Distance']} value={mode} onChange={setMode} />
             </div>
           </div>

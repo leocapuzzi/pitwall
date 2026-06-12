@@ -80,14 +80,13 @@ export default function LapAnalysis() {
   const [playing, setPlaying] = useState(false)
   const [active, setActive] = useState<number | null>(null)
   const [mode, setMode] = useState('Time')
-  const [ghostOn, setGhostOn] = useState(true)
+  const [camB, setCamB] = useState(false) // lock da câmera: false = sua volta, true = comparação
   const [showFuel, setShowFuel] = useState(false)
 
   const tRef = useRef(0), raf = useRef(0)
   const modelRef = useRef<Model | null>(model); modelRef.current = model
   const payloadRef = useRef<Payload | null>(payload); payloadRef.current = payload
   const modeRef = useRef(mode); modeRef.current = mode
-  const ghostRef = useRef(ghostOn); ghostRef.current = ghostOn
   const trackRef = useRef<TrackHandle>(null)
   const mmDot = useRef<SVGCircleElement | null>(null)
   const podA = useRef<HTMLDivElement>(null), podB = useRef<HTMLDivElement>(null)
@@ -120,8 +119,8 @@ export default function LapAnalysis() {
       const tau = lerp(m.tRef[i0], m.tRef[i1], fr)
       const dB = invTime(tau, m.tMed)
       gapM = (tv - dB) * m.lengthM
-      trackRef.current?.setT2(ghostRef.current ? (modeRef.current === 'Time' ? dB : tv) : null)
-    } else trackRef.current?.setT2(ghostRef.current && m.hasLineB ? tv : null)
+      trackRef.current?.setT2(modeRef.current === 'Time' ? dB : tv)
+    } else trackRef.current?.setT2(m.hasLineB ? tv : null)
     // ponto do carro no minimapa
     const dot = mmDot.current
     if (dot) {
@@ -239,7 +238,7 @@ export default function LapAnalysis() {
     <div className="pw-maplayer">
       <InteractiveTrack ref={trackRef} trackGeom={m.pair.track} racingGeom={m.pair.racing} racingGeomB={m.pair.racingB}
         racingSegments={m.segs} edges={m.pair.edges} unitPerM={m.pair.unitPerM} markers={m.markers}
-        initialT={t0} corners={payload.corners} hideCorners follow initialZoom={16} zoomSlider
+        initialT={t0} corners={payload.corners} hideCorners follow followCar={camB ? 'B' : 'A'} initialZoom={16} zoomSlider
         activeCorner={active} height={440}>
 
         {/* COLUNA ESQUERDA em fluxo (sem sobreposições por construção) */}
@@ -352,7 +351,7 @@ export default function LapAnalysis() {
               <span className="dim">Delta:</span> <b className="num redt" ref={deltaRef}>+0.000</b>
               <span className="dim">↔</span> <b className="num" ref={gapRef} style={{ color: 'var(--red)' }}>+0 m</b>
             </div>
-            <button className={'pw-switch' + (ghostOn ? ' on' : '')} title="Carro de comparação" onClick={() => setGhostOn(v => !v)} aria-label="Fantasma"><i /></button>
+            <button className={'pw-switch' + (camB ? ' on' : '')} title="Câmera: alternar entre os dois carros" onClick={() => setCamB(v => !v)} aria-label="Alternar câmera"><i /></button>
             <SlideSeg options={['Time', 'Distance']} value={mode} onChange={setMode} />
           </div>
         </div>

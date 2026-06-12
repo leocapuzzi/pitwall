@@ -41,9 +41,11 @@ const InteractiveTrack = forwardRef<TrackHandle, {
   markers?: { x: number; y: number; ang: number }[] // bandeirinhas de freada (vermelhas)
   zoomSlider?: boolean                              // pílula − slider + central (GO Fast)
   followX?: number                                  // âncora horizontal da câmera (fração do palco; 0.5 = centro). Telas com painel à direita usam ~0.22
-}>(function InteractiveTrack({ trackGeom, racingGeom, racingGeomB, initialT = 0, corners, activeCorner, onPickCorner, height = 300, racingSegments, focusCorner, children, edges, unitPerM, follow, hideCorners, initialZoom, markers, zoomSlider, followX = 0.5 }, ref) {
+  followCar?: 'A' | 'B'                             // qual carro a câmera segue: principal (A) ou comparação (B)
+}>(function InteractiveTrack({ trackGeom, racingGeom, racingGeomB, initialT = 0, corners, activeCorner, onPickCorner, height = 300, racingSegments, focusCorner, children, edges, unitPerM, follow, hideCorners, initialZoom, markers, zoomSlider, followX = 0.5, followCar = 'A' }, ref) {
   const carRef = useRef<HTMLDivElement>(null), ghostRef = useRef<HTMLDivElement>(null)
   const brakeChipRef = useRef<HTMLDivElement>(null)
+  const followCarRef = useRef<'A' | 'B'>(followCar); followCarRef.current = followCar
   const svgRef = useRef<SVGSVGElement>(null), gRef = useRef<SVGGElement>(null), stageRef = useRef<HTMLDivElement>(null)
   const dotsWrapRef = useRef<HTMLDivElement>(null), marksWrapRef = useRef<HTMLDivElement>(null)
   const vpr = useRef<VP>({ z: 1, x: 0, y: 0 })
@@ -100,9 +102,12 @@ const InteractiveTrack = forwardRef<TrackHandle, {
     // (CONFIRMADO pelo usuário 2026-06-12; o "fade" da âncora perto de z=1 foi
     // testado e rejeitado — fazia o mapa deslizar de um jeito estranho no zoom out).
     if (follow) {
+      // alvo do lock: carro principal (A) ou o de comparação (B), quando visível
+      const cam = (followCarRef.current === 'B' && tBLast.current != null && ptsB.length > 1)
+        ? lerpPt(ptsB, tBLast.current) : a
       const sc0 = Math.min(w / 1000, h / 640), ox0 = (w - 1000 * sc0) / 2, oy0 = (h - 640 * sc0) / 2
       const cx = (followX * w - ox0) / sc0, cy = (0.5 * h - oy0) / sc0
-      writeVp({ z: vpr.current.z, x: cx - vpr.current.z * a.x, y: cy - vpr.current.z * a.y })
+      writeVp({ z: vpr.current.z, x: cx - vpr.current.z * cam.x, y: cy - vpr.current.z * cam.y })
     }
     placeSprite(car, a, carPx)
     if (braking !== undefined && braking !== brakingRef.current) {
