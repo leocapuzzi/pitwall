@@ -91,6 +91,16 @@ O mapa é o **fundo da tela inteira**; a UI flutua por cima em vidro.
   Eixos à direita (`def.axis`), label-chip no canto, ghost pontilhado `.pw-ghostline`.
 - Navegador de segmentos ‹All/Tn/Sn› recorta `zoom {lo,hi}` — mesma janela usada pelo
   clique no minimapa da Lap (`lib/bus.ts` → `takePendingFocus`).
+- **Aba Tyres** (mesmo painel): DOIS carros (Melhor vs Média) usando o BLUEPRINT do mapa
+  (`window.PORSCHE_MARK`, viewBox 600×600, wireframe via `dangerouslySetInnerHTML` num `<g>`).
+  Bandas térmicas = `<rect>`s DENTRO do svg sobre as rodas do desenho (overlay HTML
+  desalinha — §11); temp DENTRO da banda (`paint-order:stroke` p/ ler sobre a cor); fora,
+  só a pressão. Atualização imperativa a 10 Hz via `[data-ty]`/`[data-tyb]`/`[data-typ]`
+  prefixados `ref-`/`media-`. Posição das rodas vem de `lib/tyreLayout.ts` — chip
+  "Ajustar posição" abre 6 sliders ao vivo (localStorage `pw_tyres_v1`);
+  **`TYRE_DEFAULTS` foi CALIBRADO pelo usuário (2026-06-12) — não "corrigir" sem pedido.**
+  O mapeamento O/M/I por LADO da roda é do backend (`webdata._tyres`); carro sem canais
+  de pneu → `tyres: null` → aba desabilitada.
 
 ## 6. Pods (`DriverPod.tsx`)
 

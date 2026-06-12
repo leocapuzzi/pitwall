@@ -16,9 +16,14 @@ React + TypeScript + Vite no frontend · dados 100% locais (sem nuvem).
   tabela com setores e combustível, separação automática por paradas.
 - **Telemetry** — mapa em tela cheia + canais (velocidade, freio, acelerador,
   marcha, volante…) com cursor sincronizado, zoom por trecho e replay do carro.
+  Aba **Tyres**: dois carros (melhor vs média) sobre o blueprint do Porsche, com
+  as temperaturas por banda de cada pneu (externa/meio/interna) e pressões ao
+  vivo durante a volta.
 - **Lap Analysis** — a volta colorida pelo delta no próprio mapa + perdas por
   curva com coaching real ("freie 8 m mais tarde na T3…").
-- **Comparison** — melhor volta vs média (fantasma + gap em metros ao vivo).
+- **Comparison** — por padrão melhor volta vs média (fantasma + gap em metros ao
+  vivo), com **seleção livre de voltas**: qualquer volta contra qualquer volta,
+  inclusive de sessões diferentes da mesma pista.
 - **AI Engineer** — relatório do "engenheiro": plano de recuperação do delta,
   replay fantasma por curva, evidências por canal e chat de análise local.
 
@@ -81,6 +86,8 @@ _arquivo-morto/  versões antigas (Streamlit etc.) — só consulta
 
 - ✅ Análise completa com os **seus** dados: 6 telas prontas, tempos batendo com o
   oficial ao milésimo, pista real via OpenStreetMap, coaching por curva.
+- ✅ Selector de sessão na barra de abas; comparação livre de voltas (inclusive
+  entre sessões); telemetria de pneus por banda na aba Tyres.
 - ⏸️ Comparação com outros pilotos (Garage61) e resultados/iRating (API do iRacing)
   aguardam liberação de acesso das APIs.
 - 🔜 Coach de IA escrevendo o debrief (design pronto; aguardando janela de API).

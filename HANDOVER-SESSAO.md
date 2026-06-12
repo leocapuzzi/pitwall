@@ -1,4 +1,4 @@
-# HANDOVER — PitWall (rebuild da UI em React) · atualizado 2026-06-11
+# HANDOVER — PitWall (rebuild da UI em React) · atualizado 2026-06-12
 
 > Ponte para a próxima sessão do Claude. **Leia ANTES o `COMECE-AQUI.md`** (guia único de
 > orientação: mapa de pastas/documentos, como rodar, regras). **Leia também:** as memórias do
@@ -34,6 +34,20 @@
   seguem na raiz (referências vivas).
 
 ## 1. ✅ CONCLUÍDO (e APROVADO pelo usuário)
+**Sessão 2026-06-12 — selector de sessão, Comparison livre, defaults de abertura e aba Tyres:**
+- ✅ **Selector de sessão** na tabstrip (pista·carro reais + menu em vidro) — ver §2.2.
+- ✅ **Comparison: seleção livre de voltas** (N vs M, entre sessões; picker fluxo B) — ver §2.1.
+- ✅ **Defaults de abertura** (pedidos do usuário): mapas abrem PRÓXIMOS do carro
+  (`initialZoom={16}`, slider ~72% — "90% de zoom" dele = perto, não visão geral);
+  players SEMPRE começam na largada (t=0; pulos só por clique); tracking do follow em
+  QUALQUER zoom (um "fade" da âncora perto de z=1 foi testado e REJEITADO — não recriar).
+  Fix do anel verde do Sector Comparison (padding lateral compensado).
+- ✅ **Aba Tyres da Telemetry** (3 iterações até aprovar) — ver §2.3. Posição das rodas
+  CALIBRADA pelo usuário pelos sliders da própria aba e fixada em `TYRE_DEFAULTS`
+  (lidos do localStorage do navegador dele via Chrome MCP; override local removido).
+- Commits: 1cb6b18 → 00088ce → fe9b2d4 → 5ef2789 → c297521 → 117798c → 4f09856 →
+  16373a4 → 0754578 (todos pushados).
+
 **Sessão 2026-06-11 — passe GO Fast nas 3 telas de cards (todas aprovadas):**
 - ✅ **Stint**: header de sessão + 2 pods ao vivo (volta de ref em loop; CLIQUE no pod abre o
   popup "Comparison" com a tabela do stint, réplica do print GO Fast), card principal em vidro
@@ -104,13 +118,18 @@
    mini-STORE com subscribers (todas as telas/chrome veem a mesma sessão; boot único; escolha
    lembrada em sessionStorage `pw_session`). `App.tsx` remonta a tela na troca
    (`key={current}`). Verificado por DOM no preview (hit-test, oclusão, remount, console limpo).
-3. **Telemetry**: ~~aba "Tyres" é stub~~ ✅ **Tyres FEITA (2026-06-12):** payload ganhou
-   `tyres{ref,media}` (12 temps por banda + 4 pressões no grid, inteiros; O/M/I já mapeadas
-   pelo LADO da roda no backend — `webdata._tyres`; None p/ carro sem canais → aba
-   desabilitada). Painel: diagrama 2×2 com corpo central, bandas EXT/MEIO/INT com rampa
-   térmica (40°C azul→130°C vermelho) + valores ao vivo no player (10 Hz, cache `[data-ty]`),
-   pressão kPa, Ø da volta por pneu, toggle Melhor/Média. PENDENTE da linha: canal
-   hide/reorder; o toggle Segments/Sectors hoje só alterna o navegador (não muda os gráficos).
+3. **Telemetry**: ~~aba "Tyres" é stub~~ ✅ **Tyres FEITA (2026-06-12, v3 aprovada):**
+   payload ganhou `tyres{ref,media}` (12 temps por banda + 4 pressões kPa no grid, inteiros;
+   O/M/I já mapeadas pelo LADO da roda no backend — `webdata._tyres`; None p/ carro sem
+   canais → aba desabilitada). Painel: **DOIS carros lado a lado (Melhor vs Média)** usando
+   o BLUEPRINT do mapa (PORSCHE_MARK em wireframe), bandas térmicas = rects DENTRO do svg
+   sobre as rodas do desenho, temp DENTRO de cada banda (contorno via paint-order), pressão
+   do lado externo; rampa 40°C azul→130°C vermelho; ao vivo no player (10 Hz, cache
+   `[data-ty]`/`[data-tyb]`/`[data-typ]` com prefixo ref-/media-). Posição das rodas
+   calibrável (chip "Ajustar posição" → 6 sliders, `lib/tyreLayout.ts`); valores do usuário
+   FIXADOS em `TYRE_DEFAULTS {yF:156,yR:435,trackF:93,trackR:93,w:70,h:71}` — não mexer sem
+   pedido. PENDENTE da linha: canal hide/reorder; o toggle Segments/Sectors hoje só alterna
+   o navegador (não muda os gráficos).
 4. **Dashboard**: donut "uso por carro" entre sessões (pede endpoint leve de sumários — ler só o
    header YAML de cada .ibt, sem análise completa).
 5. **AI Engineer**: ligar o chat no coach com IA quando o pool do MAX abrir (~15/06; design
