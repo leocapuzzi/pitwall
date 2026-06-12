@@ -149,6 +149,12 @@ export default function Telemetry() {
     while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (arr[mid] <= tau) lo = mid; else hi = mid }
     return (lo + (tau - arr[lo]) / ((arr[hi] - arr[lo]) || 1)) / (n - 1)
   }
+  // valor do array (ex.: tempo da volta) na fração de distância t, interpolado
+  const sampleAt = (arr: number[], t: number) => {
+    const f = Math.max(0, Math.min(arr.length - 1, t * (arr.length - 1)))
+    const i = Math.floor(f), j = Math.min(arr.length - 1, i + 1)
+    return arr[i] + (arr[j] - arr[i]) * (f - i)
+  }
 
   const renderFrame = useCallback((tv: number, force = false) => {
     const m = modelRef.current, p = payloadRef.current; if (!m || !p) return
@@ -187,9 +193,9 @@ export default function Telemetry() {
     }
     if (fillRef.current) fillRef.current.style.transform = `scaleX(${tv.toFixed(5)})`
     if (knobRef.current) knobRef.current.style.transform = `translate3d(${(tv * barW.current).toFixed(2)}px,0,0) translateX(-50%)`
-    // volante + anel dos pods (direção real; iRacing + = esquerda)
+    // volante + anel + BARRAS dos pods: todo frame (transform barato — fluidez do card)
     for (const pod of pods.current) {
-      const st = pod.s.steer[idx] || 0
+      const s = pod.s, st = s.steer[idx] || 0
       const w = pod.els.wheel
       if (w) w.style.transform = `rotate(${(-st).toFixed(1)}deg)`
       const arc = pod.els.steerarc
@@ -198,10 +204,13 @@ export default function Telemetry() {
         arc.setAttribute('stroke-dasharray', `${len.toFixed(1)} ${(100 - len).toFixed(1)}`)
         arc.setAttribute('transform', st > 0 ? 'translate(32 0) scale(-1 1) rotate(-90 16 16)' : 'rotate(-90 16 16)')
       }
+      const thr = lerp(s.throttle[i0] || 0, s.throttle[i1] || 0, fr), brk = lerp(s.brake[i0] || 0, s.brake[i1] || 0, fr)
+      if (pod.els.thrbar) pod.els.thrbar.style.transform = `scaleX(${Math.min(1, thr / 100).toFixed(3)})`
+      if (pod.els.brkbar) pod.els.brkbar.style.transform = `scaleX(${Math.min(1, brk / 100).toFixed(3)})`
     }
-    // —— textos a ~10 Hz
+    // —— textos a ~15 Hz
     const now = performance.now()
-    if (!force && now - lastText.current < 100) return
+    if (!force && now - lastText.current < 66) return
     lastText.current = now
     for (const r of rows.current) {
       if (r.val) r.val.textContent = String(r.fm(idx))
@@ -209,11 +218,8 @@ export default function Telemetry() {
     }
     for (const pod of pods.current) {
       const e = pod.els, s = pod.s
-      const thr = Math.round(s.throttle[idx] || 0), brk = Math.round(s.brake[idx] || 0)
-      if (e.thr) e.thr.textContent = thr + '%'
-      if (e.brk) e.brk.textContent = brk + '%'
-      if (e.thrbar) e.thrbar.style.transform = `scaleX(${Math.min(1, thr / 100)})`
-      if (e.brkbar) e.brkbar.style.transform = `scaleX(${Math.min(1, brk / 100)})`
+      if (e.thr) e.thr.textContent = Math.round(s.throttle[idx] || 0) + '%'
+      if (e.brk) e.brk.textContent = Math.round(s.brake[idx] || 0) + '%'
       if (e.spd) e.spd.textContent = String(Math.round(s.speed[idx] || 0))
       if (e.gear) e.gear.textContent = String(Math.round(s.gear[idx] || 0))
       if (e.rpm) e.rpm.textContent = String(Math.round(s.rpm[idx] || 0))
@@ -231,7 +237,7 @@ export default function Telemetry() {
         if (we.press) we.press.textContent = pv != null && isFinite(pv) ? String(Math.round(pv)) : '—'
       }
     }
-    if (clockRef.current) clockRef.current.textContent = fmtClock(tv * m.lapSecs)
+    if (clockRef.current) clockRef.current.textContent = fmtClock(m.tRef ? sampleAt(m.tRef, tv) : tv * m.lapSecs)
     const dv = lerp(p.delta[i0], p.delta[i1], fr)
     if (deltaRef.current) {
       deltaRef.current.textContent = sign(dv, 3)
@@ -297,7 +303,20 @@ export default function Telemetry() {
   useEffect(() => {
     if (!playing) return
     let last = performance.now()
-    const loop = (now: number) => { const dt = (now - last) / 1000; last = now; let nt = tRef.current + dt / (modelRef.current?.lapSecs || 90); if (nt >= 1) nt -= 1; tRef.current = nt; renderFrame(nt); raf.current = requestAnimationFrame(loop) }
+    const loop = (now: number) => {
+      const dt = (now - last) / 1000; last = now
+      const mm = modelRef.current
+      let nt: number
+      if (mm?.tRef && mm.tRef.length > 1) {
+        // avança em TEMPO real da volta e converte p/ distância (o carro freia de
+        // verdade nas curvas — antes andava na velocidade média, linear em distância)
+        const total = mm.tRef[mm.tRef.length - 1]
+        let tau = sampleAt(mm.tRef, tRef.current) + dt
+        if (tau >= total) tau -= total
+        nt = invTime(tau, mm.tRef)
+      } else { nt = tRef.current + dt / (mm?.lapSecs || 90); if (nt >= 1) nt -= 1 }
+      tRef.current = nt; renderFrame(nt); raf.current = requestAnimationFrame(loop)
+    }
     raf.current = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf.current)
   }, [playing, renderFrame])

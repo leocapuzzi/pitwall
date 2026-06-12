@@ -842,7 +842,10 @@ body.fullmap #root{pointer-events:none}
   border:1px solid color-mix(in oklch, var(--accent) 35%, transparent)}
 .pw-aiav img{position:absolute; inset:5px; width:calc(100% - 10px); height:calc(100% - 10px);
   border-radius:50%; object-fit:cover; z-index:1; box-shadow:0 0 22px -6px var(--accent-glow)}
-.pw-aisay{font-size:12.5px; color:var(--ink-2); margin:5px 0 0; line-height:1.45; min-height:18px; max-width:640px}
+/* altura RESERVADA p/ 3 linhas: o typewriter digitando não pode mudar o tamanho
+   do strip (cada quebra de linha empurrava a tela toda → reflow + reposicionar
+   os painéis de vidro durante a entrada — a tela inteira parecia "lenta") */
+.pw-aisay{font-size:12.5px; color:var(--ink-2); margin:5px 0 0; line-height:1.45; min-height:55px; max-width:640px}
 .pw-aisay .caret{display:inline-block; width:7px; height:12px; background:var(--accent); margin-left:3px;
   vertical-align:-1px; animation:pwBlink 1s steps(1) infinite; transition:opacity .3s}
 @keyframes pwBlink{50%{opacity:0}}

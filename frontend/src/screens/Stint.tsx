@@ -164,7 +164,7 @@ export default function Stint() {
       if (e.brkbar) e.brkbar.style.transform = `scaleX(${Math.min(1, brk / 100)})`
     }
     const now = performance.now()
-    if (!force && now - lastText.current < 100) return
+    if (!force && now - lastText.current < 66) return
     lastText.current = now
     for (const pod of pods.current) {
       const s = pod.s, e = pod.els
@@ -189,9 +189,30 @@ export default function Stint() {
   })
   useEffect(() => {
     let last = performance.now()
+    // tempo REAL da volta → distância (o pod "freia" nas curvas); fallback linear
+    const sampleAt = (arr: number[], t: number) => {
+      const f = Math.max(0, Math.min(arr.length - 1, t * (arr.length - 1)))
+      const i = Math.floor(f), j = Math.min(arr.length - 1, i + 1)
+      return arr[i] + (arr[j] - arr[i]) * (f - i)
+    }
+    const invTime = (tau: number, arr: number[]) => {
+      const n = arr.length
+      if (tau <= arr[0]) return 0
+      if (tau >= arr[n - 1]) return 1
+      let lo = 0, hi = n - 1
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (arr[mid] <= tau) lo = mid; else hi = mid }
+      return (lo + (tau - arr[lo]) / ((arr[hi] - arr[lo]) || 1)) / (n - 1)
+    }
     const loop = (now: number) => {
       const dt = (now - last) / 1000; last = now
-      let nt = tR.current + dt / (lapSecsRef.current || 90); if (nt >= 1) nt -= 1
+      const rt = payloadRef.current?.ref_time
+      let nt: number
+      if (rt && rt.length > 1) {
+        const total = rt[rt.length - 1]
+        let tau = sampleAt(rt, tR.current) + dt
+        if (tau >= total) tau -= total
+        nt = invTime(tau, rt)
+      } else { nt = tR.current + dt / (lapSecsRef.current || 90); if (nt >= 1) nt -= 1 }
       tR.current = nt; renderPods(nt)
       raf.current = requestAnimationFrame(loop)
     }
