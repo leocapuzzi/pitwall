@@ -216,7 +216,7 @@ export default function Telemetry() {
         for (const bd of we.bands) {
           const v = w[bd.b]?.[idx]
           if (bd.val) bd.val.textContent = v != null && isFinite(v) ? String(Math.round(v)) : '—'
-          if (bd.fill) bd.fill.style.background = tempBg(v)
+          if (bd.fill) bd.fill.style.fill = tempBg(v) // rect SVG do blueprint
         }
         const pv = w.p?.[idx]
         if (we.press) we.press.textContent = pv != null && isFinite(pv) ? String(Math.round(pv)) : '—'
@@ -459,21 +459,31 @@ export default function Telemetry() {
           {panel === 'tyres' && payload.tyres?.ref ? (
             <div className="pw-tyres2" ref={tyRef}>
               {(['ref', 'media'] as const).map(src => {
-                const wheel = (k: 'lf' | 'rf' | 'lr' | 'rr') => (
-                  <div className={'pw-twheel pw-tw-' + k} key={k}>
-                    <div className="pw-twbands">
-                      {(k[0] === 'l' ? (['o', 'm', 'i'] as const) : (['i', 'm', 'o'] as const)).map(b => (
-                        <i key={b} data-tyb={`${src}-${k}-${b}`} title={b === 'o' ? 'externa' : b === 'm' ? 'meio' : 'interna'} />
+                // caixas das rodas medidas no blueprint do mapa (PORSCHE_MARK, viewBox 600×600)
+                const WB = { lf: { x: 203, y: 60 }, rf: { x: 362, y: 60 }, lr: { x: 196, y: 372 }, rr: { x: 369, y: 372 } }
+                const WW = 35, WH = 57, BW = (WW - 3) / 3
+                const wheel = (k: 'lf' | 'rf' | 'lr' | 'rr') => {
+                  const wb = WB[k], left = k[0] === 'l'
+                  const order = left ? (['o', 'm', 'i'] as const) : (['i', 'm', 'o'] as const)
+                  const tx = left ? wb.x - 14 : wb.x + WW + 14
+                  return (
+                    <g key={k}>
+                      {order.map((b, bi) => (
+                        <rect key={b} data-tyb={`${src}-${k}-${b}`} x={wb.x + bi * (BW + 1.5)} y={wb.y}
+                          width={BW} height={WH} rx={3}
+                          fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" strokeWidth="1">
+                          <title>{`${k.toUpperCase()} · banda ${b === 'o' ? 'EXTERNA' : b === 'm' ? 'do MEIO' : 'INTERNA'}`}</title>
+                        </rect>
                       ))}
-                    </div>
-                    <div className="pw-twvals">
-                      {(k[0] === 'l' ? (['o', 'm', 'i'] as const) : (['i', 'm', 'o'] as const)).map(b => (
-                        <b key={b} className="num" data-ty={`${src}-${k}-${b}`}>—</b>
-                      ))}
-                    </div>
-                    <div className="pw-twpress"><b className="num" data-typ={`${src}-${k}`}>—</b> kPa</div>
-                  </div>
-                )
+                      <text className="pw-tytemps" x={tx} y={wb.y + WH / 2 + 3} textAnchor={left ? 'end' : 'start'}>
+                        {order.map((b, bi) => <tspan key={b} data-ty={`${src}-${k}-${b}`} dx={bi ? 10 : 0}>—</tspan>)}
+                      </text>
+                      <text className="pw-typress2" x={tx} y={wb.y + WH / 2 + 29} textAnchor={left ? 'end' : 'start'}>
+                        <tspan data-typ={`${src}-${k}`}>—</tspan> kPa
+                      </text>
+                    </g>
+                  )
+                }
                 return payload.tyres?.[src] && (
                   <div className="pw-tycarbox" key={src}>
                     <div className="pw-tytitle">
@@ -481,17 +491,14 @@ export default function Telemetry() {
                         ? <><span className="dot acc" />Melhor · <b className="num">{ctx.suaMelhor}</b></>
                         : <><span className="tp-dash" />{ctx.referencia}{mediaSecs != null && <> · <b className="num">{fmtClock(mediaSecs)}</b></>}</>}
                     </div>
-                    <div className="pw-tycargrid">
-                      {wheel('lf')}
-                      <div className="pw-tybody2"><i /></div>
-                      {wheel('rf')}
-                      {wheel('lr')}
-                      {wheel('rr')}
-                    </div>
+                    <svg className="pw-tycarsvg" viewBox="48 10 504 580">
+                      <g className="pw-tymark" dangerouslySetInnerHTML={{ __html: String((window as any).PORSCHE_MARK || '') }} />
+                      {(['lf', 'rf', 'lr', 'rr'] as const).map(k => wheel(k))}
+                    </svg>
                   </div>
                 )
               })}
-              <div className="pw-tylegend">Temperatura por banda da roda — de fora p/ dentro: <b>EXT · MEIO · INT</b> · pressão em kPa</div>
+              <div className="pw-tylegend">Temperatura (°C) por banda da roda — de fora p/ dentro do carro: <b>EXT · MEIO · INT</b></div>
             </div>
           ) : (
           <div className="pw-chstack" ref={stackRef}>
