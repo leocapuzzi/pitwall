@@ -47,12 +47,20 @@ const WS: { id: View; label: string }[] = [
   { id: 'comparison', label: 'Comparison' },
   { id: 'ai', label: 'AI Engineer' },
 ]
-export function SessionStrip({ view, go, label }: { view: View; go: (v: View) => void; label?: string }) {
+export function SessionStrip({ view, go, label, onSessions, sessOn }: {
+  view: View; go: (v: View) => void; label?: string
+  onSessions?: () => void; sessOn?: boolean
+}) {
   return (
     <div className="tabstrip">
       <div className="stab idle"><span>Waiting for session</span></div>
-      <div className="stab on"><span className="dot acc"></span>{label || 'Sessão'}<span className="x"><Icon n="info" s={12} sw={2.2} /></span></div>
-      <div className="add">
+      <button className={'stab on pw-sessbtn' + (sessOn ? ' menuon' : '')} onClick={onSessions}
+        title="Escolher sessão" aria-label="Escolher sessão" aria-expanded={!!sessOn}>
+        <span className="dot acc"></span>
+        <span className="pw-sesslabel">{label || 'Sessão'}</span>
+        <span className="x pw-sesschev"><Icon n="chevD" s={13} sw={2.2} /></span>
+      </button>
+      <div className="add" onClick={onSessions} role="button" aria-label="Escolher sessão">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
       </div>
       <div className="ws-switch">

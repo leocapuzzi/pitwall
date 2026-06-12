@@ -86,9 +86,12 @@
 1. **Comparison: seleção LIVRE de voltas** (volta N vs M, inclusive de outra sessão) — pede
    endpoint por volta no backend (canais de UMA volta arbitrária) + UI de seleção (fluxo B do
    design handoff). Maior valor de produto.
-2. **Selector de SESSÃO na SessionStrip** (hoje fixa na 1ª com ≥2 voltas limpas;
-   `useSession.load()` já existe — falta a UI). A aba também poderia mostrar carro|pista
-   reais em vez de "Sessão".
+2. ~~Selector de SESSÃO na SessionStrip~~ ✅ **FEITO (2026-06-11):** aba ativa mostra
+   pista · carro reais e abre o menu de sessões (`components/SessionMenu.tsx`, vidro, lista
+   com pista/carro/data parseados do nome do .ibt, ativa marcada). `useSession.ts` virou
+   mini-STORE com subscribers (todas as telas/chrome veem a mesma sessão; boot único; escolha
+   lembrada em sessionStorage `pw_session`). `App.tsx` remonta a tela na troca
+   (`key={current}`). Verificado por DOM no preview (hit-test, oclusão, remount, console limpo).
 3. **Telemetry**: aba "Tyres" é stub; canal hide/reorder não implementado; o toggle
    Segments/Sectors hoje só alterna o navegador de segmentos (não muda os gráficos).
 4. **Dashboard**: donut "uso por carro" entre sessões (pede endpoint leve de sumários — ler só o

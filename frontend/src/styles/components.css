@@ -1076,3 +1076,51 @@ body.fullmap #root{pointer-events:none}
 /* engrenagem ativa */
 .iconbtn.on{color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft)}
 .iconbtn.on:hover{color:var(--accent)}
+
+/* ============================================================
+   SELECTOR DE SESSÃO (aba ativa da tabstrip) — menu em vidro
+   ============================================================ */
+/* a aba ativa vira botão: reset + chevron que gira com o menu aberto */
+button.pw-sessbtn{border:0; font:inherit; color:var(--ink); cursor:pointer; position:relative}
+.pw-sesslabel{max-width:330px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.pw-sesschev{transition:transform .22s var(--ease)}
+.pw-sessbtn.menuon .pw-sesschev{transform:rotate(180deg)}
+.pw-sessbtn:hover .pw-sesschev{color:var(--ink)}
+
+.pw-sessmenu{position:fixed; top:116px; left:18px; z-index:60; width:380px;
+  max-height:min(520px, calc(100vh - 180px)); display:flex; flex-direction:column;
+  padding:15px 10px 10px 18px; pointer-events:auto;
+  transform-origin:60px -10px;
+  opacity:0; transform:translateY(-10px) scale(.94); visibility:hidden;
+  transition:opacity .2s var(--ease), transform .24s var(--ease), visibility 0s .24s}
+.pw-sessmenu.open{opacity:1; transform:none; visibility:visible;
+  transition:opacity .24s var(--ease), transform .32s var(--ease)}
+
+.pw-sess-head{display:flex; align-items:flex-start; justify-content:space-between;
+  margin-bottom:8px; padding-right:8px}
+.pw-sess-list{overflow:auto; overscroll-behavior:contain; padding-right:8px;
+  display:flex; flex-direction:column; gap:2px}
+.pw-sess-list::-webkit-scrollbar{width:8px}
+.pw-sess-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12); border-radius:4px}
+
+.pw-sess-item{display:flex; align-items:center; gap:11px; width:100%; text-align:left;
+  padding:8px 10px; border:0; border-radius:10px; background:transparent; cursor:pointer;
+  color:var(--ink-2); font:inherit}
+.pw-sess-item:hover{background:rgba(255,255,255,.07); color:var(--ink)}
+.pw-sess-item.on{background:var(--accent-soft); color:var(--ink); cursor:default}
+.pw-sess-item:disabled{opacity:.45; cursor:default}
+.pw-sess-dot{width:7px; height:7px; border-radius:50%; background:var(--ink-3); flex:none}
+.pw-sess-dot.acc{background:var(--accent); box-shadow:0 0 8px var(--accent)}
+.pw-sess-main{min-width:0; flex:1}
+.pw-sess-main b{display:block; font-size:12.5px; font-weight:700; letter-spacing:.01em;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-transform:capitalize}
+.pw-sess-main small{display:block; font-size:10.5px; color:var(--ink-3); margin-top:1px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-transform:capitalize}
+.pw-sess-now{font:700 9px var(--font-ui); letter-spacing:.12em; color:var(--accent);
+  border:1px solid var(--accent-line); border-radius:6px; padding:2px 6px; flex:none}
+.pw-sess-empty{padding:14px 10px; font-size:11.5px; color:var(--ink-3)}
+
+/* entrada em cascata (reusa o keyframe do settings) */
+.pw-sessmenu .pw-sess-head, .pw-sessmenu .pw-sess-item, .pw-sessmenu .pw-sess-empty{opacity:0}
+.pw-sessmenu.open .pw-sess-head, .pw-sessmenu.open .pw-sess-item, .pw-sessmenu.open .pw-sess-empty{
+  animation:pwSetRow .34s var(--ease) both; animation-delay:calc(30ms + var(--i,0)*18ms)}

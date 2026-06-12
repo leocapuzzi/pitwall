@@ -1,0 +1,61 @@
+import { useEffect } from 'react'
+import Icon from './Icon'
+import { useSession } from '../lib/useSession'
+
+// Nome padrão do iRacing: "<carro>_<pista> <YYYY-MM-DD HH-MM-SS>.ibt"
+// (a pista e o carro "bonitos" só existem no payload carregado; na lista usamos o nome)
+export function parseIbtName(file: string): { car: string; track: string; when: string | null } {
+  const m = file.match(/^(.+?)_(.+?) (\d{4})-(\d{2})-(\d{2}) (\d{2})-(\d{2})-(\d{2})\.ibt$/i)
+  if (!m) return { car: file.replace(/\.ibt$/i, ''), track: '', when: null }
+  const [, car, track, Y, Mo, D, h, mi] = m
+  return { car, track, when: `${D}/${Mo}/${Y.slice(2)} · ${h}:${mi}` }
+}
+
+export default function SessionMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { sessions, current, loading, load } = useSession()
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  return (
+    <>
+      {open && <div className="pw-set-veil" onClick={onClose} />}
+      <div className={'pw-sessmenu pw-glass2' + (open ? ' open' : '')} role="dialog"
+        aria-label="Escolher sessão" aria-hidden={!open}>
+        <div className="pw-sess-head" style={{ '--i': 0 } as React.CSSProperties}>
+          <div>
+            <div className="pw-set-title">SESSÕES</div>
+            <div className="pw-set-sub">{sessions.length} gravadas · mais recente primeiro</div>
+          </div>
+          <button className="pw-set-x" onClick={onClose} aria-label="Fechar"><Icon n="x" s={15} /></button>
+        </div>
+        <div className="pw-sess-list">
+          {sessions.map((s, i) => {
+            const p = parseIbtName(s.file)
+            const on = s.path === current
+            return (
+              <button key={s.path} className={'pw-sess-item' + (on ? ' on' : '')}
+                style={{ '--i': Math.min(i, 14) + 1 } as React.CSSProperties}
+                disabled={loading && !on}
+                onClick={() => { if (!on) void load(s.path); onClose() }}>
+                <span className={'pw-sess-dot' + (on ? ' acc' : '')} />
+                <span className="pw-sess-main">
+                  <b>{p.track || p.car}</b>
+                  <small>{p.track ? p.car : 'arquivo de telemetria'}{p.when ? ` · ${p.when}` : ''}</small>
+                </span>
+                {on && <span className="pw-sess-now">ATIVA</span>}
+              </button>
+            )
+          })}
+          {!sessions.length && (
+            <div className="pw-sess-empty">Nenhum arquivo .ibt encontrado.</div>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}

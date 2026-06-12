@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import type { ComponentType } from 'react'
 import { TopNav, SessionStrip, StatusBar } from './components/Chrome'
 import SettingsMenu from './components/SettingsMenu'
+import SessionMenu from './components/SessionMenu'
+import { useSession } from './lib/useSession'
 import type { View } from './lib/api'
 import Dashboard from './screens/Dashboard'
 import Telemetry from './screens/Telemetry'
@@ -41,6 +43,12 @@ export default function App() {
   }, [])
 
   const [settings, setSettings] = useState(false)
+  const [sessMenu, setSessMenu] = useState(false)
+
+  // sessão ativa: alimenta o label da aba e remonta a tela quando troca
+  const { payload, current } = useSession()
+  const ctx = payload?.contexto
+  const sessLabel = ctx?.pista ? `${ctx.pista} · ${ctx.carro || ''}`.replace(/ · $/, '') : undefined
 
   const Screen = SCREENS[view]
   // modo FULLMAP (estilo GO Fast): o mapa vive atrás de TUDO e a UI flutua em vidro.
@@ -53,9 +61,12 @@ export default function App() {
   return (
     <div className={'app' + (fullmap ? ' fullmap' : '')}>
       <TopNav view={view} go={setView} onSettings={() => setSettings(s => !s)} settingsOn={settings} />
-      {view !== 'dashboard' && <SessionStrip view={view} go={setView} />}
+      {view !== 'dashboard' && (
+        <SessionStrip view={view} go={setView} label={sessLabel}
+          onSessions={() => setSessMenu(s => !s)} sessOn={sessMenu} />
+      )}
       <main className="stage">
-        <div className="screen on">
+        <div className="screen on" key={current || 'boot'}>
           {!SELF_HEADED.has(view) && (
             <div className="scr-head">
               <div>
@@ -69,6 +80,7 @@ export default function App() {
       </main>
       <StatusBar />
       <SettingsMenu open={settings} onClose={() => setSettings(false)} />
+      <SessionMenu open={sessMenu} onClose={() => setSessMenu(false)} />
     </div>
   )
 }
