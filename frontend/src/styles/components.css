@@ -1165,7 +1165,7 @@ button.pw-sessbtn{border:0; font:inherit; color:var(--ink); cursor:pointer; posi
    do desenho (rects DENTRO do svg — overlay HTML desalinha) e
    temps/pressão ao lado externo de cada roda.
    ============================================================ */
-.pw-tyres2{flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr;
+.pw-tyres2{position:relative; flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr;
   grid-template-rows:1fr auto; gap:10px 10px; padding:8px 2px 4px; align-items:center}
 .pw-tycarbox{display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:8px; padding:10px 8px; height:100%; min-height:0;
@@ -1176,7 +1176,31 @@ button.pw-sessbtn{border:0; font:inherit; color:var(--ink); cursor:pointer; posi
 .pw-tycarsvg{flex:1; min-height:0; width:100%; display:block}
 .pw-tymark{color:rgba(255,255,255,.14)}
 .pw-tycarsvg rect{transition:fill .25s linear}
-.pw-tytemps{font:700 27px var(--font-mono); fill:rgba(255,255,255,.92)}
-.pw-typress2{font:600 21px var(--font-mono); fill:var(--ink-3)}
-.pw-tylegend{grid-column:1/3; text-align:center; font-size:9.5px; color:var(--ink-3)}
+/* temp DENTRO da banda: contorno escuro (paint-order) p/ ler sobre qualquer cor */
+.pw-tytemps{font:700 15.5px var(--font-mono); fill:rgba(255,255,255,.95);
+  paint-order:stroke; stroke:rgba(0,0,0,.55); stroke-width:3px; stroke-linejoin:round}
+.pw-typress2{font:600 20px var(--font-mono); fill:var(--ink-3)}
+.pw-tylegend{grid-column:1/3; display:flex; align-items:center; justify-content:center;
+  gap:12px; font-size:9.5px; color:var(--ink-3)}
 .pw-tylegend b{font-weight:700; color:var(--ink-2)}
+.pw-tycalbtn{padding:2px 8px; font-size:9.5px}
+.pw-tycalbtn.on{color:var(--accent); border-color:var(--accent-line)}
+
+/* painel de calibração (sliders ao vivo; valores em lib/tyreLayout) */
+.pw-tycal{position:absolute; right:12px; bottom:30px; z-index:6; width:236px;
+  padding:11px 13px 9px; border-radius:13px; pointer-events:auto}
+.pw-tycal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px}
+.pw-tycal-head span{font-size:9px; font-weight:800; letter-spacing:.13em; color:var(--ink-3)}
+.pw-tycal-row{display:grid; grid-template-columns:78px 30px 1fr; align-items:center; gap:8px; padding:3px 0}
+.pw-tycal-row label{font-size:8.5px; font-weight:700; letter-spacing:.04em; color:var(--ink-2);
+  text-transform:uppercase; line-height:1.2}
+.pw-tycal-row .num{font-size:10px; color:var(--ink); text-align:right}
+.pw-tycal-row input[type=range]{-webkit-appearance:none; appearance:none; width:100%;
+  height:16px; margin:0; background:transparent; cursor:pointer}
+.pw-tycal-row input[type=range]::-webkit-slider-runnable-track{height:3px; border-radius:2px;
+  background:rgba(255,255,255,.16)}
+.pw-tycal-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:11px; height:11px;
+  border-radius:50%; background:#fff; border:none; margin-top:-4px; box-shadow:0 1px 5px rgba(0,0,0,.5)}
+.pw-tycal-foot{display:flex; align-items:center; gap:8px; margin-top:7px; padding-top:7px;
+  border-top:1px solid var(--hair)}
+.pw-tycal-foot .pw-set-note{font-size:8.5px}

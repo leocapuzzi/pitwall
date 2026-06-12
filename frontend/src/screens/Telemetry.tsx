@@ -7,6 +7,7 @@ import DriverPod from '../components/DriverPod'
 import InteractiveTrack, { type TrackHandle } from '../components/InteractiveTrack'
 import MiniTrackMap from '../components/MiniTrackMap'
 import { useSession } from '../lib/useSession'
+import { getTyreLayout, setTyreParam, resetTyreLayout, onTyreLayout, TYRE_DEFAULTS, TYRE_CX, type TyreLayout } from '../lib/tyreLayout'
 import { projectTrackPair, type TrackPair } from '../lib/track'
 import { parseLap, fmtClock } from '../lib/fmt'
 import { takePendingFocus } from '../lib/bus'
@@ -88,6 +89,10 @@ export default function Telemetry() {
   const model = useMemo(() => (payload ? build(payload) : null), [payload])
   // aba do painel: canais ou pneus (diagrama ao vivo)
   const [panel, setPanel] = useState<'tel' | 'tyres'>('tel')
+  // posição das rodas no blueprint: calibrável ao vivo pelo usuário (lib/tyreLayout)
+  const [tyLay, setTyLay] = useState(getTyreLayout())
+  useEffect(() => onTyreLayout(setTyLay), [])
+  const [tyCal, setTyCal] = useState(false)
   // tempo médio das voltas limpas (título do carro "Média" no diagrama Tyres)
   const mediaSecs = useMemo(() => {
     const clean = (payload?.laps || []).filter(l => l.clean)
@@ -459,26 +464,33 @@ export default function Telemetry() {
           {panel === 'tyres' && payload.tyres?.ref ? (
             <div className="pw-tyres2" ref={tyRef}>
               {(['ref', 'media'] as const).map(src => {
-                // caixas das rodas medidas no blueprint do mapa (PORSCHE_MARK, viewBox 600×600)
-                const WB = { lf: { x: 203, y: 60 }, rf: { x: 362, y: 60 }, lr: { x: 196, y: 372 }, rr: { x: 369, y: 372 } }
-                const WW = 35, WH = 57, BW = (WW - 3) / 3
+                // caixas das rodas derivadas do layout calibrável (lib/tyreLayout)
+                const L = tyLay, BW = (L.w - 3) / 3
+                const box = (k: 'lf' | 'rf' | 'lr' | 'rr') => ({
+                  x: (k[0] === 'l' ? TYRE_CX - (k[1] === 'f' ? L.trackF : L.trackR) : TYRE_CX + (k[1] === 'f' ? L.trackF : L.trackR)) - L.w / 2,
+                  y: (k[1] === 'f' ? L.yF : L.yR) - L.h / 2,
+                })
                 const wheel = (k: 'lf' | 'rf' | 'lr' | 'rr') => {
-                  const wb = WB[k], left = k[0] === 'l'
+                  const wb = box(k), left = k[0] === 'l'
                   const order = left ? (['o', 'm', 'i'] as const) : (['i', 'm', 'o'] as const)
-                  const tx = left ? wb.x - 14 : wb.x + WW + 14
+                  const px = left ? wb.x - 14 : wb.x + L.w + 14
                   return (
                     <g key={k}>
-                      {order.map((b, bi) => (
-                        <rect key={b} data-tyb={`${src}-${k}-${b}`} x={wb.x + bi * (BW + 1.5)} y={wb.y}
-                          width={BW} height={WH} rx={3}
-                          fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" strokeWidth="1">
-                          <title>{`${k.toUpperCase()} · banda ${b === 'o' ? 'EXTERNA' : b === 'm' ? 'do MEIO' : 'INTERNA'}`}</title>
-                        </rect>
-                      ))}
-                      <text className="pw-tytemps" x={tx} y={wb.y + WH / 2 + 3} textAnchor={left ? 'end' : 'start'}>
-                        {order.map((b, bi) => <tspan key={b} data-ty={`${src}-${k}-${b}`} dx={bi ? 10 : 0}>—</tspan>)}
-                      </text>
-                      <text className="pw-typress2" x={tx} y={wb.y + WH / 2 + 29} textAnchor={left ? 'end' : 'start'}>
+                      {order.map((b, bi) => {
+                        const bx = wb.x + bi * (BW + 1.5)
+                        return (
+                          <g key={b}>
+                            <rect data-tyb={`${src}-${k}-${b}`} x={bx} y={wb.y} width={BW} height={L.h} rx={3}
+                              fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" strokeWidth="1">
+                              <title>{`${k.toUpperCase()} · banda ${b === 'o' ? 'EXTERNA' : b === 'm' ? 'do MEIO' : 'INTERNA'}`}</title>
+                            </rect>
+                            <text className="pw-tytemps" x={bx + BW / 2} y={wb.y + L.h / 2 + 4.5} textAnchor="middle">
+                              <tspan data-ty={`${src}-${k}-${b}`}>—</tspan>
+                            </text>
+                          </g>
+                        )
+                      })}
+                      <text className="pw-typress2" x={px} y={wb.y + L.h / 2 + 7} textAnchor={left ? 'end' : 'start'}>
                         <tspan data-typ={`${src}-${k}`}>—</tspan> kPa
                       </text>
                     </g>
@@ -498,7 +510,42 @@ export default function Telemetry() {
                   </div>
                 )
               })}
-              <div className="pw-tylegend">Temperatura (°C) por banda da roda — de fora p/ dentro do carro: <b>EXT · MEIO · INT</b></div>
+              <div className="pw-tylegend">
+                <span>Temperatura (°C) por banda — de fora p/ dentro: <b>EXT · MEIO · INT</b> · pressão (kPa) ao lado</span>
+                <button className={'chip pw-tycalbtn' + (tyCal ? ' on' : '')} onClick={() => setTyCal(v => !v)}>
+                  <Icon n="gear" s={11} /> Ajustar posição
+                </button>
+              </div>
+              {tyCal && (
+                <div className="pw-tycal pw-glass2">
+                  <div className="pw-tycal-head">
+                    <span>POSIÇÃO DAS RODAS</span>
+                    <button className="pw-set-x" onClick={() => setTyCal(false)} aria-label="Fechar"><Icon n="x" s={13} /></button>
+                  </div>
+                  {([
+                    { k: 'yF', label: 'Eixo diant. (alt.)', min: 30, max: 180 },
+                    { k: 'yR', label: 'Eixo tras. (alt.)', min: 320, max: 500 },
+                    { k: 'trackF', label: 'Bitola diant.', min: 50, max: 150 },
+                    { k: 'trackR', label: 'Bitola tras.', min: 50, max: 150 },
+                    { k: 'w', label: 'Largura roda', min: 28, max: 86 },
+                    { k: 'h', label: 'Altura roda', min: 30, max: 96 },
+                  ] as Array<{ k: keyof TyreLayout; label: string; min: number; max: number }>).map(r => (
+                    <div className="pw-tycal-row" key={r.k}>
+                      <label>{r.label}</label>
+                      <span className="num">{tyLay[r.k]}</span>
+                      <input type="range" min={r.min} max={r.max} step={1} value={tyLay[r.k]}
+                        onChange={e => setTyreParam(r.k, Number(e.target.value))} />
+                    </div>
+                  ))}
+                  <div className="pw-tycal-foot">
+                    <button className="pw-set-reset" onClick={resetTyreLayout}
+                      disabled={(Object.keys(TYRE_DEFAULTS) as Array<keyof TyreLayout>).every(k => tyLay[k] === TYRE_DEFAULTS[k])}>
+                      Padrão
+                    </button>
+                    <span className="pw-set-note">Quando ficar bom, me avisa — eu fixo como padrão</span>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
           <div className="pw-chstack" ref={stackRef}>
