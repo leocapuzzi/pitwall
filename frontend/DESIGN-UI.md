@@ -53,13 +53,12 @@ O mapa é o **fundo da tela inteira**; a UI flutua por cima em vidro.
   da verdade e `writeVp()` escreve o atributo. Estado `vpUi` só espelha p/ UI discreta.
 - **`follow`**: câmera presa no carro. **`followX`** = âncora horizontal (fração do palco):
   `0.5` na Lap, `0.22` em Telemetry/Comparison (centro da área visível à esquerda do painel).
-  ⚠️ A âncora entra com **FADE pelo zoom** (`f = clamp01(z−1)`): em `z=1` o mapa fica
-  **CENTRADO** (`translate(0 0)` — pista inteira visível, sem corte) e ela vale cheia a
-  partir de `z≥2`. NUNCA por degrau (`if z>1`): o salto no zoom out era visível — o fade
-  é contínuo nos dois sentidos.
-- **Default das telas: SEM `initialZoom`** (decisão do usuário 2026-06-12) → abre em `z=1`,
-  visão geral da pista (~86–90% do palco, `pad=70` do projectTrackPair). `Z_MAX = 48`.
-  Slider em escala log.
+  ⚠️ O recentro vale em **QUALQUER zoom** (sem condição de z mínimo) — o tracking no carro
+  é SEMPRE mantido, inclusive no zoom out máximo (z=1). CONFIRMADO pelo usuário
+  (2026-06-12): um "fade" da âncora perto de z=1 foi testado e REJEITADO (o mapa deslizava
+  de um jeito estranho no zoom out) — não recriar.
+- **Default das telas: `initialZoom={16}`** (decisão do usuário 2026-06-12: abrir já
+  PRÓXIMO do carro, como o GO Fast — slider a ~72%). `Z_MAX = 48`. Slider em escala log.
 - **Players começam em `t=0` (largada) no load** — `tRef = useRef(0)` em TODAS as telas.
   O carro/cursor só pula p/ um trecho por CLIQUE do usuário (curva/setor/replay/deep-link
   `pendingFocus`). Na Lap, a pior curva continua ATIVA por padrão (card de insight), mas
@@ -126,8 +125,8 @@ A janela do preview fica `document.hidden` (sem screenshot/rAF; timers ≥1s). P
    ancestrais/camadas acima do alvo — nada opaco no caminho.
 2. **Hit-test**: `document.elementFromPoint(cx, cy)` nas coordenadas REAIS de cada controle —
    o retorno deve ser o alvo (ou descendente). `elementsFromPoint` mostra a pilha.
-3. Âncora da câmera: em `z=1` o mapa fica CENTRADO (`g` com `translate(0 0) scale(1)`);
-   a partir de `z≥2`, centro do carro ≈ `followX × innerWidth` (±2px).
+3. Âncora da câmera: centro do carro ≈ `followX × innerWidth` (±2px) em z=1, no z
+   inicial (16) e num z médio — o tracking vale em QUALQUER zoom.
 4. **CSS animations ficam PAUSADAS na janela oculta**: a animação de entrada do `.screen`
    congela um `transform` no meio (vira containing block p/ `fixed` e desloca tudo ~6px).
    Rodar `document.getAnimations().forEach(a => a.finish())` ANTES de medir layout/fixed.

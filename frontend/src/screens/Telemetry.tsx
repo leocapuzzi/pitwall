@@ -344,7 +344,7 @@ export default function Telemetry() {
     <div className="pw-maplayer pw-tel">
       <InteractiveTrack ref={trackRef} trackGeom={m.pair.track} racingGeom={m.pair.racing} racingGeomB={m.pair.racingB}
         edges={m.pair.edges} unitPerM={m.pair.unitPerM} initialT={t0} corners={payload.corners}
-        hideCorners follow followX={0.22} zoomSlider height={440}>
+        hideCorners follow followX={0.22} initialZoom={16} zoomSlider height={440}>
 
         {/* COLUNA ESQUERDA */}
         <div className="pw-leftcol">

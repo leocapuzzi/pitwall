@@ -239,7 +239,7 @@ export default function LapAnalysis() {
     <div className="pw-maplayer">
       <InteractiveTrack ref={trackRef} trackGeom={m.pair.track} racingGeom={m.pair.racing} racingGeomB={m.pair.racingB}
         racingSegments={m.segs} edges={m.pair.edges} unitPerM={m.pair.unitPerM} markers={m.markers}
-        initialT={t0} corners={payload.corners} hideCorners follow zoomSlider
+        initialT={t0} corners={payload.corners} hideCorners follow initialZoom={16} zoomSlider
         activeCorner={active} height={440}>
 
         {/* COLUNA ESQUERDA em fluxo (sem sobreposições por construção) */}

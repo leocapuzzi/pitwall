@@ -94,15 +94,14 @@ const InteractiveTrack = forwardRef<TrackHandle, {
     const a = lerpPt(ptsA, tLast.current)
     // câmera fixa no carro (sem clamp — fundo é escuro, como o GO Fast). A âncora
     // horizontal é deslocável (followX): telas com painel à direita centram o carro
-    // na ÁREA VISÍVEL do mapa, não no centro da tela. A âncora entra com FADE pelo
-    // zoom: em z=1 o mapa fica CENTRADO (pista inteira visível, sem corte — é o
-    // default das telas) e ela passa a valer cheia a partir de z>=2. A transição é
-    // contínua — sem o "pulo" que soltar a âncora por degrau causava no zoom out.
+    // na ÁREA VISÍVEL do mapa, não no centro da tela. Vale em QUALQUER zoom —
+    // inclusive no zoom out máximo (z=1): o tracking no carro é sempre mantido
+    // (CONFIRMADO pelo usuário 2026-06-12; o "fade" da âncora perto de z=1 foi
+    // testado e rejeitado — fazia o mapa deslizar de um jeito estranho no zoom out).
     if (follow) {
       const sc0 = Math.min(w / 1000, h / 640), ox0 = (w - 1000 * sc0) / 2, oy0 = (h - 640 * sc0) / 2
       const cx = (followX * w - ox0) / sc0, cy = (0.5 * h - oy0) / sc0
-      const f = Math.max(0, Math.min(1, vpr.current.z - 1))
-      writeVp({ z: vpr.current.z, x: f * (cx - vpr.current.z * a.x), y: f * (cy - vpr.current.z * a.y) })
+      writeVp({ z: vpr.current.z, x: cx - vpr.current.z * a.x, y: cy - vpr.current.z * a.y })
     }
     placeSprite(car, a, carPx)
     if (braking !== undefined && braking !== brakingRef.current) {
