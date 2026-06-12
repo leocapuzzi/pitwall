@@ -45,8 +45,11 @@
 - ✅ **Aba Tyres da Telemetry** (3 iterações até aprovar) — ver §2.3. Posição das rodas
   CALIBRADA pelo usuário pelos sliders da própria aba e fixada em `TYRE_DEFAULTS`
   (lidos do localStorage do navegador dele via Chrome MCP; override local removido).
-- Commits: 1cb6b18 → 00088ce → fe9b2d4 → 5ef2789 → c297521 → 117798c → 4f09856 →
-  16373a4 → 0754578 (todos pushados).
+- ✅ **Toggle do player mudou de função** (pedido dele): não esconde mais o carro da média —
+  os DOIS carros ficam sempre visíveis e o switch alterna o **lock da câmera** entre eles
+  (`followCar` no InteractiveTrack; `camB` nas 3 telas fullmap).
+- Commits: 1cb6b18 → … → 0754578 → dfe3d71 (Telemetry fechada) → 9b12bdf (lock da câmera);
+  todos pushados.
 
 **Sessão 2026-06-11 — passe GO Fast nas 3 telas de cards (todas aprovadas):**
 - ✅ **Stint**: header de sessão + 2 pods ao vivo (volta de ref em loop; CLIQUE no pod abre o
