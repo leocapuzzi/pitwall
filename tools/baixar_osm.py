@@ -37,6 +37,10 @@ CIRCUITOS = {
     "oschersleben": {"q": "Motorsport Arena Oschersleben, Germany",              "fb": (52.027, 11.280),   "raio": 4000},
     "ledenon":      {"q": "Circuit de Ledenon, France",                          "fb": (43.923, 4.504),    "raio": 4000},
     "interlagos":   {"q": "Autodromo Jose Carlos Pace, Sao Paulo, Brazil",       "fb": (-23.701, -46.697), "raio": 4000},
+    # F1600 Rookie 2026 S3 (alem das compartilhadas com o MX-5):
+    "rudskogen":    {"q": "Rudskogen Motorsenter, Rakkestad, Norway",            "fb": (59.376, 11.297),   "raio": 4000},
+    # Oran Park fechou em 2010 (virou bairro) — provavel que o OSM nao tenha o tracado.
+    "oranpark":     {"q": "Oran Park Raceway, New South Wales, Australia",       "fb": (-34.005, 150.737), "raio": 4000},
 }
 
 

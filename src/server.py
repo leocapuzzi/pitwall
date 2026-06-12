@@ -63,6 +63,26 @@ def api_lap(path: str, lap: int):
         return JSONResponse({"error": str(e)}, status_code=400)
 
 
+# Calendario da temporada (tracks/calendario_2026s3.json), cacheado por mtime.
+_CAL_FP = os.path.join(ROOT, "tracks", "calendario_2026s3.json")
+_cal_cache: tuple[float, dict] | None = None
+
+
+@app.get("/api/calendar")
+def api_calendar():
+    """Calendario das series da temporada + thumbnails de tracado."""
+    global _cal_cache
+    if not os.path.isfile(_CAL_FP):
+        return JSONResponse({"error": "Calendario nao gerado (tools/gerar_calendario.py)."},
+                            status_code=404)
+    mt = os.path.getmtime(_CAL_FP)
+    if _cal_cache is None or _cal_cache[0] != mt:
+        import json
+        with open(_CAL_FP, encoding="utf-8") as f:
+            _cal_cache = (mt, json.load(f))
+    return _cal_cache[1]
+
+
 # Frontend estatico na raiz (build do React). DEPOIS das rotas /api.
 # Se o build nao existe (ex.: maquina recem-clonada), sobe so a API e avisa.
 if os.path.isdir(DIST_DIR):

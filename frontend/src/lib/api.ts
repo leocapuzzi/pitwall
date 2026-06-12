@@ -85,3 +85,31 @@ export async function getLap(path: string, lap: number): Promise<LapData> {
   if (!r.ok || j.error) throw new Error(j.error || 'Falha ao carregar a volta')
   return j
 }
+
+// ---- Calendário da temporada (tracks/calendario_2026s3.json) ----
+export interface CalWeek {
+  w: number; inicio: string; corrida: string; pista: string; config: string
+  track_id: number; temp_c: number; thumb: string | null
+}
+export interface CalSeries {
+  id: string; nome: string; by: string; carro: string; cadencia: string
+  largada: string; duracao_min: number; licenca: string; weeks: CalWeek[]
+}
+export interface CalThumb { paths: { x: number[]; y: number[] }[]; fonte: string }
+export interface Calendar {
+  season: string; fonte: string
+  series: CalSeries[]; thumbs: Record<string, CalThumb>
+}
+
+let _cal: Promise<Calendar> | null = null
+export function getCalendar(): Promise<Calendar> {
+  if (!_cal) {
+    _cal = fetch('/api/calendar').then(async r => {
+      const j = await r.json()
+      if (!r.ok || j.error) throw new Error(j.error || 'Falha ao carregar o calendário')
+      return j as Calendar
+    })
+    _cal.catch(() => { _cal = null })  // permite tentar de novo num erro
+  }
+  return _cal
+}

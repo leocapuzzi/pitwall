@@ -1239,3 +1239,85 @@ button.pw-sessbtn{border:0; font:inherit; color:var(--ink); cursor:pointer; posi
 .pw-chcfg-row .mv:hover:not(:disabled){color:var(--ink); background:rgba(255,255,255,.09)}
 .pw-chcfg-row .mv:disabled{opacity:.3; cursor:default}
 .pw-chcfg-row .pw-switch:disabled{opacity:.4; cursor:default}
+
+/* ---------- SEASON STRIP (calendário da temporada · Dashboard) ---------- */
+.pw-season{flex:none; border-radius:20px; padding:11px 14px 8px; display:flex; flex-direction:column; gap:6px; position:relative}
+.pw-sea-skel{min-height:186px}
+.pw-seahead{display:flex; align-items:center; gap:14px; min-height:30px}
+.pw-seatitle{display:flex; align-items:center; gap:12px; flex:none}
+.pw-seatabs{display:flex; gap:4px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.07); border-radius:999px; padding:3px}
+.pw-seatab{border:0; background:transparent; color:var(--ink-2); font:inherit; font-size:11.5px; font-weight:700; padding:4px 12px; border-radius:999px; cursor:pointer; white-space:nowrap; transition:background .15s, color .15s}
+.pw-seatab:hover{color:var(--ink)}
+.pw-seatab.on{background:var(--accent); color:#08130c; box-shadow:0 2px 12px color-mix(in oklch, var(--accent) 45%, transparent)}
+.pw-seasub{font-size:11.5px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
+.pw-seasub i{font-style:normal; opacity:.85}
+.pw-seanext{margin-left:auto; text-align:right; flex:none}
+.pw-seanext .lbl{display:block}
+.pw-seacount{font-family:var(--font-display); font-weight:800; font-size:14.5px; color:var(--accent); letter-spacing:.01em}
+
+.pw-searailwrap{position:relative; min-height:0}
+.pw-searail{display:flex; gap:9px; overflow-x:auto; scroll-snap-type:x proximity; padding:3px 24px 5px; scrollbar-width:none}
+.pw-searail::-webkit-scrollbar{display:none}
+.pw-seaarrow{position:absolute; top:50%; transform:translateY(-50%); z-index:2; width:24px; height:24px; border-radius:50%; border:1px solid rgba(255,255,255,.13); background:rgba(14,17,24,.78); color:var(--ink-2); display:grid; place-items:center; cursor:pointer; padding:0}
+.pw-seaarrow:hover{color:var(--ink); border-color:rgba(255,255,255,.25)}
+.pw-seaarrow.l{left:-4px}
+.pw-seaarrow.l svg{transform:rotate(180deg)}
+.pw-seaarrow.r{right:-4px}
+
+.pw-calcard{flex:none; width:168px; scroll-snap-align:center; text-align:left; border:1px solid rgba(255,255,255,.075); background:rgba(255,255,255,.04); border-radius:15px; padding:8px 11px 9px; display:flex; flex-direction:column; gap:3px; cursor:pointer; color:inherit; font:inherit; transition:transform .18s, border-color .18s, background .18s, opacity .18s; position:relative}
+.pw-calcard:hover{transform:translateY(-2px); border-color:rgba(255,255,255,.17); background:rgba(255,255,255,.065)}
+.pw-calcard.done{opacity:.5}
+.pw-calcard.done:hover{opacity:.85}
+.pw-calcard.next{border-color:color-mix(in oklch, var(--accent) 55%, transparent);
+  box-shadow:0 0 0 1px color-mix(in oklch, var(--accent) 30%, transparent), 0 8px 26px -10px color-mix(in oklch, var(--accent) 55%, transparent)}
+.pw-calhead{display:flex; align-items:center; gap:6px; min-height:17px}
+.pw-calw{font-family:var(--font-display); font-weight:800; font-size:13px}
+.pw-caldone{color:var(--ink-3); display:grid; place-items:center}
+.pw-callive{font-size:8.5px; font-weight:800; letter-spacing:.08em; color:#08130c; background:var(--accent); border-radius:5px; padding:2px 6px; animation:pw-calpulse 2.4s ease-in-out infinite}
+@keyframes pw-calpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in oklch, var(--accent) 50%, transparent)} 55%{box-shadow:0 0 0 6px transparent}}
+.pw-calreal{margin-left:auto; color:var(--cyan); font-size:11.5px; font-weight:800; line-height:1}
+.pw-calthumb{height:56px; display:grid; place-items:center; margin:1px 0; min-height:0}
+.pw-calthumb svg{height:100%; width:100%}
+.pw-calthumb path{stroke:rgba(255,255,255,.66); stroke-width:1.4px}
+.pw-calcard.next .pw-calthumb path{stroke:var(--accent); filter:drop-shadow(0 0 4px color-mix(in oklch, var(--accent) 55%, transparent))}
+.pw-calthumb.miss{display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center; color:var(--ink-3); font-size:9px; font-weight:600; border:1px dashed rgba(255,255,255,.14); border-radius:10px; align-self:stretch}
+.pw-calpista{font-size:11.5px; font-weight:800; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pw-calcfg{font-size:10px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pw-calmeta{display:flex; align-items:center; gap:4px; font-size:10px; color:var(--ink-2); margin-top:2px; white-space:nowrap}
+.pw-calmeta i{font-style:normal; color:var(--ink-3)}
+
+.pw-seatl{position:relative; height:15px; margin:0 28px; flex:none}
+.pw-seatl .bar{position:absolute; left:0; right:0; top:6.5px; height:2.5px; border-radius:2px; background:rgba(255,255,255,.09); display:block; overflow:hidden}
+.pw-seatl .fill{display:block; height:100%; border-radius:2px; background:linear-gradient(90deg, color-mix(in oklch, var(--accent) 55%, transparent), var(--accent))}
+.pw-seatl .tick{position:absolute; top:7.75px; width:6px; height:6px; transform:translate(-50%,-50%); border-radius:50%; background:var(--surface-3); cursor:pointer; transition:transform .15s}
+.pw-seatl .tick:hover{transform:translate(-50%,-50%) scale(1.5)}
+.pw-seatl .tick.done{background:color-mix(in oklch, var(--accent) 60%, var(--surface-3))}
+.pw-seatl .tick.live{background:var(--accent)}
+.pw-seacar{position:absolute; top:7.75px; transform:translate(-50%,-50%) rotate(45deg); width:9px; height:9px; border-radius:2.5px; background:var(--accent); box-shadow:0 0 12px color-mix(in oklch, var(--accent) 75%, transparent); pointer-events:none}
+
+.pw-calmodal{position:fixed; inset:0; z-index:60; background:rgba(6,8,13,.55); backdrop-filter:blur(3px) saturate(.9); display:grid; place-items:center}
+.pw-calsheet{width:min(540px, calc(100vw - 48px)); border-radius:20px; padding:16px 18px 14px; display:flex; flex-direction:column; gap:11px; max-height:calc(100vh - 120px); overflow:auto}
+.pw-calshead{display:flex; align-items:flex-start; gap:10px}
+.pw-calshead > div{display:flex; flex-direction:column; gap:2px; min-width:0; flex:1}
+.pw-calsh{font-family:var(--font-display); font-weight:800; font-size:19px; line-height:1.12}
+.pw-calscfg{font-size:11.5px; color:var(--ink-3)}
+.pw-calthumb.big{height:185px; flex:none}
+.pw-calthumb.big path{stroke:rgba(255,255,255,.85); stroke-width:1.6px}
+.pw-calthumb.big.miss{font-size:11px}
+.pw-calfacts{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:9px 14px}
+.pw-calfacts > div{display:flex; flex-direction:column; gap:1px; min-width:0}
+.pw-calfacts .lbl{font-size:10px}
+.pw-calfacts b{font-size:12px; font-weight:700; line-height:1.25}
+.pw-calstatus{font-size:11px; color:var(--ink-2); border:1px dashed rgba(255,255,255,.15); border-radius:11px; padding:8px 11px; line-height:1.45}
+.pw-calstatus.ok{border:1px solid color-mix(in oklch, var(--cyan) 45%, transparent); color:var(--cyan)}
+
+@media (max-width: 1100px){
+  .pw-seasub{display:none}
+}
+
+/* Season Strip: compacto em telas baixas (laptop) — devolve altura ao hero */
+@media (max-height: 820px){
+  .pw-season{padding:9px 14px 7px; gap:5px}
+  .pw-calthumb{height:44px}
+  .pw-calcard{padding:7px 10px 8px}
+}

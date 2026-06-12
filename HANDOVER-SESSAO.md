@@ -34,6 +34,32 @@
   seguem na raiz (referências vivas).
 
 ## 1. ✅ CONCLUÍDO (e APROVADO pelo usuário)
+**Sessão 2026-06-12 (parte 3) — SEASON STRIP no Dashboard (calendário da temporada):**
+- ✅ **`components/SeasonStrip.tsx` (novo)**: faixa full-width entre o topo e o corpo do
+  Dashboard com o calendário 2026 S3 por série — tabs em vidro **MX-5 Cup / F1600 Rookie**
+  (persistem em `localStorage pw_cal_serie`), 12 cards com o **traçado real de cada circuito**,
+  countdown ao vivo p/ a próxima corrida (componente isolado, re-render 1 Hz só nele),
+  card da próxima corrida com glow accent, semanas passadas esmaecidas c/ bandeira,
+  badge ✓ cyan = pista criada no PitWall, **timeline com 12 ticks clicáveis + marcador
+  "você está aqui"** (progresso por data real), trilho com scroll-snap + setas + wheel
+  vertical→horizontal (listener manual passive:false), clique no card abre **modal de
+  detalhe em vidro** (thumb grande, corrida 1x, semana, clima, largada, cadência, licença,
+  status PitWall). Skeleton enquanto carrega; erro no fetch não quebra o Dashboard (some).
+- ✅ **Dados**: `tracks/calendario_2026s3.json` gerado por **`tools/gerar_calendario.py`**
+  (semanas transcritas do PDF oficial `2026s3.pdf` págs 65/132; thumbs por pista = melhor
+  geometria disponível: centerline real da config se a pista foi criada → senão silhueta
+  OSM do **componente conexo principal** do circuito → senão null/placeholder).
+  **RE-RODAR o script após criar pistas novas** promove os thumbs ao traçado real.
+  Oran Park (F1600 S12) não existe mais no OSM (demolida 2010) → placeholder
+  "traçado no seu 1º stint". OSM de **Rudskogen** baixado; IDs novos: Rudskogen=451,
+  Oran Park GP=202. Endpoint **`/api/calendar`** no server.py (cache por mtime).
+- ✅ Horários exibidos como no PDF (o schedule não declara fuso — sem conversão).
+  Datas date-only parseadas como LOCAL (`dt()` no SeasonStrip — UTC voltava 1 dia no BR).
+- ✅ Verificado no preview por DOM (checklist §9): hit-test/oclusão ok nas tabs/cards/setas/
+  ticks, modal abre/fecha (X e backdrop), troca de série ok, console limpo, 1366×768 sem
+  estouro (media query compacta `max-height:820px`). Build verde. ⚠️ preview_screenshot
+  não funciona na janela oculta (timeout) — validação visual final é do Leo no app.
+
 **Sessão 2026-06-12 (parte 2) — pistas da temporada 2026 S3 (Global MX-5 Cup) preparadas:**
 - ✅ **Calendário cadastrado** em `tracks/temporada_2026s3.json` (manifesto: 12 semanas + Interlagos;
   track_id de cada config vindo de catálogo público e validado — Winton=439 bateu com o .ibt;

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import Icon from '../components/Icon'
+import SeasonStrip from '../components/SeasonStrip'
 import { useSession } from '../lib/useSession'
 import { projectTrackPair } from '../lib/track'
 import type { Payload, SessionInfo } from '../lib/api'
@@ -105,6 +106,9 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* calendário da temporada (séries do Leo) */}
+      <SeasonStrip />
 
       {/* corpo: hero | coluna direita */}
       <div className="pw-dashmain">
