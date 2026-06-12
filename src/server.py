@@ -1,8 +1,12 @@
-"""Servidor web do PitWall (Cenario B): um processo Python que serve o frontend
-e a API de dados (JSON), reusando todo o motor via webdata.
+"""Servidor web do PitWall: um processo Python que serve o frontend (React,
+build em frontend/dist) e a API de dados (JSON), reusando todo o motor via webdata.
 
 Rodar:  .venv\\Scripts\\python.exe -m uvicorn server:app --app-dir src --port 8600
-(ou use abrir_pitwall_web.bat)
+(ou use abrir_pitwall.bat)
+
+Dev: o frontend tambem pode rodar pelo Vite (npm --prefix frontend run dev, porta
+5173, que proxia /api para ca); o build (npm --prefix frontend run build) atualiza
+o frontend/dist servido aqui.
 """
 from __future__ import annotations
 
@@ -15,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 import webdata
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-WEB_DIR = os.path.join(ROOT, "web")
+DIST_DIR = os.path.join(ROOT, "frontend", "dist")
 
 app = FastAPI(title="PitWall")
 
@@ -37,5 +41,9 @@ def api_session(path: str, max_off: float = 1.07):
         return JSONResponse({"error": str(e)}, status_code=400)
 
 
-# Frontend estatico na raiz (index.html). DEPOIS das rotas /api.
-app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
+# Frontend estatico na raiz (build do React). DEPOIS das rotas /api.
+# Se o build nao existe (ex.: maquina recem-clonada), sobe so a API e avisa.
+if os.path.isdir(DIST_DIR):
+    app.mount("/", StaticFiles(directory=DIST_DIR, html=True), name="frontend")
+else:
+    print("[PitWall] frontend/dist nao encontrado - rode: npm --prefix frontend run build")

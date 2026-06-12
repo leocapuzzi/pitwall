@@ -3,6 +3,18 @@
 > App de análise de telemetria de sim-racing (iRacing) para "debriefing" pós-corrida.
 > Documento de referência. Atualizado conforme o projeto evolui.
 
+> **NOTA (2026-06-11):** este é o plano-mestre original — vale como registro das
+> decisões (em especial §3, §4, §6 e as regras travadas do §12). O que mudou desde
+> que foi escrito:
+> - **UI:** o Streamlit (§2) foi substituído por **React+TS+Vite** (`frontend/`) +
+>   **FastAPI** (`src/server.py`), após o handoff de design (`design_handoff_pitwall/`).
+>   A versão Streamlit está em `_arquivo-morto/`.
+> - **Fase 2:** a API `/data` do iRacing está **bloqueada** (login por senha
+>   descontinuado; OAuth2 pausado p/ novos clients) e o Garage61 exige aprovação +
+>   opt-in — integração aguardando acesso.
+> - **Fase 3 (coach de IA):** design pronto, ON HOLD aguardando janela de API.
+> - Estado vivo e pendências: ver `HANDOVER-SESSAO.md`; orientação geral: `COMECE-AQUI.md`.
+
 ---
 
 ## 1. Visão geral

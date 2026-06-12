@@ -16,7 +16,7 @@ email = config.get("iracing_email")
 password = config.get("iracing_password")
 
 if not email or not password:
-    print("X  Faltam as credenciais do iRacing no cofre (.streamlit/secrets.toml).")
+    print("X  Faltam as credenciais do iRacing no cofre (secrets.toml na raiz).")
     print("   Preencha iracing_email e iracing_password e rode de novo.")
     raise SystemExit(1)
 

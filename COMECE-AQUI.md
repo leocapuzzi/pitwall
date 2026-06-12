@@ -1,66 +1,95 @@
-# COMECE AQUI — Retomar o PitWall no PC Windows
+# COMECE AQUI — Guia de orientação do PitWall
 
-Este arquivo sincroniza pelo iCloud. Abra-o no PC para retomar de onde paramos.
-O contexto completo está no **`PLANO.md`** (mesma pasta) — ele é auto-suficiente.
-
-> A sessão do Claude no PC é "nova" (não lembra das conversas do Mac). O `PLANO.md`
-> é a ponte. Se o Claude sugerir algo que contradiz o plano, diga:
-> *"confere no PLANO.md, já decidimos isso"*.
+> **Este é o único documento de orientação do projeto.** Ele diz o que é o PitWall,
+> como rodar, o que tem em cada pasta e **qual documento serve para quê**.
+> Numa sessão nova do Claude: leia este arquivo e depois o `HANDOVER-SESSAO.md`
+> (estado da última sessão + pendências). Atualizado em **2026-06-11**.
 
 ---
 
-## ✅ Pré-checklist (antes de abrir o Claude no PC)
+## 1. O que é
 
-1. **iCloud sincronizado:** a pasta `Claude/PItWall` aparece no PC e o `PLANO.md` está
-   baixado (não só "na nuvem").
-2. **Ter um `.ibt` real:** no iRacing, ativar gravação de telemetria (tecla **Alt+L**
-   dentro do sim) e rodar algumas voltas. Arquivos em `Documentos\iRacing\telemetry`.
+**PitWall** é o app de debriefing de telemetria do iRacing do Leo: lê os arquivos
+`.ibt` gravados pelo sim, analisa as voltas (deltas, setores, curvas, coaching) e
+mostra tudo numa interface web estilo "engenheiro de pista" (marca LIGMA Racing,
+visual GO Fast com liquid glass).
 
----
+- **Usuário não programa** → o Claude constrói e guia passo a passo, em português.
+- **Stack atual:** backend **Python/FastAPI** (`src/`) + frontend **React+TS+Vite**
+  (`frontend/`). *(A primeira versão era Streamlit; foi arquivada — ver `_arquivo-morto/`.)*
 
-## 📋 Mensagem para colar na sessão do PC
+## 2. Como abrir o app (usuário)
 
-```
-Estou no meu PC Windows, onde rodo o iRacing. Vou construir o PitWall e
-NÃO programo — preciso que você me guie passo a passo.
+Dois cliques em **`abrir_pitwall.bat`** → abre `http://localhost:8600` no navegador.
+O `.bat` já mata instâncias velhas ("zumbis") da porta 8600 e serve o build do React.
 
-1) Primeiro, leia o arquivo PLANO.md nesta pasta. Ele tem todo o escopo e
-   as decisões que já fechamos. Siga esse plano.
+## 3. Como rodar em desenvolvimento (Claude)
 
-2) Vamos começar a FASE 1. Me guie do zero:
-   - Me ajude a localizar/confirmar um arquivo .ibt real de uma sessão minha
-     (em Documentos\iRacing\telemetry).
-   - Monte comigo o ambiente Python, me dando os comandos exatos pra colar.
-   - Construa um primeiro dashboard que leia esse .ibt de verdade e mostre:
-     os canais (velocidade, freio, acelerador, volante), um seletor de voltas,
-     e o delta "best vs average" por setor (usando os setores oficiais do
-     SplitTimeInfo).
+- **Caminho do projeto: `C:\Users\leoca\Documents\Claude\PitWall`** ⚠️ A sessão pode
+  abrir com cwd no caminho VELHO do iCloud (`iCloudDrive\Claude\PItWall`, hoje só uma
+  casca com `.claude/`) — trabalhar SEMPRE no caminho novo, com paths absolutos.
+  (O projeto saiu do iCloud porque o driver `cldflt.sys` causava telas azuis.)
+- **Backend:** `.venv\Scripts\python.exe -m uvicorn server:app --app-dir src --port 8600`
+  (sem `--reload`; reiniciar o processo após mudar `src\*.py`).
+- **Frontend (dev):** `npm --prefix frontend run dev` → Vite na porta 5173, proxia
+  `/api` → 8600. No preview do Claude há as configs `backend` e `frontend` no
+  `.claude/launch.json`.
+- **Build/typecheck (obrigatório após cada mudança no frontend):**
+  `npm --prefix frontend run build` — além de checar tipos, atualiza o
+  `frontend/dist` que o `.bat` serve.
+- **Telemetria:** `.ibt` reais em `C:\Users\leoca\Documents\iRacing\telemetry`;
+  sem eles, cai no fallback `samples/` (2 voltas de MX-5 em Winton).
+  Override: variável de ambiente `PITWALL_TELEMETRY_DIR`.
+- **GitHub:** repo privado `github.com/leocapuzzi/pitwall` (branch `main`).
+  Fluxo: `git add -A; git commit -m "..."; git push` (gh CLI NÃO instalado).
 
-3) Vá me explicando o que cada passo faz, sem pressupor conhecimento técnico.
+## 4. Mapa de pastas
 
-Comece lendo o PLANO.md e me dizendo o plano da Fase 1 antes de executar.
-```
+| Pasta | O que é |
+|---|---|
+| `src/` | Motor de análise + API: `ibt_reader` (lê .ibt), `analysis` (voltas/deltas/setores), `corners`/`signatures`/`coaching` (análise por curva e insights), `lapdata`/`store` (volta canônica + histórico SQLite/Parquet em `data/`), `webdata` (monta o payload JSON), `server` (FastAPI, porta 8600), `config`/`calibration`/`track_model`, testes `test_*.py`, `inspect_ibt.py` (utilitário p/ listar canais de um .ibt) |
+| `frontend/` | Interface React+TS+Vite — 6 telas (Dashboard, Stint, Telemetry, Lap, Comparison, AI Engineer). Docs próprios: `DESIGN-UI.md` e `LIQUID-GLASS.md` |
+| `tracks/` | Geometria fixa das pistas (`*.track.json`, gerados do OpenStreetMap) |
+| `tools/` | `build_track_from_osm.py` — pipeline p/ gerar a pista de um circuito novo |
+| `samples/` | 2 `.ibt` pequenos de exemplo (vão pro GitHub; fallback sem telemetria real) |
+| `data/` | Histórico local gerado pelo app (SQLite+Parquet) — NÃO versionado |
+| `Design Reference/` | Prints do app **GO Fast** = north star visual do produto |
+| `design_handoff_pitwall/` | Handoff de design (React/JSX+CSS das 6 telas) que guiou o rebuild — ainda é referência p/ pendências (ex.: fluxo B da Comparison) |
+| `_arquivo-morto/` | Tudo que saiu de uso (Streamlit, web vanilla, docs antigos) — ver o `LEIA-ME.md` de lá |
+| `.venv/` | Ambiente Python (não versionado) |
 
----
+Na raiz há também o **`secrets.toml`** (cofre de credenciais p/ as APIs da Fase 2,
+lido por `src/config.py`) — **fora do git**; nunca commitar nem imprimir.
 
-## 🎯 O que esperar na Fase 1
+## 5. Mapa de documentos (quem faz o quê)
 
-| Passo | O que o Claude faz | O que você faz |
-|---|---|---|
-| 1. Contexto | Lê o `PLANO.md` e confirma o plano da Fase 1 | Confere se bate |
-| 2. Telemetria | Ajuda a achar/validar um `.ibt` real | Aponta a pasta / roda sessão de teste |
-| 3. Ambiente | Dá os comandos pra instalar Python + bibliotecas | Cola e reporta o resultado |
-| 4. Ler o dado | Script que abre o `.ibt` e lista voltas/canais | Confirma que os dados aparecem |
-| 5. Dashboard | 1ª tela (canais + seletor + delta por setor) | Abre no navegador e dá feedback |
+| Documento | Papel |
+|---|---|
+| `README.md` | Vitrine do GitHub: o que é o projeto, como instalar/rodar em qualquer máquina |
+| `COMECE-AQUI.md` | **Este guia** — orientação geral única do projeto |
+| `HANDOVER-SESSAO.md` | **Documento vivo**: estado da última sessão, o que foi feito/aprovado, pendências em ordem de valor, contrato do payload. Atualizar ao fim de cada sessão de trabalho |
+| `PLANO.md` | Plano-mestre original: visão, decisões de arquitetura, regras travadas (§12), roadmap por fases. Histórico de decisões — consultar antes de contrariar algo já decidido |
+| `ANALISES.md` | Catálogo dos 278 canais de telemetria e das análises possíveis ❄️ |
+| `pitwall_setup.md` | Conhecimento de referência: setup de carro ❄️ |
+| `pitwall_pilotagem.md` | Conhecimento de referência: técnica de pilotagem ❄️ |
+| `frontend/DESIGN-UI.md` | Guia de manutenção da UI (fullmap, câmera, liquid glass, pegadinhas, checklist de verificação) — **LER antes de mexer nas telas** |
+| `frontend/LIQUID-GLASS.md` | Física e implementação do vidro líquido (filtro SVG por painel) |
+| `_arquivo-morto/LEIA-ME.md` | O que foi arquivado, quando e por quê |
 
-**Resultado:** dashboard local lendo uma volta sua de verdade, com gráficos dos canais
-e o **delta best vs average por setor** — o primeiro insight real e a fundação do resto.
+❄️ = arquivos de conhecimento estáveis: **não editar** sem pedido explícito do Leo.
 
----
+## 6. Regras de ouro (decididas; não mudar sem conversa)
 
-## ⚠️ Lembretes
+1. **Nunca apagar os `.ibt`** — é o acervo-fonte, irrecuperável.
+2. Alinhar voltas por `LapDistPct`; comparar só **mesmo carro + mesma pista**.
+3. Cores: você/BEST = **vermelho**, referência/média = **azul** (no design GO Fast,
+   roxo p/ best-sectors conforme as telas).
+4. Não voltar a sincronizar código/dados por nuvem "sob demanda" (iCloud causou BSOD).
+5. Matar processos zumbis antes de subir servidor (8600) — o `.bat` já faz isso.
+6. APIs externas: iRacing `/data` está **bloqueada** (OAuth2 pausado p/ novos clients);
+   Garage61 exige aprovação + opt-in. Detalhes nas memórias do Claude.
 
-- **Código fica local** no PC (fora do iCloud, pra evitar conflitos). **Documentos**
-  (PLANO.md, este arquivo) ficam no iCloud. GitHub como ponte depois, se quiser.
-- Pequenos perrengues (instalar Python, achar o `.ibt`) são normais — só reportar a
-  tela que o Claude resolve.
+## 7. Estado e pendências
+
+O estado por sessão (o que está pronto e aprovado, e a fila de pendências em ordem
+de valor) vive no **`HANDOVER-SESSAO.md`** — sempre lá, sempre atualizado.

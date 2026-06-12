@@ -1,8 +1,7 @@
-"""Leitor do cofre de segredos (.streamlit/secrets.toml).
+"""Leitor do cofre de segredos (secrets.toml na raiz do projeto).
 
-Funciona tanto dentro do Streamlit quanto em scripts soltos (testes), lendo o
-mesmo arquivo. Nunca imprime os segredos. Valores ainda com o texto de exemplo
-("COLE_..._AQUI") contam como NAO preenchidos.
+Arquivo fora do git (.gitignore). Nunca imprime os segredos. Valores ainda com
+o texto de exemplo ("COLE_..._AQUI") contam como NAO preenchidos.
 """
 from __future__ import annotations
 
@@ -11,7 +10,7 @@ import os
 import toml
 
 _PROJ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_SECRETS = os.path.join(_PROJ, ".streamlit", "secrets.toml")
+_SECRETS = os.path.join(_PROJ, "secrets.toml")
 
 # Textos de exemplo do cofre — nao contam como valor real.
 _PLACEHOLDERS = {"COLE_SEU_TOKEN_AQUI", "COLE_SEU_EMAIL_AQUI", "COLE_SUA_SENHA_AQUI"}

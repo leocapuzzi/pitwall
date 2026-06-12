@@ -1,86 +1,89 @@
 # PitWall 🏁
 
-Debriefing de telemetria de sim-racing (iRacing). **Fase 1** — análise só com os
-seus próprios dados, sem APIs, sem senha, sem custo.
+Debriefing de telemetria de sim-racing (iRacing), no estilo "engenheiro de pista":
+lê os arquivos `.ibt` gravados pelo sim, analisa as voltas e mostra onde o tempo
+está sendo ganho e perdido — por setor, por curva e por fase da curva (entrada,
+ápice, saída) — numa interface web escura com mapa da pista em tela cheia e
+painéis em "liquid glass" (marca LIGMA Racing, visual inspirado no GO Fast).
 
-## Como abrir o dashboard
+**Stack:** Python (FastAPI + pandas/numpy + pyirsdk) no backend ·
+React + TypeScript + Vite no frontend · dados 100% locais (sem nuvem).
 
-**Jeito fácil:** dê dois cliques em **`abrir_pitwall.bat`**.
+## Telas
 
-**Pelo terminal** (na pasta do projeto):
+- **Dashboard** — visão geral: última sessão, voltas limpas, atividade da semana.
+- **Stint** — evolução do stint: KPIs (melhor/ótima/média), gráfico de tempos,
+  tabela com setores e combustível, separação automática por paradas.
+- **Telemetry** — mapa em tela cheia + canais (velocidade, freio, acelerador,
+  marcha, volante…) com cursor sincronizado, zoom por trecho e replay do carro.
+- **Lap Analysis** — a volta colorida pelo delta no próprio mapa + perdas por
+  curva com coaching real ("freie 8 m mais tarde na T3…").
+- **Comparison** — melhor volta vs média (fantasma + gap em metros ao vivo).
+- **AI Engineer** — relatório do "engenheiro": plano de recuperação do delta,
+  replay fantasma por curva, evidências por canal e chat de análise local.
 
-```powershell
-.venv\Scripts\streamlit.exe run src\app.py
+## Como rodar
+
+### No PC do dia a dia (Windows, com iRacing)
+
+Dois cliques em **`abrir_pitwall.bat`** → abre `http://localhost:8600`.
+O app lê os `.ibt` de `Documentos\iRacing\telemetry` automaticamente
+(no iRacing, grave telemetria com `Alt+L`).
+
+### Numa máquina nova (qualquer SO)
+
+```bash
+git clone https://github.com/leocapuzzi/pitwall.git
+cd pitwall
+
+# Backend (Python 3.10+)
+python -m venv .venv
+.venv/Scripts/pip install -r requirements.txt        # Windows
+# .venv/bin/pip install -r requirements.txt          # macOS/Linux
+
+# Frontend (Node 20+)
+npm --prefix frontend install
+npm --prefix frontend run build
+
+# Subir (serve API + interface na porta 8600)
+.venv/Scripts/python -m uvicorn server:app --app-dir src --port 8600
 ```
 
-O navegador abre sozinho em `http://localhost:8501`. Para fechar, volte ao
-terminal e aperte `Ctrl+C` (ou feche a janela do `.bat`).
+Sem telemetria real, o app usa as voltas de exemplo de `samples/` (MX-5 em
+Winton). Para apontar outra pasta de `.ibt`: variável `PITWALL_TELEMETRY_DIR`.
 
-## O que o dashboard mostra
-
-Na barra lateral você escolhe o arquivo de telemetria (`.ibt`) — ele lista
-automaticamente os da pasta `Documentos\iRacing\telemetry`, do mais novo ao mais
-antigo. Depois escolhe a comparação:
-
-- **Sua melhor vs sua média** (padrão): compara sua volta mais rápida com o seu
-  ritmo médio (média sintetizada das voltas limpas). Revela quanto tempo está
-  "na mesa".
-- **Comparar duas voltas**: escolhe duas voltas quaisquer.
-
-E vê:
-
-**Seletor de análise** (barra lateral):
-- **BEST vs AVG** — sua melhor volta (vermelho) vs sua média (azul).
-- **Comparar duas voltas** — você escolhe a volta A (vermelho) e a B (azul).
-  *(Comparar com outro piloto chega na Fase 2, com o Garage61 — mesma lógica de cores.)*
-
-**Código de cores (vale para todas as comparações e o mapa):** sua volta / BEST =
-**vermelho**; média / referência = **azul**.
-
-1. **Visualizador integrado** no padrão Garage61 — **mapa grande à esquerda**, e à
-   direita os gráficos (eixo X = distância em metros): **Velocidade, Acelerador,
-   Freio, Marcha e Volante** (volante com Esq/Dir em vez de +/−). Sem legenda: cada
-   gráfico tem **caixas de valor à direita** que mostram o valor no cursor para cada
-   volta, na cor da volta. Recursos:
-   - **Cursor sincronizado nos dois sentidos:** passe o mouse em qualquer gráfico →
-     linha vertical em todos + marcador do carro no mapa; passe o mouse no **mapa** →
-     a linha vertical aparece nos gráficos no mesmo ponto.
-   - **Pista de referência + traçado:** o mapa mostra a pista (faixa cinza), as **duas
-     linhas sobrepostas** (sua volta vs referência) e marcadores de início de setor e
-     da linha de chegada — pra você saber sempre onde está na pista.
-   - **Abas de setor (embaixo):** uma por setor, com o **tempo e o gap** do setor;
-     clicar dá **zoom no trecho nos gráficos e no mapa**. Também dá pra arrastar nos
-     gráficos para zoom livre (o mapa acompanha). Duplo-clique volta à volta toda.
-   - Os eixos verticais são travados: o zoom afeta só a distância, sem distorcer escala.
-2. **Delta por setor oficial** — barras por setor real da pista (lidos do
-   `SplitTimeInfo` do próprio `.ibt`; verde = ganhou, vermelho = perdeu). Os tempos e
-   gaps de cada setor aparecem nas abas embaixo do visualizador.
-3. **Consistência** — tempo de cada volta da sessão.
-
-Os limites dos setores oficiais aparecem como linhas laranja nos gráficos; as
-curvas detectadas, como linhas pontilhadas cinza.
+Em desenvolvimento, o frontend também roda com hot-reload:
+`npm --prefix frontend run dev` (porta 5173, proxia `/api` → 8600).
 
 ## Estrutura
 
 ```
-src/
-  ibt_reader.py      # lê o .ibt (telemetria + setores oficiais/pista/carro/setup)
-  analysis.py        # separa voltas, best/média, delta e tempo por setor
-  lapdata.py         # estrutura canônica de "Volta" (base p/ N voltas e outras fontes)
-  store.py           # histórico local (SQLite + Parquet): sessões, voltas, setup
-  telemetry_view.py  # visualizador interativo (cursor sincronizado + mapa + zoom)
-  app.py             # o dashboard (Streamlit + Plotly)
-  inspect_ibt.py     # utilitário: lista os canais de um arquivo .ibt
-data/                # histórico gerado automaticamente (não versionado)
-requirements.txt
+src/        motor de análise (leitura .ibt, voltas, setores, curvas, coaching)
+            + server.py (FastAPI: /api/* e o build do frontend)
+frontend/   interface React+TS+Vite (build em frontend/dist)
+tracks/     geometria fixa das pistas (gerada do OpenStreetMap)
+tools/      build_track_from_osm.py (pipeline p/ adicionar circuito novo)
+samples/    telemetria de exemplo (única que vai pro GitHub)
+data/       histórico local (SQLite+Parquet) — gerado, não versionado
+_arquivo-morto/  versões antigas (Streamlit etc.) — só consulta
 ```
 
-Cada sessão aberta é guardada automaticamente no histórico (`data/`) com carro,
-pista, condições e o setup do carro — base para acompanhar evolução, recordes
-pessoais e o coach de IA das próximas fases.
+## Documentação
 
-## Próximas fases (ver `PLANO.md`)
+- **`COMECE-AQUI.md`** — guia de orientação do projeto (mapa de pastas e docs,
+  como rodar, regras).
+- **`HANDOVER-SESSAO.md`** — estado vivo: o que está pronto e o que vem a seguir.
+- **`PLANO.md`** — plano-mestre: visão, decisões de arquitetura e roadmap.
+- **`ANALISES.md`** — catálogo dos canais de telemetria e análises possíveis.
+- **`frontend/DESIGN-UI.md`** e **`frontend/LIQUID-GLASS.md`** — guias técnicos da UI.
 
-- **Fase 2:** referência de pilotos (Garage61) + resultados/progresso (API iRacing).
-- **Fase 3:** coach de IA que escreve o debrief.
-- **Fase 4:** detecção automática de nova corrida + versão web.
+## Estado (jun/2026)
+
+- ✅ Análise completa com os **seus** dados: 6 telas prontas, tempos batendo com o
+  oficial ao milésimo, pista real via OpenStreetMap, coaching por curva.
+- ⏸️ Comparação com outros pilotos (Garage61) e resultados/iRating (API do iRacing)
+  aguardam liberação de acesso das APIs.
+- 🔜 Coach de IA escrevendo o debrief (design pronto; aguardando janela de API).
+
+> Os `.ibt` são o acervo-fonte: nunca são apagados nem versionados (são pesados);
+> só `samples/` vai pro repositório.

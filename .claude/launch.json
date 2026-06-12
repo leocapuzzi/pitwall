@@ -2,28 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "pitwall",
-      "runtimeExecutable": ".venv\\Scripts\\streamlit.exe",
-      "runtimeArgs": ["run", "src/app.py", "--server.port", "8501", "--server.headless", "true"],
-      "port": 8501
-    },
-    {
-      "name": "design",
-      "runtimeExecutable": ".venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8534", "--directory", "DESIGN REFERENCES"],
-      "port": 8534
-    },
-    {
-      "name": "web",
+      "name": "backend",
       "runtimeExecutable": ".venv\\Scripts\\python.exe",
       "runtimeArgs": ["-m", "uvicorn", "server:app", "--app-dir", "src", "--port", "8600"],
       "port": 8600
-    }
-  ,{
-      "name": "landing",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8535", "--directory", "."],
-      "port": 8535
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
+      "port": 5173
     }
   ]
 }

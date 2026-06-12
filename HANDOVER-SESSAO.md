@@ -1,7 +1,8 @@
 # HANDOVER — PitWall (rebuild da UI em React) · atualizado 2026-06-11
 
-> Ponte para a próxima sessão do Claude. **Leia também:** as memórias do projeto (índice em
-> `MEMORY.md` — em especial `pitwall-frontend-react.md`, `pitwall-projeto.md`,
+> Ponte para a próxima sessão do Claude. **Leia ANTES o `COMECE-AQUI.md`** (guia único de
+> orientação: mapa de pastas/documentos, como rodar, regras). **Leia também:** as memórias do
+> projeto (índice em `MEMORY.md` — em especial `pitwall-frontend-react.md`, `pitwall-projeto.md`,
 > `iracing-data-api-bloqueada.md`, `pitwall-coach-ia-decisao.md`,
 > `preview-verificacao-oclusao-hittest.md`) e o **guia de manutenção da UI em
 > `frontend/DESIGN-UI.md`** (arquitetura fullmap/liquid glass, knobs, regras e pegadinhas —
@@ -10,19 +11,27 @@
 ## 0. Onde estamos / como rodar
 - **Caminho do projeto:** `C:\Users\leoca\Documents\Claude\PitWall` (a sessão pode abrir com cwd
   no path VELHO do iCloud, vazio — trabalhar SEMPRE no path novo, absoluto).
-  GitHub: `github.com/leocapuzzi/pitwall` (main; tudo pushado — último: passe GO Fast
-  nas telas de cards, 2026-06-11).
+  GitHub: `github.com/leocapuzzi/pitwall` (main).
 - **Stack:** backend Python/FastAPI (motor de análise intacto) + frontend React+TS+Vite em `frontend/`.
+- **Usuário abre o app por `abrir_pitwall.bat`** → mata zumbis da 8600 e sobe uvicorn servindo
+  `frontend/dist` (o `src/server.py` agora serve o BUILD do React; o `web/` vanilla foi arquivado).
 - **Rodar (dev):**
   - Backend: `.venv/Scripts/python.exe -m uvicorn server:app --app-dir src --port 8600`
     (⚠️ SEM --reload — reiniciar o processo após mudar `src/*.py`; ele costuma estar morto no
     início da sessão: checar `Get-NetTCPConnection -LocalPort 8600`).
-  - Frontend: `npm --prefix frontend run dev` (Vite 5173, proxia `/api`→8600). Preview: config
-    "frontend" no `.claude/launch.json` (caminhos absolutos).
-  - Build/typecheck: `npm --prefix frontend run build` (usar após CADA mudança).
+  - Frontend: `npm --prefix frontend run dev` (Vite 5173, proxia `/api`→8600). Preview: configs
+    "backend" e "frontend" no `.claude/launch.json` (no do iCloud, caminhos absolutos).
+  - Build/typecheck: `npm --prefix frontend run build` (usar após CADA mudança — também atualiza
+    o `frontend/dist` que o `.bat` do usuário serve).
 - `.ibt` reais em `~/Documents/iRacing/telemetry`; fallback `samples/`. Node v22, venv ok.
 - ⚠️ Preview headless: janela fica `document.hidden` (sem rAF/screenshot; timers ≥1s). Verificar
   por DOM com o checklist do DESIGN-UI.md §9 (oclusão + `elementFromPoint`).
+- **Organização (2026-06-11):** versão Streamlit (`app.py`/`telemetry_view.py`), `web/` vanilla,
+  docs de fases antigas e a pasta `DESIGN REFERENCES/` foram movidos p/ `_arquivo-morto/`
+  (ver `LEIA-ME.md` lá); `PLANO 2.md` voltou a chamar `PLANO.md`; `abrir_pitwall_web.bat`
+  removido (virou o `abrir_pitwall.bat`); `streamlit`/`plotly` saíram do requirements.txt;
+  README do GitHub reescrito. `Design Reference/` (prints GO Fast) e `design_handoff_pitwall/`
+  seguem na raiz (referências vivas).
 
 ## 1. ✅ CONCLUÍDO (e APROVADO pelo usuário)
 **Sessão 2026-06-11 — passe GO Fast nas 3 telas de cards (todas aprovadas):**
