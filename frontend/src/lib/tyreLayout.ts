@@ -11,7 +11,8 @@ export interface TyreLayout {
   h: number       // altura da roda
 }
 
-export const TYRE_DEFAULTS: TyreLayout = { yF: 88, yR: 400, trackF: 96, trackR: 104, w: 56, h: 58 }
+// CALIBRADO PELO USUÁRIO no app (2026-06-12) — não "corrigir" sem novo pedido dele
+export const TYRE_DEFAULTS: TyreLayout = { yF: 156, yR: 435, trackF: 93, trackR: 93, w: 70, h: 71 }
 export const TYRE_CX = 299 // centro do carro no blueprint (bbox do corpo: x 172..426)
 
 const KEY = 'pw_tyres_v1'
