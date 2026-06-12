@@ -88,24 +88,16 @@ export default function Telemetry() {
   const model = useMemo(() => (payload ? build(payload) : null), [payload])
   // aba do painel: canais ou pneus (diagrama ao vivo)
   const [panel, setPanel] = useState<'tel' | 'tyres'>('tel')
-  const [tySrc, setTySrc] = useState<'Melhor' | 'Média'>('Melhor')
-  // média térmica da volta por pneu (3 bandas), p/ o "Ø volta" do diagrama Tyres
-  const tyAvg = useMemo(() => {
-    const ty = payload?.tyres?.[tySrc === 'Melhor' ? 'ref' : 'media']
-    if (!ty) return null
-    const out = {} as Record<'lf' | 'rf' | 'lr' | 'rr', number>
-    for (const k of ['lf', 'rf', 'lr', 'rr'] as const) {
-      const all = [...(ty[k]?.o || []), ...(ty[k]?.m || []), ...(ty[k]?.i || [])].filter(v => v != null && isFinite(v)) as number[]
-      out[k] = all.length ? all.reduce((a, b) => a + b, 0) / all.length : NaN
-    }
-    return out
-  }, [payload, tySrc])
+  // tempo médio das voltas limpas (título do carro "Média" no diagrama Tyres)
+  const mediaSecs = useMemo(() => {
+    const clean = (payload?.laps || []).filter(l => l.clean)
+    return clean.length ? clean.reduce((a, l) => a + l.t, 0) / clean.length : null
+  }, [payload])
   // refs imperativos (a animação não passa pelo render do React)
   const tRef = useRef(0), raf = useRef(0), selecting = useRef(false)
   const zoomRef = useRef(zoom); zoomRef.current = zoom
   const modeRef = useRef(mode); modeRef.current = mode
   const ghostRefB = useRef(ghostOn); ghostRefB.current = ghostOn
-  const tySrcRef = useRef(tySrc); tySrcRef.current = tySrc
   const modelRef = useRef<Model | null>(model); modelRef.current = model
   const payloadRef = useRef<Payload | null>(payload); payloadRef.current = payload
   const trackRef = useRef<TrackHandle>(null)
@@ -124,6 +116,7 @@ export default function Telemetry() {
   }
   interface PodEls { s: Channels; els: Record<string, HTMLElement | null> }
   interface TyreEls {
+    src: 'ref' | 'media'
     k: 'lf' | 'rf' | 'lr' | 'rr'
     bands: Array<{ b: 'o' | 'm' | 'i'; val: HTMLElement | null; fill: HTMLElement | null }>
     press: HTMLElement | null
@@ -216,20 +209,17 @@ export default function Telemetry() {
       if (e.gear) e.gear.textContent = String(Math.round(s.gear[idx] || 0))
       if (e.rpm) e.rpm.textContent = String(Math.round(s.rpm[idx] || 0))
     }
-    // pneus ao vivo (aba Tyres): temps das bandas (texto+cor) e pressão
-    if (tyEls.current.length) {
-      const ty = p.tyres?.[tySrcRef.current === 'Melhor' ? 'ref' : 'media']
-      if (ty) {
-        for (const we of tyEls.current) {
-          const w = ty[we.k]; if (!w) continue
-          for (const bd of we.bands) {
-            const v = w[bd.b]?.[idx]
-            if (bd.val) bd.val.textContent = v != null && isFinite(v) ? String(Math.round(v)) : '—'
-            if (bd.fill) bd.fill.style.background = tempBg(v)
-          }
-          const pv = w.p?.[idx]
-          if (we.press) we.press.textContent = pv != null && isFinite(pv) ? String(Math.round(pv)) : '—'
+    // pneus ao vivo (aba Tyres): os DOIS carros (melhor e média) ao mesmo tempo
+    if (tyEls.current.length && p.tyres) {
+      for (const we of tyEls.current) {
+        const w = p.tyres[we.src]?.[we.k]; if (!w) continue
+        for (const bd of we.bands) {
+          const v = w[bd.b]?.[idx]
+          if (bd.val) bd.val.textContent = v != null && isFinite(v) ? String(Math.round(v)) : '—'
+          if (bd.fill) bd.fill.style.background = tempBg(v)
         }
+        const pv = w.p?.[idx]
+        if (we.press) we.press.textContent = pv != null && isFinite(pv) ? String(Math.round(pv)) : '—'
       }
     }
     if (clockRef.current) clockRef.current.textContent = fmtClock(tv * m.lapSecs)
@@ -266,15 +256,16 @@ export default function Telemetry() {
     pods.current = [...podOf(podA.current, p?.ref), ...podOf(podB.current, p?.media)]
     // cache dos elementos do diagrama de pneus (quando a aba Tyres está montada)
     const tyRoot = tyRef.current
-    tyEls.current = tyRoot ? (['lf', 'rf', 'lr', 'rr'] as const).map(k => ({
-      k,
-      bands: (['o', 'm', 'i'] as const).map(b => ({
-        b,
-        val: tyRoot.querySelector(`[data-ty="${k}-${b}"]`) as HTMLElement | null,
-        fill: tyRoot.querySelector(`[data-tyb="${k}-${b}"]`) as HTMLElement | null,
-      })),
-      press: tyRoot.querySelector(`[data-typ="${k}"]`) as HTMLElement | null,
-    })) : []
+    tyEls.current = tyRoot ? (['ref', 'media'] as const).flatMap(src =>
+      (['lf', 'rf', 'lr', 'rr'] as const).map(k => ({
+        src, k,
+        bands: (['o', 'm', 'i'] as const).map(b => ({
+          b,
+          val: tyRoot.querySelector(`[data-ty="${src}-${k}-${b}"]`) as HTMLElement | null,
+          fill: tyRoot.querySelector(`[data-tyb="${src}-${k}-${b}"]`) as HTMLElement | null,
+        })),
+        press: tyRoot.querySelector(`[data-typ="${src}-${k}"]`) as HTMLElement | null,
+      }))) : []
     if (barRef.current) barW.current = barRef.current.clientWidth
     renderFrame(tRef.current, true)
   })
@@ -461,38 +452,46 @@ export default function Telemetry() {
             </div>
             <div className="row center gap8" style={{ color: 'var(--ink-3)' }}>
               {panel === 'tel' && zoomed && <button className="chip" style={{ padding: '3px 9px' }} onClick={() => applySeg(null)}><Icon n="refresh" s={11} /> Reset zoom</button>}
-              {panel === 'tel' ? (
-                <>
-                  <span className="tp-leg"><span className="dot acc" />Melhor</span>
-                  <span className="tp-leg"><span className="tp-dash" />Média</span>
-                </>
-              ) : (
-                <SlideSeg options={['Melhor', 'Média']} value={tySrc} onChange={v => setTySrc(v as 'Melhor' | 'Média')} />
-              )}
+              <span className="tp-leg"><span className="dot acc" />Melhor</span>
+              <span className="tp-leg"><span className="tp-dash" />Média</span>
             </div>
           </div>
           {panel === 'tyres' && payload.tyres?.ref ? (
-            <div className="pw-tyres" ref={tyRef}>
-              <div className="pw-tycar" aria-hidden><i /></div>
-              {(['lf', 'rf', 'lr', 'rr'] as const).map(k => (
-                <div className={'pw-tyre pw-ty-' + k} key={k}>
-                  <div className="pw-tyhead">
-                    <span className="pw-tylabel">{k.toUpperCase()}</span>
-                    <span className="pw-tyavg">Ø volta <b className="num">{tyAvg && isFinite(tyAvg[k]) ? Math.round(tyAvg[k]) + '°C' : '—'}</b></span>
+            <div className="pw-tyres2" ref={tyRef}>
+              {(['ref', 'media'] as const).map(src => {
+                const wheel = (k: 'lf' | 'rf' | 'lr' | 'rr') => (
+                  <div className={'pw-twheel pw-tw-' + k} key={k}>
+                    <div className="pw-twbands">
+                      {(k[0] === 'l' ? (['o', 'm', 'i'] as const) : (['i', 'm', 'o'] as const)).map(b => (
+                        <i key={b} data-tyb={`${src}-${k}-${b}`} title={b === 'o' ? 'externa' : b === 'm' ? 'meio' : 'interna'} />
+                      ))}
+                    </div>
+                    <div className="pw-twvals">
+                      {(k[0] === 'l' ? (['o', 'm', 'i'] as const) : (['i', 'm', 'o'] as const)).map(b => (
+                        <b key={b} className="num" data-ty={`${src}-${k}-${b}`}>—</b>
+                      ))}
+                    </div>
+                    <div className="pw-twpress"><b className="num" data-typ={`${src}-${k}`}>—</b> kPa</div>
                   </div>
-                  <div className="pw-tybands">
-                    {(k[0] === 'l' ? (['o', 'm', 'i'] as const) : (['i', 'm', 'o'] as const)).map(b => (
-                      <div className="pw-tyband" key={b}>
-                        <i className="pw-tyfill" data-tyb={`${k}-${b}`} />
-                        <span className="pw-tybl">{b === 'o' ? 'EXT' : b === 'm' ? 'MEIO' : 'INT'}</span>
-                        <b className="num" data-ty={`${k}-${b}`}>—</b>
-                        <span className="pw-tyun">°C</span>
-                      </div>
-                    ))}
+                )
+                return payload.tyres?.[src] && (
+                  <div className="pw-tycarbox" key={src}>
+                    <div className="pw-tytitle">
+                      {src === 'ref'
+                        ? <><span className="dot acc" />Melhor · <b className="num">{ctx.suaMelhor}</b></>
+                        : <><span className="tp-dash" />{ctx.referencia}{mediaSecs != null && <> · <b className="num">{fmtClock(mediaSecs)}</b></>}</>}
+                    </div>
+                    <div className="pw-tycargrid">
+                      {wheel('lf')}
+                      <div className="pw-tybody2"><i /></div>
+                      {wheel('rf')}
+                      {wheel('lr')}
+                      {wheel('rr')}
+                    </div>
                   </div>
-                  <div className="pw-typress"><span>Pressão</span><b className="num" data-typ={k}>—</b><i>kPa</i></div>
-                </div>
-              ))}
+                )
+              })}
+              <div className="pw-tylegend">Temperatura por banda da roda — de fora p/ dentro: <b>EXT · MEIO · INT</b> · pressão em kPa</div>
             </div>
           ) : (
           <div className="pw-chstack" ref={stackRef}>
