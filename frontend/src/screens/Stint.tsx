@@ -74,8 +74,9 @@ function lapTip(l: LapRow, isBest: boolean) {
   return 'Volta ' + l.n + ' · ' + parts.join(' · ')
 }
 
-// Tabela de voltas (tela e popup compartilham; o popup vai sem a coluna de fuel)
-function LapTable({ laps, bestN, bestT, bestSec, nSec, withFuel, sel, hover, onSel, onHover }: {
+// Tabela de voltas (tela e popup compartilham; o popup vai sem a coluna de fuel;
+// a Comparison reusa no picker de voltas)
+export function LapTable({ laps, bestN, bestT, bestSec, nSec, withFuel, sel, hover, onSel, onHover }: {
   laps: LapRow[]; bestN?: number; bestT?: number; bestSec: number[]; nSec: number
   withFuel?: boolean
   sel?: number | null; hover?: number | null

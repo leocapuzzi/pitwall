@@ -83,9 +83,21 @@
 - Commits da época: `1b84515` → `1a9a593` → `7b339a8` → `994804c` (todos pushados).
 
 ## 2. ❌ NÃO CONCLUÍDO (pendências, em ordem de valor)
-1. **Comparison: seleção LIVRE de voltas** (volta N vs M, inclusive de outra sessão) — pede
-   endpoint por volta no backend (canais de UMA volta arbitrária) + UI de seleção (fluxo B do
-   design handoff). Maior valor de produto.
+1. ~~Comparison: seleção LIVRE de voltas~~ ✅ **FEITO (2026-06-11):**
+   - Backend: `/api/laps?path=` (índice leve de voltas p/ o picker) e `/api/lap?path=&lap=N`
+     (canais/tempo/linha/setores de UMA volta no grid padrão `A.GRID` — voltas de sessões
+     DIFERENTES da mesma pista saem comparáveis ponto a ponto). `webdata.py` ganhou cache
+     LRU(3) do .ibt por (path, mtime) — picker/troca de sessão não releem o arquivo.
+     Calibração de sinais da volta avulsa usa a MELHOR da sessão (estável).
+   - Frontend: `Comparison.tsx` parametrizada por LADOS (`Side` A/B; default = média vs
+     melhor, igual antes). Chevron nos rows A/B abre o **picker** (fluxo B do handoff):
+     select de sessão compatível (mesmo carro+pista pelo nome do arquivo + guard por
+     trackId) → `LapTable` (reexportada do Stint) → Select. Delta/setores/gap/fantasma
+     recalculados client-side de `timeArr` A−B (defaults reproduzem `p.delta` ao milésimo).
+     Chip "↺ padrão" volta ao média vs melhor.
+   - Verificado no preview: cross-session real (média da sessão 00:34 vs Volta 5 da 00:42),
+     soma dos setores = Δ total ao centésimo, gap em metros vivo, reset, console limpo;
+     `/api/lap` da best = `ref_time` do payload (diff 0).
 2. ~~Selector de SESSÃO na SessionStrip~~ ✅ **FEITO (2026-06-11):** aba ativa mostra
    pista · carro reais e abre o menu de sessões (`components/SessionMenu.tsx`, vidro, lista
    com pista/carro/data parseados do nome do .ibt, ativa marcada). `useSession.ts` virou
@@ -135,10 +147,10 @@
   confirmar com reload + build verde antes de caçar fantasma.
 
 ## 5. Primeiro passo sugerido na próxima sessão
-1. **Seleção livre de voltas na Comparison** (pendência nº1 — maior valor de produto):
-   backend ganha endpoint por volta (canais de UMA volta arbitrária) e a UI o fluxo B do
-   design handoff (escolher volta N vs M, inclusive entre sessões).
-2. Alternativa rápida: **selector de sessão na SessionStrip** (UI sobre `useSession.load()`).
+1. **Coach de IA no chat do AI Engineer** quando o pool do MAX abrir (~15/06) — design
+   pronto na memória `pitwall-coach-ia-decisao`; a análise local já cobre o básico.
+2. Alternativas: aba **Tyres** da Telemetry; **donut uso-por-carro** do Dashboard (pede
+   endpoint leve de sumários — ler só o header YAML de cada .ibt).
 3. Validar no preview com o checklist do DESIGN-UI.md §9 (incl. item 4: finish() nas CSS
    animations antes de medir) e commitar no fluxo `git add -A; git commit; git push`
    (identidade local já configurada; gh CLI NÃO instalado).

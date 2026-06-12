@@ -1124,3 +1124,33 @@ button.pw-sessbtn{border:0; font:inherit; color:var(--ink); cursor:pointer; posi
 .pw-sessmenu .pw-sess-head, .pw-sessmenu .pw-sess-item, .pw-sessmenu .pw-sess-empty{opacity:0}
 .pw-sessmenu.open .pw-sess-head, .pw-sessmenu.open .pw-sess-item, .pw-sessmenu.open .pw-sess-empty{
   animation:pwSetRow .34s var(--ease) both; animation-delay:calc(30ms + var(--i,0)*18ms)}
+
+/* ============================================================
+   COMPARISON — seleção livre de voltas (picker, fluxo B)
+   ============================================================ */
+/* botões de troca nos rows A/B do resumo */
+.pw-sidelbl{display:flex; align-items:baseline; gap:6px; overflow:hidden; white-space:nowrap}
+.pw-sidelbl .pw-sidewhen{font-style:normal; font-weight:500; font-size:10px; color:var(--ink-3);
+  overflow:hidden; text-overflow:ellipsis}
+.pw-sidechg{width:20px; height:20px; border-radius:6px; border:1px solid var(--hair);
+  background:rgba(255,255,255,.05); color:var(--ink-2); display:grid; place-items:center;
+  cursor:pointer; padding:0; flex:none}
+.pw-sidechg:hover{color:var(--ink); border-color:var(--hair-2); background:rgba(255,255,255,.1)}
+.pw-sidereset{height:20px; padding:0 8px; border-radius:6px; border:1px solid var(--hair);
+  background:rgba(255,255,255,.05); color:var(--ink-2); font:600 10px var(--font-ui);
+  cursor:pointer; flex:none}
+.pw-sidereset:hover{color:var(--ink); background:rgba(255,255,255,.1)}
+
+/* picker (modal sobre o fullmap) */
+.pw-pickcard{width:min(920px, 94vw)}
+.pw-picksess{margin-left:auto; max-width:300px; height:32px; padding:0 10px; border-radius:9px;
+  border:1px solid var(--hair-2); background:var(--surface-2); color:var(--ink);
+  font:600 12px var(--font-ui); cursor:pointer; outline:none}
+.pw-picksess:hover{border-color:var(--accent-line)}
+.pw-picksess option{background:#0d1117; color:var(--ink)}
+.pw-pickbody{display:flex; min-height:0; flex:1; margin-top:12px}
+.pw-pickbody .pw-ltable{flex:1}
+.pw-pickmsg{flex:1; display:grid; place-items:center; min-height:160px; color:var(--ink-3);
+  font-size:12.5px; text-align:center; padding:0 30px}
+.pw-pickfoot{display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-top:12px; padding-top:11px; border-top:1px solid var(--hair); flex:none}

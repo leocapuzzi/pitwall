@@ -6,11 +6,15 @@ import SlideSeg from '../components/SlideSeg'
 import DriverPod from '../components/DriverPod'
 import InteractiveTrack, { type TrackHandle } from '../components/InteractiveTrack'
 import { useSession } from '../lib/useSession'
+import { parseIbtName } from '../components/SessionMenu'
+import { LapTable } from './Stint'
 import { projectTrackPair, deltaGradientSegments, type TrackPair, type LineSegment } from '../lib/track'
 import { parseLap, fmtClock } from '../lib/fmt'
-import type { Payload, Channels } from '../lib/api'
+import { getLaps, getLap, type Payload, type Channels, type LapsIndex, type LapData, type SessionInfo } from '../lib/api'
 
-// Comparison fullmap (padrão GO Fast): Volta A = MÉDIA vs Volta B = SUA MELHOR.
+// Comparison fullmap (padrão GO Fast). Por padrão: A = MÉDIA vs B = SUA MELHOR da
+// sessão atual; o picker (fluxo B do design handoff) deixa escolher QUALQUER volta
+// p/ cada lado — inclusive de outra sessão da MESMA pista (grid comum do backend).
 // Mapa = fundo (linha gradiente por delta + fantasma), pods ao vivo, resumo A/Δ/B +
 // setores em vidro à esquerda, painel à direita com delta acumulado + canais A vs B
 // e o player embutido.
@@ -26,30 +30,73 @@ interface Chan {
   fmA: (i: number) => string | number; fmB: (i: number) => string | number
 }
 interface SecRow { s: string; a: number; b: number; d: number; focusN: number | null }
+// Um LADO da comparação (A = lenta/linha cheia; B = rápida/referência tracejada)
+interface Side {
+  label: string; sub?: string; time: number; ch: Channels
+  timeArr: number[] | null            // tempo até cada ponto do grid
+  line: { x: number[]; y: number[] } | null
+  sectors: number[]
+}
 interface Model {
   pair: TrackPair; segs: LineSegment[]; chans: Chan[]; secRows: SecRow[]
-  aSecs: number; bSecs: number; totalD: number
+  A: Side; B: Side; totalD: number; delta: number[]
   dLine: string; dArea: string; dNorm: number[]
-  tRef: number[] | null; tMed: number[] | null; lengthM: number; hasLineB: boolean
+  tA: number[] | null; tB: number[] | null; lengthM: number; hasLineB: boolean
 }
 
-function buildModel(p: Payload): Model {
-  const pair = projectTrackPair(p.track, p.racing_line, p.track_edges, p.racing_line_b)
-  const med = p.media, ref = p.ref
-  const allS = ref.speed.concat(med.speed)
+// Lados padrão da sessão: A = média das limpas, B = sua melhor.
+function defaultSides(p: Payload): { A: Side; B: Side } {
+  const st = p.sectorTimes || { labels: [], ref: [], media: [], genericos: true }
+  const bSecs = parseLap(p.contexto.suaMelhor)
+  const totalD = p.delta.length ? p.delta[p.delta.length - 1] : 0
+  const clean = (p.laps || []).filter(l => l.clean)
+  const aSecs = clean.length ? clean.reduce((a, l) => a + l.t, 0) / clean.length : bSecs + totalD
+  const N = p.delta.length
+  const tB = p.ref_time?.length === N ? p.ref_time : null
+  return {
+    A: {
+      label: p.contexto.referencia || 'Média', time: aSecs, ch: p.media,
+      timeArr: tB ? tB.map((v, i) => v + (p.delta[i] || 0)) : null,
+      line: p.racing_line_b ?? null, sectors: st.media,
+    },
+    B: {
+      label: 'Sua melhor', time: bSecs, ch: p.ref,
+      timeArr: tB, line: p.racing_line, sectors: st.ref,
+    },
+  }
+}
+
+// Volta escolhida no picker -> lado da comparação.
+function sideFromLap(d: LapData): Side {
+  const pi = parseIbtName(d.arquivo)
+  return {
+    label: `Volta ${d.n}`, sub: pi.when ?? d.arquivo, time: d.t, ch: d.ch,
+    timeArr: d.time?.length ? d.time : null, line: d.line, sectors: d.sectors || [],
+  }
+}
+
+function buildModel(p: Payload, A: Side, B: Side): Model {
+  const pair = projectTrackPair(p.track, B.line ?? p.racing_line, p.track_edges, A.line ?? p.racing_line_b)
+  const N = p.delta.length
+  // Delta acumulado A−B: dos tempos por ponto quando há (sempre, com payload novo);
+  // nos defaults isso reproduz p.delta ao milésimo (tA−tB = delta do backend).
+  const delta = (A.timeArr && B.timeArr && A.timeArr.length === N && B.timeArr.length === N)
+    ? A.timeArr.map((v, i) => +(v - B.timeArr![i]).toFixed(3))
+    : p.delta
+  const a = A.ch, b = B.ch
+  const allS = b.speed.concat(a.speed)
   const smin = Math.min(...allS), smax = Math.max(...allS)
-  const NRM = (a: number[]) => a.map(v => clamp01((v - smin) / ((smax - smin) || 1)))
-  const N01 = (a: number[]) => a.map(v => clamp01(v / 100))
-  // A = média (linha cheia), B = sua melhor (tracejada/referência)
+  const NRM = (arr: number[]) => arr.map(v => clamp01((v - smin) / ((smax - smin) || 1)))
+  const N01 = (arr: number[]) => arr.map(v => clamp01(v / 100))
   const chans: Chan[] = [
-    { kind: 'speed', name: 'SPEED', color: 'var(--cyan)', unit: ' km/h', main: NRM(med.speed), ghost: NRM(ref.speed), fmA: i => Math.round(med.speed[i]), fmB: i => Math.round(ref.speed[i]), line: '', gline: '', area: '' },
-    { kind: 'throttle', name: 'THROTTLE', color: 'var(--accent)', unit: '%', main: N01(med.throttle), ghost: N01(ref.throttle), fmA: i => Math.round(med.throttle[i]), fmB: i => Math.round(ref.throttle[i]), line: '', gline: '', area: '' },
-    { kind: 'brake', name: 'BRAKE', color: 'var(--red)', unit: '%', main: N01(med.brake), ghost: N01(ref.brake), fmA: i => Math.round(med.brake[i]), fmB: i => Math.round(ref.brake[i]), line: '', gline: '', area: '' },
+    { kind: 'speed', name: 'SPEED', color: 'var(--cyan)', unit: ' km/h', main: NRM(a.speed), ghost: NRM(b.speed), fmA: i => Math.round(a.speed[i]), fmB: i => Math.round(b.speed[i]), line: '', gline: '', area: '' },
+    { kind: 'throttle', name: 'THROTTLE', color: 'var(--accent)', unit: '%', main: N01(a.throttle), ghost: N01(b.throttle), fmA: i => Math.round(a.throttle[i]), fmB: i => Math.round(b.throttle[i]), line: '', gline: '', area: '' },
+    { kind: 'brake', name: 'BRAKE', color: 'var(--red)', unit: '%', main: N01(a.brake), ghost: N01(b.brake), fmA: i => Math.round(a.brake[i]), fmB: i => Math.round(b.brake[i]), line: '', gline: '', area: '' },
   ]
   chans.forEach(c => { c.line = linePath(c.main); c.gline = linePath(c.ghost); c.area = c.line + ` L${W},${H} L0,${H} Z` })
 
-  const dmax = Math.max(0.05, ...p.delta.map(v => Math.abs(v)))
-  const dNorm = p.delta.map(v => clamp01(0.5 - (v / (2 * dmax)) * 0.45 * 2))
+  const dmax = Math.max(0.05, ...delta.map(v => Math.abs(v)))
+  const dNorm = delta.map(v => clamp01(0.5 - (v / (2 * dmax)) * 0.45 * 2))
   const dLine = linePath(dNorm)
   const dArea = dLine + ` L${W},${H} L0,${H} Z`
 
@@ -66,27 +113,123 @@ function buildModel(p: Payload): Model {
         if (dt >= bd) { bd = dt; focusN = c.n }
       }
     })
-    return { s: lb, a: st.media[i] || 0, b: st.ref[i] || 0, d: +((st.media[i] || 0) - (st.ref[i] || 0)), focusN }
+    const av = A.sectors[i] || 0, bv = B.sectors[i] || 0
+    return { s: lb, a: av, b: bv, d: +(av - bv), focusN }
   })
 
-  const bSecs = parseLap(p.contexto.suaMelhor)
-  const totalD = p.delta.length ? p.delta[p.delta.length - 1] : 0
-  const clean = (p.laps || []).filter(l => l.clean)
-  const aSecs = clean.length ? clean.reduce((a, l) => a + l.t, 0) / clean.length : bSecs + totalD
-  const N = p.delta.length
-  const tRefArr = p.ref_time?.length === N ? p.ref_time : null
+  const totalD = delta.length ? delta[delta.length - 1] : 0
   return {
-    pair, segs: deltaGradientSegments(pair.racing.pts, p.delta), chans, secRows,
-    aSecs, bSecs, totalD, dLine, dArea, dNorm,
-    tRef: tRefArr, tMed: tRefArr ? tRefArr.map((v, i) => v + (p.delta[i] || 0)) : null,
+    pair, segs: deltaGradientSegments(pair.racing.pts, delta), chans, secRows,
+    A, B, totalD, delta, dLine, dArea, dNorm,
+    tA: A.timeArr, tB: B.timeArr,
     lengthM: p.eixoDist?.length ? p.eixoDist[p.eixoDist.length - 1] : 0,
-    hasLineB: !!p.racing_line_b?.x?.length,
+    hasLineB: !!(A.line ?? p.racing_line_b)?.x?.length,
   }
 }
 
+// ——— PICKER (fluxo B do design handoff): sessão -> tabela de voltas -> Select ———
+function LapPicker({ side, payload, sessions, current, onApply, onDefault, onClose }: {
+  side: 'A' | 'B'; payload: Payload; sessions: SessionInfo[]; current: string | null
+  onApply: (d: LapData) => void; onDefault: () => void; onClose: () => void
+}) {
+  const ctx = payload.contexto
+  // só sessões do MESMO carro+pista (regra do projeto), pelo nome do arquivo
+  const me = parseIbtName(ctx.arquivo || '')
+  const compat = useMemo(() => sessions.filter(s => {
+    const pi = parseIbtName(s.file)
+    return pi.track === me.track && pi.car === me.car
+  }), [sessions, me.track, me.car])
+  const [path, setPath] = useState<string>(current || compat[0]?.path || '')
+  const [idx, setIdx] = useState<LapsIndex | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!path) return
+    let cancel = false
+    setBusy(true); setErr(null); setIdx(null)
+    getLaps(path)
+      .then(r => { if (!cancel) setIdx(r) })
+      .catch(e => { if (!cancel) setErr(e?.message || 'Falha ao listar voltas') })
+      .finally(() => { if (!cancel) setBusy(false) })
+    return () => { cancel = true }
+  }, [path])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const wrongTrack = !!(idx && ctx.trackId != null && idx.trackId != null && String(idx.trackId) !== String(ctx.trackId))
+  const bestRow = idx?.laps.filter(l => l.valid).reduce<{ n: number; t: number } | null>((acc, l) => (!acc || l.t < acc.t ? { n: l.n, t: l.t } : acc), null)
+  const nSec = idx?.laps.find(l => l.s?.length)?.s.length || (payload.setores?.length || 0)
+  const bestSec = Array.from({ length: nSec }, (_, si) => {
+    const vals = (idx?.laps || []).filter(l => l.valid && l.s?.[si] != null).map(l => l.s[si])
+    return vals.length ? Math.min(...vals) : NaN
+  })
+  const pick = async (i: number) => {
+    const l = idx?.laps[i]; if (!l || wrongTrack) return
+    setBusy(true); setErr(null)
+    try { onApply(await getLap(path, l.n)) }
+    catch (e: any) { setErr(e?.message || 'Falha ao carregar a volta'); setBusy(false) }
+  }
+
+  return createPortal(
+    <div className="pw-modal" onClick={onClose}>
+      <div className="pw-modalcard pw-glass2 pw-pickcard" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="pw-modalhead">
+          <span className="mic"><Icon n="telem" s={18} /></span>
+          <b className="ttl">Escolher volta {side}</b>
+          <button className="pw-modalx" onClick={onClose} aria-label="Fechar">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="pw-modalcar">
+          <span className="cbadge" style={{ width: 38, height: 38 }}><Icon n="car" s={18} /></span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <b style={{ fontSize: 13.5, fontWeight: 800 }}>{idx?.carro || ctx.carro}</b>
+            <div className="muted" style={{ fontSize: 12 }}>{idx?.pista || ctx.pista}</div>
+          </div>
+          <select className="pw-picksess" value={path} onChange={e => setPath(e.target.value)} aria-label="Sessão">
+            {compat.map(s => {
+              const pi = parseIbtName(s.file)
+              return <option key={s.path} value={s.path}>{(pi.when || s.file) + (s.path === current ? ' · atual' : '')}</option>
+            })}
+          </select>
+        </div>
+        <div className="pw-pickbody">
+          {busy && <div className="pw-pickmsg">Carregando voltas…</div>}
+          {!busy && err && <div className="pw-pickmsg redt">{err}</div>}
+          {!busy && !err && wrongTrack && <div className="pw-pickmsg redt">Esta sessão é de OUTRA pista — só dá para comparar voltas da mesma pista.</div>}
+          {!busy && !err && idx && !wrongTrack && (
+            idx.laps.length
+              ? <LapTable laps={idx.laps} bestN={bestRow?.n} bestT={bestRow?.t} bestSec={bestSec} nSec={nSec} onSel={pick} />
+              : <div className="pw-pickmsg">Sessão sem voltas com tempo fechado.</div>
+          )}
+        </div>
+        <div className="pw-pickfoot">
+          <button className="pw-set-reset" onClick={onDefault}>
+            Usar padrão ({side === 'A' ? 'média das limpas' : 'sua melhor'})
+          </button>
+          <span className="pw-set-note">Clique numa volta para usá-la como {side}</span>
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 export default function Comparison() {
-  const { payload, loading, error } = useSession()
-  const model = useMemo(() => (payload ? buildModel(payload) : null), [payload])
+  const { payload, loading, error, sessions, current } = useSession()
+  const [lapA, setLapA] = useState<LapData | null>(null)
+  const [lapB, setLapB] = useState<LapData | null>(null)
+  const [picker, setPicker] = useState<'A' | 'B' | null>(null)
+  const model = useMemo(() => {
+    if (!payload) return null
+    const d = defaultSides(payload)
+    return buildModel(payload, lapA ? sideFromLap(lapA) : d.A, lapB ? sideFromLap(lapB) : d.B)
+  }, [payload, lapA, lapB])
   const [playing, setPlaying] = useState(false)
   const [focusSec, setFocusSec] = useState<string | null>(null)
   const [mode, setMode] = useState('Time')
@@ -96,7 +239,6 @@ export default function Comparison() {
 
   const tRef = useRef(0.3), raf = useRef(0)
   const modelRef = useRef<Model | null>(model); modelRef.current = model
-  const payloadRef = useRef<Payload | null>(payload); payloadRef.current = payload
   const trackRef = useRef<TrackHandle>(null)
   const stackRef = useRef<HTMLDivElement>(null), dplotRef = useRef<HTMLDivElement>(null)
   const barRef = useRef<HTMLDivElement>(null)
@@ -122,16 +264,16 @@ export default function Comparison() {
   }
 
   const renderFrame = useCallback((tv: number, force = false) => {
-    const m = modelRef.current, p = payloadRef.current; if (!m || !p) return
-    const N = p.delta.length; if (!N) return
+    const m = modelRef.current; if (!m) return
+    const N = m.delta.length; if (!N) return
     const f = Math.max(0, Math.min(N - 1, tv * (N - 1)))
     const i0 = Math.floor(f), i1 = Math.min(N - 1, i0 + 1), fr = f - i0
     const idx = fr < 0.5 ? i0 : i1
-    trackRef.current?.setT(tv, (p.ref.brake[idx] || 0) > 18)
+    trackRef.current?.setT(tv, (m.B.ch.brake[idx] || 0) > 18)
     let gapM: number | null = null
-    if (m.tRef && m.tMed) {
-      const tau = lerp(m.tRef[i0], m.tRef[i1], fr)
-      const dB = invTime(tau, m.tMed)
+    if (m.tB && m.tA) {
+      const tau = lerp(m.tB[i0], m.tB[i1], fr)
+      const dB = invTime(tau, m.tA)
       gapM = (tv - dB) * m.lengthM
       trackRef.current?.setT2(ghostRefB.current ? (modeRef.current === 'Time' ? dB : tv) : null)
     } else trackRef.current?.setT2(ghostRefB.current && m.hasLineB ? tv : null)
@@ -178,8 +320,8 @@ export default function Comparison() {
       if (e.gear) e.gear.textContent = String(Math.round(s.gear[idx] || 0))
       if (e.rpm) e.rpm.textContent = String(Math.round(s.rpm[idx] || 0))
     }
-    if (clockRef.current) clockRef.current.textContent = fmtClock(tv * m.aSecs)
-    const dv = lerp(p.delta[i0], p.delta[i1], fr)
+    if (clockRef.current) clockRef.current.textContent = fmtClock(tv * m.A.time)
+    const dv = lerp(m.delta[i0], m.delta[i1], fr)
     if (dValRef.current) dValRef.current.textContent = sign(dv, 3)
     if (deltaRef.current) {
       deltaRef.current.textContent = sign(dv, 3)
@@ -204,13 +346,12 @@ export default function Comparison() {
     }) : []
     const dp = dplotRef.current
     dEls.current = dp ? { w: dp.clientWidth, h: dp.clientHeight, cursor: dp.querySelector('[data-cursor]'), dot: dp.querySelector('[data-dot]') } : null
-    const p = payload
     const podOf = (el: HTMLDivElement | null, s?: Channels): PodEls[] => {
       if (!el || !s) return []
       const q = (k: string) => el.querySelector(`[data-f="${k}"]`) as HTMLElement | null
       return [{ s, els: { thr: q('thr'), thrbar: q('thrbar'), brk: q('brk'), brkbar: q('brkbar'), spd: q('spd'), gear: q('gear'), rpm: q('rpm'), wheel: q('wheel'), steerarc: q('steerarc') } }]
     }
-    pods.current = [...podOf(podA.current, p?.ref), ...podOf(podB.current, p?.media)]
+    pods.current = [...podOf(podA.current, model?.B.ch), ...podOf(podB.current, model?.A.ch)]
     if (barRef.current) barW.current = barRef.current.clientWidth
     renderFrame(tRef.current, true)
   })
@@ -234,7 +375,7 @@ export default function Comparison() {
   useEffect(() => {
     if (!playing) return
     let last = performance.now()
-    const loop = (now: number) => { const dt = (now - last) / 1000; last = now; let nt = tRef.current + dt / (modelRef.current?.aSecs || 90); if (nt >= 1) nt -= 1; tRef.current = nt; renderFrame(nt); raf.current = requestAnimationFrame(loop) }
+    const loop = (now: number) => { const dt = (now - last) / 1000; last = now; let nt = tRef.current + dt / (modelRef.current?.A.time || 90); if (nt >= 1) nt -= 1; tRef.current = nt; renderFrame(nt); raf.current = requestAnimationFrame(loop) }
     raf.current = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf.current)
   }, [playing, renderFrame])
@@ -276,12 +417,30 @@ export default function Comparison() {
               <span><Icon n="telem" s={12} sw={2} /> {ctx.voltasLimpas} limpas</span>
             </div>
           </div>
-          {/* resumo A / Δ / B */}
+          {/* resumo A / Δ / B (chevron abre o picker de volta de cada lado) */}
           <div className="pw-segnav pw-glass2">
             <div className="pw-segrows" style={{ marginTop: 0 }}>
-              <div className="row between"><span style={{ color: 'var(--accent)', fontWeight: 600 }}>A · {ctx.referencia}</span><b className="num">{fmtClock(m.aSecs)}</b></div>
-              <div className="row between"><span className="dim" style={{ fontWeight: 600 }}>Δ total</span><b className={'num ' + (m.totalD >= 0 ? 'redt' : 'green')}>{sign(m.totalD)}s</b></div>
-              <div className="row between"><span className="purple" style={{ fontWeight: 600 }}>B · sua melhor</span><b className="num purple">{ctx.suaMelhor}</b></div>
+              <div className="row between">
+                <span className="pw-sidelbl" style={{ color: 'var(--accent)', fontWeight: 600, minWidth: 0 }}>A · {m.A.label}{m.A.sub && <i className="pw-sidewhen">{m.A.sub}</i>}</span>
+                <span className="row center gap6" style={{ flex: 'none' }}>
+                  <b className="num">{fmtClock(m.A.time)}</b>
+                  <button className="pw-sidechg" onClick={() => setPicker('A')} title="Trocar a volta A" aria-label="Trocar a volta A"><Icon n="chevD" s={12} sw={2.4} /></button>
+                </span>
+              </div>
+              <div className="row between">
+                <span className="dim" style={{ fontWeight: 600 }}>Δ total</span>
+                <span className="row center gap6">
+                  {(lapA || lapB) && <button className="pw-sidereset" onClick={() => { setLapA(null); setLapB(null) }} title="Voltar ao padrão (média vs melhor)">↺ padrão</button>}
+                  <b className={'num ' + (m.totalD >= 0 ? 'redt' : 'green')}>{sign(m.totalD)}s</b>
+                </span>
+              </div>
+              <div className="row between">
+                <span className="purple pw-sidelbl" style={{ fontWeight: 600, minWidth: 0 }}>B · {m.B.label}{m.B.sub && <i className="pw-sidewhen">{m.B.sub}</i>}</span>
+                <span className="row center gap6" style={{ flex: 'none' }}>
+                  <b className="num purple">{fmtClock(m.B.time)}</b>
+                  <button className="pw-sidechg" onClick={() => setPicker('B')} title="Trocar a volta B" aria-label="Trocar a volta B"><Icon n="chevD" s={12} sw={2.4} /></button>
+                </span>
+              </div>
             </div>
           </div>
           {/* setores A vs B (clique foca a pior curva do setor no mapa) */}
@@ -307,8 +466,8 @@ export default function Comparison() {
 
         {/* PODS ao vivo */}
         <div className="pw-pods">
-          <DriverPod podRef={podA} on name="Sua melhor" time={ctx.suaMelhor} sub="ref" />
-          <DriverPod podRef={podB} name={ctx.referencia} time={fmtClock(m.aSecs)} sub="média" />
+          <DriverPod podRef={podA} on name={m.B.label} time={fmtClock(m.B.time)} sub="B" />
+          <DriverPod podRef={podB} name={m.A.label} time={fmtClock(m.A.time)} sub="A" />
         </div>
 
         {/* PAINEL: delta acumulado + canais A vs B + player */}
@@ -317,8 +476,8 @@ export default function Comparison() {
             <span className="lbl">Delta acumulado · A vs B</span>
             <div className="row center gap8" style={{ color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 600 }}>
               <b className="num redt" style={{ fontSize: 14 }}><span ref={dValRef}>{sign(m.totalD, 3)}</span><i style={{ fontStyle: 'normal', color: 'var(--ink-3)', fontWeight: 500, fontSize: 10.5 }}> s</i></b>
-              <span className="row center gap6"><span className="dot acc"></span>A (média)</span>
-              <span className="row center gap6"><span className="leg-dash"></span>B (melhor)</span>
+              <span className="row center gap6"><span className="dot acc"></span>A · {m.A.label}</span>
+              <span className="row center gap6"><span className="leg-dash"></span>B · {m.B.label}</span>
             </div>
           </div>
           <div ref={dplotRef} style={{ height: 96, position: 'relative', flex: 'none', borderRadius: 10, overflow: 'hidden', background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.04)' }}>
@@ -370,7 +529,7 @@ export default function Comparison() {
               <button className={'tp-play' + (playing ? ' on' : '')} onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pause' : 'Play'}>
                 {playing ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.2" /><rect x="14" y="5" width="4" height="14" rx="1.2" /></svg> : <Icon n="play" s={14} fill="currentColor" />}
               </button>
-              <b className="num tp-clock" ref={clockRef}>{fmtClock(t0 * m.aSecs)}</b>
+              <b className="num tp-clock" ref={clockRef}>{fmtClock(t0 * m.A.time)}</b>
               <div className="pw-delta">
                 <span className="dim">Delta:</span> <b className="num redt" ref={deltaRef}>+0.000</b>
                 <span className="dim">↔</span> <b className="num" ref={gapRef} style={{ color: 'var(--red)' }}>+0 m</b>
@@ -381,6 +540,12 @@ export default function Comparison() {
           </div>
         </div>
       </InteractiveTrack>
+      {picker && (
+        <LapPicker side={picker} payload={payload} sessions={sessions} current={current}
+          onApply={d => { (picker === 'A' ? setLapA : setLapB)(d); setPicker(null) }}
+          onDefault={() => { (picker === 'A' ? setLapA : setLapB)(null); setPicker(null) }}
+          onClose={() => setPicker(null)} />
+      )}
     </div>,
     document.body
   )

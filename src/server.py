@@ -41,6 +41,28 @@ def api_session(path: str, max_off: float = 1.07):
         return JSONResponse({"error": str(e)}, status_code=400)
 
 
+@app.get("/api/laps")
+def api_laps(path: str, max_off: float = 1.07):
+    """Indice leve de voltas de uma sessao (picker da Comparison)."""
+    if not os.path.isfile(path):
+        return JSONResponse({"error": "Arquivo nao encontrado."}, status_code=404)
+    try:
+        return webdata.build_laps_index(path, max_off)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+@app.get("/api/lap")
+def api_lap(path: str, lap: int):
+    """Canais/tempo/linha de UMA volta arbitraria (comparacao livre)."""
+    if not os.path.isfile(path):
+        return JSONResponse({"error": "Arquivo nao encontrado."}, status_code=404)
+    try:
+        return webdata.build_lap_payload(path, lap)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
 # Frontend estatico na raiz (build do React). DEPOIS das rotas /api.
 # Se o build nao existe (ex.: maquina recem-clonada), sobe so a API e avisa.
 if os.path.isdir(DIST_DIR):

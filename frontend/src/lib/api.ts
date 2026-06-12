@@ -39,6 +39,21 @@ export interface Payload {
   analise_curvas: Array<Record<string, any>>
 }
 
+// Índice leve de voltas de uma sessão (picker da Comparison)
+export interface LapsIndex {
+  carro: string | null; pista: string; trackId: number | string | null
+  arquivo: string; laps: LapRow[]
+}
+// Uma volta arbitrária, alinhada ao grid padrão (comparável entre sessões)
+export interface LapData {
+  n: number; t: number; valid: boolean
+  trackId: number | string | null; arquivo: string
+  ch: Channels
+  time: number[]                                  // tempo até cada ponto do grid
+  line: { x: number[]; y: number[] } | null      // linha no referencial da pista fixa
+  sectors: number[]
+}
+
 export async function getSessions(): Promise<SessionInfo[]> {
   const r = await fetch('/api/sessions')
   if (!r.ok) throw new Error('Falha ao listar sessões')
@@ -49,5 +64,19 @@ export async function getSession(path: string): Promise<Payload> {
   const r = await fetch('/api/session?path=' + encodeURIComponent(path))
   const j = await r.json()
   if (!r.ok || j.error) throw new Error(j.error || 'Falha ao carregar sessão')
+  return j
+}
+
+export async function getLaps(path: string): Promise<LapsIndex> {
+  const r = await fetch('/api/laps?path=' + encodeURIComponent(path))
+  const j = await r.json()
+  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao listar voltas')
+  return j
+}
+
+export async function getLap(path: string, lap: number): Promise<LapData> {
+  const r = await fetch('/api/lap?path=' + encodeURIComponent(path) + '&lap=' + lap)
+  const j = await r.json()
+  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao carregar a volta')
   return j
 }

@@ -5,6 +5,7 @@ corners/coaching/track_model). Nada de Streamlit aqui. Saida 100% serializavel.
 """
 from __future__ import annotations
 
+import functools
 import glob
 import json
 import os
@@ -31,6 +32,32 @@ def _arr(a, dec=2):
     if a is None:
         return []
     return [round(float(v), dec) if np.isfinite(v) else None for v in np.asarray(a)]
+
+
+@functools.lru_cache(maxsize=3)
+def _load_cached(path: str, mtime: float):
+    """Leitura cara do .ibt (DataFrame 60 Hz + YAML), cacheada por arquivo+mtime.
+
+    O picker de voltas e a troca de sessao reabrem o mesmo arquivo varias vezes;
+    sem isso cada request relia o .ibt inteiro do disco.
+    """
+    return ibt_reader.load_ibt(path), ibt_reader.load_session_info(path)
+
+
+def _load(path: str):
+    return _load_cached(os.path.abspath(path), os.path.getmtime(path))
+
+
+def _series(sig) -> dict:
+    """Canais de um conjunto de sinais alinhados ao grid -> JSON do frontend."""
+    return {
+        "throttle": _arr(np.asarray(sig.get("Throttle")) * 100 if sig.get("Throttle") is not None else None, 1),
+        "brake": _arr(np.asarray(sig.get("Brake")) * 100 if sig.get("Brake") is not None else None, 1),
+        "speed": _arr(sig.get("SpeedKph"), 1),
+        "rpm": _arr(sig.get("RPM"), 0),
+        "gear": _arr(sig.get("Gear"), 0),
+        "steer": _arr(np.degrees(np.asarray(sig.get("SteeringWheelAngle"))) if sig.get("SteeringWheelAngle") is not None else None, 1),
+    }
 
 
 def _scan_ibt(dir_: str) -> list[dict]:
@@ -94,13 +121,48 @@ def _load_fixed_track(track_id):
     return None
 
 
+def _fixed_frame_origin(fixed) -> tuple[float, float]:
+    """(lat0, lon0) do referencial da pista fixa — toda projeção usa o MESMO."""
+    src = fixed.get("center") or {"lat": fixed["lat"], "lon": fixed["lon"]}
+    return float(np.nanmean(src["lat"])), float(np.nanmean(src["lon"]))
+
+
+def _laps_rows(df, infos, best, limpas, setores, grid=None) -> list[dict]:
+    """Volta a volta (tempo, validade, setores, combustível) — Stint e picker."""
+    if grid is None:
+        grid = A.GRID
+    out = []
+    for i in infos:
+        if not (np.isfinite(i.lap_time) and i.lap_time > 0):
+            continue  # sem tempo fechado (ex.: ultima volta parcial)
+        entry = {
+            "n": int(i.lap), "t": round(float(i.lap_time), 3),
+            "valid": bool(i.valid), "pit": bool(i.on_pit),
+            "clean": i.lap in limpas, "best": i.lap == best, "s": [], "fuel": None,
+        }
+        try:
+            seg = A.lap_frame(df, i.lap)
+            if i.valid and setores and len(setores) >= 2:
+                ttd_lap = A.time_to_distance(seg, grid)
+                entry["s"] = _arr(A.sector_times(ttd_lap, setores, grid), 3)
+            if "FuelLevel" in seg.columns and len(seg) > 30:
+                f0 = float(seg["FuelLevel"].iloc[:15].max())
+                f1 = float(seg["FuelLevel"].iloc[-15:].min())
+                used = f0 - f1
+                if 0 < used < 20:  # sanity (reabastecimento/anomalia fica de fora)
+                    entry["fuel"] = round(used, 2)
+        except Exception:
+            pass
+        out.append(entry)
+    return out
+
+
 def build_session_payload(path: str, max_off: float = 1.07) -> dict:
     """Carrega + analisa uma sessao e devolve o payload do frontend.
 
     Modo: sua MELHOR (referencia/rapida) vs sua MEDIA das voltas limpas (aluna/lenta).
     """
-    df = ibt_reader.load_ibt(path)
-    sessao = ibt_reader.load_session_info(path)
+    df, sessao = _load(path)
     resumo = ibt_reader.session_summary(sessao)
     modelo = TM.load_model(resumo.get("track_id"), resumo.get("config"))
     infos = A.split_laps(df)
@@ -143,7 +205,7 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
     racing_b_xy = None
     if fixed:
         src = fixed.get("center") or {"lat": fixed["lat"], "lon": fixed["lon"]}
-        lat0 = float(np.nanmean(src["lat"])); lon0 = float(np.nanmean(src["lon"]))
+        lat0, lon0 = _fixed_frame_origin(fixed)
         tfx, tfy = _project_with(src["lat"], src["lon"], lat0, lon0)
         sfx, sfy = _project_with(sig_fast.get("Lat"), sig_fast.get("Lon"), lat0, lon0)
         track_xy = {"x": _arr(tfx, 2), "y": _arr(tfy, 2)}
@@ -171,16 +233,6 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
             track_xy = racing_xy = {"x": [], "y": []}
         track_fixed = False
 
-    def series(sig):
-        return {
-            "throttle": _arr(np.asarray(sig.get("Throttle")) * 100 if sig.get("Throttle") is not None else None, 1),
-            "brake": _arr(np.asarray(sig.get("Brake")) * 100 if sig.get("Brake") is not None else None, 1),
-            "speed": _arr(sig.get("SpeedKph"), 1),
-            "rpm": _arr(sig.get("RPM"), 0),
-            "gear": _arr(sig.get("Gear"), 0),
-            "steer": _arr(np.degrees(np.asarray(sig.get("SteeringWheelAngle"))) if sig.get("SteeringWheelAngle") is not None else None, 1),
-        }
-
     pista = resumo.get("track") or "?"
     if resumo.get("config"):
         pista += f" ({resumo['config']})"
@@ -199,29 +251,7 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
     }
 
     # Volta a volta (tela Stint): tempo, validade, setores e combustivel por volta.
-    laps_out = []
-    for i in infos:
-        if not (np.isfinite(i.lap_time) and i.lap_time > 0):
-            continue  # sem tempo fechado (ex.: ultima volta parcial)
-        entry = {
-            "n": int(i.lap), "t": round(float(i.lap_time), 3),
-            "valid": bool(i.valid), "pit": bool(i.on_pit),
-            "clean": i.lap in limpas, "best": i.lap == best, "s": [], "fuel": None,
-        }
-        try:
-            seg = A.lap_frame(df, i.lap)
-            if i.valid and setores and len(setores) >= 2:
-                ttd_lap = A.time_to_distance(seg, grid)
-                entry["s"] = _arr(A.sector_times(ttd_lap, setores, grid), 3)
-            if "FuelLevel" in seg.columns and len(seg) > 30:
-                f0 = float(seg["FuelLevel"].iloc[:15].max())
-                f1 = float(seg["FuelLevel"].iloc[-15:].min())
-                used = f0 - f1
-                if 0 < used < 20:  # sanity (reabastecimento/anomalia fica de fora)
-                    entry["fuel"] = round(used, 2)
-        except Exception:
-            pass
-        laps_out.append(entry)
+    laps_out = _laps_rows(df, infos, best, limpas, setores, grid)
     fuel_fim = None
     if "FuelLevel" in df.columns and len(df):
         v = float(df["FuelLevel"].iloc[-1])
@@ -237,12 +267,12 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
             "deltaTotal": f"{float(delta[-1]):+.2f}s",
             "voltasGravadas": len(infos), "voltasValidas": len([i for i in infos if i.valid]),
             "voltasLimpas": len(limpas), "cornersSrc": corners_src,
-            "fuelFim": fuel_fim,
+            "fuelFim": fuel_fim, "trackId": resumo.get("track_id"),
         },
         "eixoDist": _arr(sig_fast.get("LapDist"), 0),
         "delta": _arr(delta, 3),        # acumulado media-melhor (>0 = media perde ali)
-        "ref": series(sig_fast),        # sua melhor (linha principal)
-        "media": series(sig_slow),      # sua media (fantasma/comparacao)
+        "ref": _series(sig_fast),       # sua melhor (linha principal)
+        "media": _series(sig_slow),     # sua media (fantasma/comparacao)
         "track": track_xy, "racing_line": racing_xy, "track_fixed": track_fixed,
         "racing_line_b": racing_b_xy,      # linha da MEDIA (carro-fantasma da comparacao)
         "ref_time": _arr(sig_fast["time_to_dist"], 3),  # tempo da MELHOR ate cada ponto (modo Time)
@@ -260,4 +290,65 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
              "flags": r["flags"], "coach": r["coach"]}
             for r in rows
         ],
+    }
+
+
+def build_laps_index(path: str, max_off: float = 1.07) -> dict:
+    """Índice LEVE de voltas de uma sessão (picker da Comparison): tempos,
+    validade e setores por volta — sem rodar a análise completa."""
+    df, sessao = _load(path)
+    resumo = ibt_reader.session_summary(sessao)
+    infos = A.split_laps(df)
+    best = A.best_lap(infos)
+    limpas = A.clean_laps(infos, max_off) if best is not None else []
+    setores = ibt_reader.sector_starts(sessao)
+    pista = resumo.get("track") or "?"
+    if resumo.get("config"):
+        pista += f" ({resumo['config']})"
+    return {
+        "carro": resumo.get("car"), "pista": pista,
+        "trackId": resumo.get("track_id"), "arquivo": os.path.basename(path),
+        "laps": _laps_rows(df, infos, best, limpas, setores),
+    }
+
+
+def build_lap_payload(path: str, lap_n: int) -> dict:
+    """Canais/tempo/linha de UMA volta arbitrária, no grid padrão (A.GRID).
+
+    Como o grid é o mesmo para qualquer sessão, duas voltas (mesmo de sessões
+    diferentes da MESMA pista) saem comparáveis ponto a ponto por distância.
+    """
+    df, sessao = _load(path)
+    resumo = ibt_reader.session_summary(sessao)
+    infos = A.split_laps(df)
+    lap_n = int(lap_n)
+    info = next((i for i in infos if i.lap == lap_n), None)
+    if info is None or not (np.isfinite(info.lap_time) and info.lap_time > 0):
+        raise ValueError(f"Volta {lap_n} não encontrada (ou sem tempo fechado).")
+    grid = A.GRID
+
+    # Sinais da volta; calibração de sinais (volante etc.) pela MELHOR da sessão,
+    # que é estável — uma volta suja sozinha pode calibrar errado.
+    best = A.best_lap(infos)
+    signs = CAL.calibrate_signs(S.signals_from_laps(df, [best], grid)) if best is not None else None
+    sig = S.signals_from_laps(df, [lap_n], grid)
+    sig = S.enrich(CAL.apply_signs(sig, signs) if signs is not None else sig)
+
+    # Linha da volta no referencial da PISTA FIXA (mesmo das telas de mapa).
+    line = None
+    fixed = _load_fixed_track(resumo.get("track_id"))
+    if fixed and sig.get("Lat") is not None and sig.get("Lon") is not None:
+        lat0, lon0 = _fixed_frame_origin(fixed)
+        x, y = _project_with(sig["Lat"], sig["Lon"], lat0, lon0)
+        line = {"x": _arr(x, 2), "y": _arr(y, 2)}
+
+    setores = ibt_reader.sector_starts(sessao)
+    ttd = sig["time_to_dist"]
+    return {
+        "n": lap_n, "t": round(float(info.lap_time), 3), "valid": bool(info.valid),
+        "trackId": resumo.get("track_id"), "arquivo": os.path.basename(path),
+        "ch": _series(sig),
+        "time": _arr(ttd, 3),  # tempo até cada ponto do grid (base do delta A−B)
+        "line": line,
+        "sectors": _arr(A.sector_times(ttd, setores, grid), 3) if setores and len(setores) >= 2 else [],
     }
