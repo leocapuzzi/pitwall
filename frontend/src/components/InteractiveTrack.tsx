@@ -43,6 +43,7 @@ const InteractiveTrack = forwardRef<TrackHandle, {
   followX?: number                                  // âncora horizontal da câmera (fração do palco; 0.5 = centro). Telas com painel à direita usam ~0.22
 }>(function InteractiveTrack({ trackGeom, racingGeom, racingGeomB, initialT = 0, corners, activeCorner, onPickCorner, height = 300, racingSegments, focusCorner, children, edges, unitPerM, follow, hideCorners, initialZoom, markers, zoomSlider, followX = 0.5 }, ref) {
   const carRef = useRef<HTMLDivElement>(null), ghostRef = useRef<HTMLDivElement>(null)
+  const brakeChipRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null), gRef = useRef<SVGGElement>(null), stageRef = useRef<HTMLDivElement>(null)
   const dotsWrapRef = useRef<HTMLDivElement>(null), marksWrapRef = useRef<HTMLDivElement>(null)
   const vpr = useRef<VP>({ z: 1, x: 0, y: 0 })
@@ -116,6 +117,15 @@ const InteractiveTrack = forwardRef<TrackHandle, {
     }
     const v2 = vpr.current
     const sc2 = Math.min(w / 1000, h / 640), ox2 = (w - 1000 * sc2) / 2, oy2 = (h - 640 * sc2) / 2
+    // aviso BRAKING flutuando sobre o carro enquanto ele está na zona de freada
+    const chip = brakeChipRef.current
+    if (chip) {
+      if (brakingRef.current) {
+        const bx = ox2 + sc2 * (v2.x + v2.z * a.x), by = oy2 + sc2 * (v2.y + v2.z * a.y)
+        chip.style.visibility = 'visible'
+        chip.style.transform = `translate3d(${bx.toFixed(1)}px,${(by - carPx.current / 2 - 8).toFixed(1)}px,0) translate(-50%,-100%)`
+      } else chip.style.visibility = 'hidden'
+    }
     const wrap = dotsWrapRef.current
     if (wrap) {
       for (const el of Array.from(wrap.children) as HTMLElement[]) {
@@ -263,6 +273,8 @@ const InteractiveTrack = forwardRef<TrackHandle, {
         <img ref={imgARef} src={sprites.normal} alt="" draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 1 }} />
         <img ref={imgBRef} src={sprites.braking} alt="" draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0 }} />
       </div>
+      {/* aviso BRAKING (segue o carro na zona de freada; posicionado por frame) */}
+      <div ref={brakeChipRef} className="pw-braking" aria-hidden style={{ visibility: 'hidden' }}>BRAKING</div>
       {children}
       {zoomSlider ? (
         <div className="pw-zoompill pw-glass2">

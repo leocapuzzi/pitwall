@@ -118,7 +118,13 @@
    mini-STORE com subscribers (todas as telas/chrome veem a mesma sessão; boot único; escolha
    lembrada em sessionStorage `pw_session`). `App.tsx` remonta a tela na troca
    (`key={current}`). Verificado por DOM no preview (hit-test, oclusão, remount, console limpo).
-3. **Telemetry**: ~~aba "Tyres" é stub~~ ✅ **Tyres FEITA (2026-06-12, v3 aprovada):**
+3. ✅ **Telemetry FECHADA (2026-06-12):** toggle Segments/Sectors agora muda também as
+   marcas dos GRÁFICOS e do scrubber (curvas vs setores); canais com **ocultar/reordenar**
+   (chip "Canais" no painel → switches + ↑↓; persiste em `localStorage pw_channels_v1`,
+   `lib/channelPrefs.ts`; guard de último canal visível). Detalhes GO Fast: **chip BRAKING**
+   seguindo o carro nas zonas de freada (InteractiveTrack, todas as telas fullmap) e
+   **atalhos 🏁〰⏱ na tabstrip** (stint/telemetry/lap). ~~aba "Tyres" é stub~~
+   ✅ **Tyres FEITA (2026-06-12, v3 aprovada):**
    payload ganhou `tyres{ref,media}` (12 temps por banda + 4 pressões kPa no grid, inteiros;
    O/M/I já mapeadas pelo LADO da roda no backend — `webdata._tyres`; None p/ carro sem
    canais → aba desabilitada). Painel: **DOIS carros lado a lado (Melhor vs Média)** usando
@@ -173,8 +179,11 @@
 ## 5. Primeiro passo sugerido na próxima sessão
 1. **Coach de IA no chat do AI Engineer** quando o pool do MAX abrir (~15/06) — design
    pronto na memória `pitwall-coach-ia-decisao`; a análise local já cobre o básico.
-2. Alternativas: aba **Tyres** da Telemetry; **donut uso-por-carro** do Dashboard (pede
-   endpoint leve de sumários — ler só o header YAML de cada .ibt).
+2. **DECISÕES DO USUÁRIO (2026-06-12):** o Dashboard completo (donut uso-por-carro,
+   licenças, histórico de performance) fica para QUANDO a conexão com a API do iRacing
+   sair — fazer tudo junto. Pistas novas: ele está na última semana da temporada; quando
+   o calendário novo sair, ELE abre uma sessão dedicada indicando as pistas p/ recriar
+   (pipeline OSM).
 3. Validar no preview com o checklist do DESIGN-UI.md §9 (incl. item 4: finish() nas CSS
    animations antes de medir) e commitar no fluxo `git add -A; git commit; git push`
    (identidade local já configurada; gh CLI NÃO instalado).

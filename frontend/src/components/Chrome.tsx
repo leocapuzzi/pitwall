@@ -63,6 +63,12 @@ export function SessionStrip({ view, go, label, onSessions, sessOn }: {
       <div className="add" onClick={onSessions} role="button" aria-label="Escolher sessão">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
       </div>
+      {/* atalhos à direita (réplica GO Fast): stint / telemetria / lap */}
+      <div className="ts-icons">
+        <button className={view === 'stint' ? 'on' : ''} title="Stint" onClick={() => go('stint')}><Icon n="flag" s={14} /></button>
+        <button className={view === 'telemetry' ? 'on' : ''} title="Telemetry" onClick={() => go('telemetry')}><Icon n="telem" s={14} /></button>
+        <button className={view === 'lap' ? 'on' : ''} title="Lap Analysis" onClick={() => go('lap')}><Icon n="clock" s={14} /></button>
+      </div>
       <div className="ws-switch">
         {WS.map(w => (
           <button key={w.id} className={view === w.id ? 'on' : ''} onClick={() => go(w.id)}>{w.label}</button>

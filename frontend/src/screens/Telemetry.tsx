@@ -8,6 +8,7 @@ import InteractiveTrack, { type TrackHandle } from '../components/InteractiveTra
 import MiniTrackMap from '../components/MiniTrackMap'
 import { useSession } from '../lib/useSession'
 import { getTyreLayout, setTyreParam, resetTyreLayout, onTyreLayout, TYRE_DEFAULTS, TYRE_CX, type TyreLayout } from '../lib/tyreLayout'
+import { getChannelPrefs, moveChannel, toggleChannel, resetChannelPrefs, onChannelPrefs, CHANNEL_ORDER } from '../lib/channelPrefs'
 import { projectTrackPair, type TrackPair } from '../lib/track'
 import { parseLap, fmtClock } from '../lib/fmt'
 import { takePendingFocus } from '../lib/bus'
@@ -93,6 +94,10 @@ export default function Telemetry() {
   const [tyLay, setTyLay] = useState(getTyreLayout())
   useEffect(() => onTyreLayout(setTyLay), [])
   const [tyCal, setTyCal] = useState(false)
+  // ordem/visibilidade dos canais (painel "Canais"; persistem no navegador)
+  const [chPrefs, setChPrefsState] = useState(getChannelPrefs())
+  useEffect(() => onChannelPrefs(setChPrefsState), [])
+  const [chCfg, setChCfg] = useState(false)
   // tempo médio das voltas limpas (título do carro "Média" no diagrama Tyres)
   const mediaSecs = useMemo(() => {
     const clean = (payload?.laps || []).filter(l => l.clean)
@@ -240,7 +245,7 @@ export default function Telemetry() {
   // (re)constrói caches e mede após CADA render (pré-paint)
   useLayoutEffect(() => {
     const m = model, stack = stackRef.current
-    rows.current = (m && stack) ? m.defs.flatMap(d => {
+    rows.current = (m && stack) ? viewDefs.flatMap(d => {
       const row = stack.querySelector(`.pw-ch[data-kind="${d.kind}"]`) as HTMLElement | null
       if (!row) return []
       return [{
@@ -363,6 +368,13 @@ export default function Telemetry() {
     applySeg(ni)
   }
 
+  // canais VISÍVEIS na ordem das preferências do usuário (painel "Canais")
+  const viewDefs = useMemo(() => {
+    if (!model) return []
+    const pos = (k: string) => { const i = chPrefs.order.indexOf(k); return i < 0 ? 999 : i }
+    return model.defs.filter(d => !chPrefs.hidden.includes(d.kind)).sort((a, b) => pos(a.kind) - pos(b.kind))
+  }, [model, chPrefs])
+
   // janela de zoom: paths RE-AMOSTRADOS (viewBox fixo ⇒ sem distorção/serrilhado)
   const charts = useMemo(() => {
     if (!model) return []
@@ -371,12 +383,12 @@ export default function Telemetry() {
     const X = (gi: number) => ((gi / (N - 1)) - lo) / span * W
     const line = (arr: number[]) => { let d = ''; for (let i = a0; i <= a1; i++) d += (i === a0 ? 'M' : 'L') + X(i).toFixed(1) + ',' + ((1 - arr[i]) * H).toFixed(1); return d }
     const step = (arr: number[]) => { let d = ''; for (let i = a0; i <= a1; i++) { const y = ((1 - arr[i]) * H).toFixed(1); d += (i === a0 ? 'M' : 'L') + X(i).toFixed(1) + ',' + y; if (i < a1) d += ' L' + X(i + 1).toFixed(1) + ',' + y } return d }
-    return model.defs.map(d => {
+    return viewDefs.map(d => {
       const fn = d.step ? step : line
       const ln = fn(d.main)
       return { line: ln, gline: d.ghost ? fn(d.ghost) : '', area: ln + ` L${X(a1).toFixed(1)},${H} L${X(a0).toFixed(1)},${H} Z` }
     })
-  }, [model, zoom])
+  }, [model, viewDefs, zoom])
 
   if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Carregando sessão…</div>
   if (error || !model || !payload) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'Sem dados'}</div>
@@ -384,6 +396,10 @@ export default function Telemetry() {
   const m = model, ctx = payload.contexto
   const t0 = tRef.current
   const sectors = (payload.setores || []).filter(s => s > 0.001 && s < 0.999)
+  // marcas verticais dos gráficos/scrubber seguem o toggle: curvas (Segments) ou setores
+  const marks = view === 'Segments'
+    ? m.segCorners.map(c => c.apex).filter(s => s > 0.001 && s < 0.999)
+    : sectors
   const span = zoom.hi - zoom.lo
   const zoomed = zoom.lo > 0.001 || zoom.hi < 0.999
   const seg = segIdx != null ? segList[segIdx] : null
@@ -457,10 +473,42 @@ export default function Telemetry() {
             </div>
             <div className="row center gap8" style={{ color: 'var(--ink-3)' }}>
               {panel === 'tel' && zoomed && <button className="chip" style={{ padding: '3px 9px' }} onClick={() => applySeg(null)}><Icon n="refresh" s={11} /> Reset zoom</button>}
+              {panel === 'tel' && (
+                <button className={'chip pw-chcfgbtn' + (chCfg ? ' on' : '')} style={{ padding: '3px 9px' }}
+                  onClick={() => setChCfg(v => !v)} title="Mostrar/ocultar e reordenar canais">
+                  <Icon n="sliders" s={11} /> Canais
+                </button>
+              )}
               <span className="tp-leg"><span className="dot acc" />Melhor</span>
               <span className="tp-leg"><span className="tp-dash" />Média</span>
             </div>
           </div>
+          {chCfg && panel === 'tel' && (
+            <div className="pw-chcfg pw-glass2">
+              <div className="pw-tycal-head">
+                <span>CANAIS</span>
+                <button className="pw-set-x" onClick={() => setChCfg(false)} aria-label="Fechar"><Icon n="x" s={13} /></button>
+              </div>
+              {[...m.defs].sort((a, b) => chPrefs.order.indexOf(a.kind) - chPrefs.order.indexOf(b.kind)).map((d, i, arr) => {
+                const hidden = chPrefs.hidden.includes(d.kind)
+                const lastVisible = !hidden && arr.length - chPrefs.hidden.length <= 1
+                return (
+                  <div className={'pw-chcfg-row' + (hidden ? ' off' : '')} key={d.kind}>
+                    <button className="mv" onClick={() => moveChannel(d.kind, -1)} disabled={i === 0} aria-label="Subir"><Icon n="chevD" s={11} sw={2.4} /></button>
+                    <button className="mv dn" onClick={() => moveChannel(d.kind, 1)} disabled={i === arr.length - 1} aria-label="Descer"><Icon n="chevD" s={11} sw={2.4} /></button>
+                    <span className="nm" style={{ color: d.color }}>{d.name}</span>
+                    <button className={'pw-switch' + (!hidden ? ' on' : '')} onClick={() => toggleChannel(d.kind)}
+                      disabled={lastVisible} title={lastVisible ? 'Pelo menos um canal visível' : (hidden ? 'Mostrar' : 'Ocultar')} aria-label="Visível"><i /></button>
+                  </div>
+                )
+              })}
+              <div className="pw-tycal-foot">
+                <button className="pw-set-reset" onClick={resetChannelPrefs}
+                  disabled={chPrefs.hidden.length === 0 && chPrefs.order.join() === CHANNEL_ORDER.join()}>Padrão</button>
+                <span className="pw-set-note">Ordem e visibilidade · salvo neste navegador</span>
+              </div>
+            </div>
+          )}
           {panel === 'tyres' && payload.tyres?.ref ? (
             <div className="pw-tyres2" ref={tyRef}>
               {(['ref', 'media'] as const).map(src => {
@@ -549,7 +597,7 @@ export default function Telemetry() {
             </div>
           ) : (
           <div className="pw-chstack" ref={stackRef}>
-            {m.defs.map((d, i) => {
+            {viewDefs.map((d, i) => {
               const ch = charts[i]
               return (
                 <div className="pw-ch" key={d.kind} data-kind={d.kind} onPointerDown={startSelect} onPointerMove={hover}>
@@ -559,7 +607,7 @@ export default function Telemetry() {
                     {ch.gline && <path d={ch.gline} className="pw-ghostline" />}
                     <path d={ch.line} fill="none" stroke={d.color} className="tp-mainline" />
                   </svg>
-                  {sectors.map((s, si) => { const lp = ((s - zoom.lo) / span) * 100; return (lp >= 0 && lp <= 100) ? <span key={si} style={{ position: 'absolute', top: 0, bottom: 0, left: lp + '%', width: 1, background: 'rgba(255,255,255,.13)', pointerEvents: 'none' }} /> : null })}
+                  {marks.map((s, si) => { const lp = ((s - zoom.lo) / span) * 100; return (lp >= 0 && lp <= 100) ? <span key={si} style={{ position: 'absolute', top: 0, bottom: 0, left: lp + '%', width: 1, background: 'rgba(255,255,255,.13)', pointerEvents: 'none' }} /> : null })}
                   {sel && (() => { const la = Math.min(sel.a, sel.b), lb = Math.max(sel.a, sel.b); const l = ((la - zoom.lo) / span) * 100, w2 = ((lb - la) / span) * 100; return <span style={{ position: 'absolute', top: 0, bottom: 0, left: l + '%', width: w2 + '%', background: 'var(--accent-soft)', borderLeft: '1px solid var(--accent)', borderRight: '1px solid var(--accent)', pointerEvents: 'none' }} /> })()}
                   <span className="pw-chlabel">{d.name}</span>
                   <span className="pw-axis"><i>{d.axis[0]}</i><i>{d.axis[1]}</i><i>{d.axis[2]}</i></span>
@@ -574,7 +622,7 @@ export default function Telemetry() {
           <div className="pw-telscrub">
             <div className="pw-progress" ref={barRef} onPointerDown={startDragBar}>
               <div className="tp-fill" ref={fillRef} style={{ width: '100%', transform: `scaleX(${t0})`, transformOrigin: 'left', willChange: 'transform' }} />
-              {sectors.map((s, si) => <span key={si} className="tp-tick" style={{ left: s * 100 + '%' }} />)}
+              {marks.map((s, si) => <span key={si} className="tp-tick" style={{ left: s * 100 + '%' }} />)}
               <span className="tp-knob" ref={knobRef} style={{ left: 0, willChange: 'transform' }} />
             </div>
             <div className="pw-telctrl">

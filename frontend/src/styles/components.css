@@ -1204,3 +1204,35 @@ button.pw-sessbtn{border:0; font:inherit; color:var(--ink); cursor:pointer; posi
 .pw-tycal-foot{display:flex; align-items:center; gap:8px; margin-top:7px; padding-top:7px;
   border-top:1px solid var(--hair)}
 .pw-tycal-foot .pw-set-note{font-size:8.5px}
+
+/* aviso BRAKING sobre o carro (zona de freada; posicionado por frame) */
+.pw-braking{position:absolute; left:0; top:0; z-index:7; pointer-events:none;
+  padding:3px 9px; border-radius:7px; white-space:nowrap;
+  font:800 9.5px var(--font-ui); letter-spacing:.14em; color:#fff;
+  background:color-mix(in oklch, var(--red) 38%, rgba(10,8,8,.72));
+  border:1px solid color-mix(in oklch, var(--red) 55%, transparent);
+  box-shadow:0 0 14px color-mix(in oklch, var(--red) 30%, transparent);
+  will-change:transform}
+
+/* atalhos à direita da tabstrip (GO Fast) */
+.ts-icons{margin-left:auto; display:flex; gap:3px; align-items:center}
+.ts-icons + .ws-switch{margin-left:10px}
+.ts-icons button{width:27px; height:27px; border-radius:8px; border:0; background:none;
+  color:var(--ink-3); display:grid; place-items:center; cursor:pointer; padding:0;
+  transition:.15s var(--ease)}
+.ts-icons button:hover{color:var(--ink); background:var(--surface-3)}
+.ts-icons button.on{color:var(--accent)}
+
+/* popover Canais (painel da Telemetry): ordem + visibilidade */
+.pw-chcfg{position:absolute; right:12px; top:44px; z-index:8; width:212px;
+  padding:11px 13px 9px; border-radius:13px; pointer-events:auto}
+.pw-chcfg-row{display:flex; align-items:center; gap:5px; padding:2.5px 0}
+.pw-chcfg-row .nm{flex:1; font-size:9.5px; font-weight:800; letter-spacing:.08em}
+.pw-chcfg-row.off .nm{opacity:.38}
+.pw-chcfg-row .mv{width:19px; height:19px; border-radius:6px; border:1px solid var(--hair);
+  background:rgba(255,255,255,.04); color:var(--ink-2); display:grid; place-items:center;
+  cursor:pointer; padding:0}
+.pw-chcfg-row .mv:not(.dn) svg{transform:rotate(180deg)}
+.pw-chcfg-row .mv:hover:not(:disabled){color:var(--ink); background:rgba(255,255,255,.09)}
+.pw-chcfg-row .mv:disabled{opacity:.3; cursor:default}
+.pw-chcfg-row .pw-switch:disabled{opacity:.4; cursor:default}
