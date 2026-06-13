@@ -161,7 +161,12 @@ export default function AIEngineer() {
   const xplayRef = useRef(true); xplayRef.current = xplay
   const xrayRef = useRef<XrayGeom | null>(null)
   const xT = useRef(0), xRaf = useRef(0), xLastText = useRef(0)
-  const dotA = useRef<SVGCircleElement>(null), dotB = useRef<SVGCircleElement>(null)
+  // dots do replay são camada HTML compositada (FORA do svg): animar elemento
+  // dentro do svg repintava o palco inteiro a cada frame, dentro de um painel
+  // com backdrop-filter pesado — era o custo permanente que arrastava a tela
+  const dotA = useRef<HTMLDivElement>(null), dotB = useRef<HTMLDivElement>(null)
+  const dotPx = useRef({ a: 0, b: 0 })
+  const xStageSz = useRef({ w: 0, h: 0 })
   const xwrapRef = useRef<HTMLDivElement>(null)
   // zoom/pan do palco: viewBox IMPERATIVO (React não controla o atributo — re-render
   // do chat não pode resetar o enquadramento do usuário)
@@ -219,14 +224,31 @@ export default function AIEngineer() {
     const N = p.delta.length; if (!N) return
     const tG = g.lo + nt * (g.hi - g.lo)
     const a = posAt(g.ptsA, tG)
-    dotA.current?.setAttribute('cx', a.x.toFixed(2)); dotA.current?.setAttribute('cy', a.y.toFixed(2))
     let dB = tG
     if (mm.tRef && mm.tMed) {
       const fi = tG * (N - 1), i0 = Math.floor(fi), i1 = Math.min(N - 1, i0 + 1), fr = fi - i0
       const tau = mm.tRef[i0] + (mm.tRef[i1] - mm.tRef[i0]) * fr
       dB = invTime(tau, mm.tMed)
     }
-    if (dotB.current) { const b = posAt(g.ptsB || g.ptsA, dB); dotB.current.setAttribute('cx', b.x.toFixed(2)); dotB.current.setAttribute('cy', b.y.toFixed(2)) }
+    // dots em PX do palco (camada HTML compositada; svg fica 100% estático no replay)
+    const sw = xStageSz.current.w, sh = xStageSz.current.h
+    if (sw > 0 && sh > 0) {
+      const s = zXf.current
+      const vw = g.bw / s.z, vh = g.bh / s.z
+      const vx = s.cx - vw / 2, vy = s.cy - vh / 2
+      const sc = Math.min(sw / vw, sh / vh)
+      const ox = (sw - vw * sc) / 2, oy = (sh - vh * sc) / 2
+      const base = Math.max(2.2, (g.roadW || 8) * 0.30) * 2 * sc
+      const place = (el: HTMLDivElement | null, wx: number, wy: number, d: number, key: 'a' | 'b') => {
+        if (!el) return
+        if (Math.abs(d - dotPx.current[key]) > 0.5) { dotPx.current[key] = d; el.style.width = d.toFixed(1) + 'px'; el.style.height = d.toFixed(1) + 'px' }
+        el.style.visibility = 'visible'
+        el.style.transform = `translate3d(${(ox + (wx - vx) * sc - d / 2).toFixed(1)}px,${(oy + (wy - vy) * sc - d / 2).toFixed(1)}px,0)`
+      }
+      const b = posAt(g.ptsB || g.ptsA, dB)
+      place(dotB.current, b.x, b.y, base * 0.92, 'b')
+      place(dotA.current, a.x, a.y, base, 'a')
+    }
     // transform (compositado), NUNCA style.left — left dispara layout da página
     // inteira a cada frame e era o que deixava a tela toda lenta com o replay
     for (const c of xEls.current.cursors) c.el.style.transform = `translate3d(${(nt * c.w).toFixed(1)}px,0,0)`
@@ -267,7 +289,8 @@ export default function AIEngineer() {
     s.cx = Math.max(g.bx + w / 2 - sx, Math.min(g.bx + g.bw - w / 2 + sx, s.cx))
     s.cy = Math.max(g.by + h / 2 - sy, Math.min(g.by + g.bh - h / 2 + sy, s.cy))
     el.setAttribute('viewBox', `${(s.cx - w / 2).toFixed(1)} ${(s.cy - h / 2).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`)
-  }, [])
+    renderXray(xT.current, true) // dots HTML acompanham o novo enquadramento
+  }, [renderXray])
   const zoomXray = useCallback((f: number, px?: number, py?: number) => {
     const g = xrayRef.current, el = segSvgRef.current; if (!g || !el) return
     const s = zXf.current
@@ -311,15 +334,20 @@ export default function AIEngineer() {
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
   }, [pin, m, zoomXray])
-  // larguras dos gráficos do raio-X acompanham resize (cursor por transform)
+  // larguras dos gráficos + tamanho do palco acompanham resize (tudo por transform)
   useEffect(() => {
     const w = xwrapRef.current; if (!w) return
-    const ro = new ResizeObserver(() => {
+    const measure = () => {
       for (const c of xEls.current.cursors) c.w = c.el.parentElement?.clientWidth || c.w
-    })
+      const st = segSvgRef.current
+      if (st) { xStageSz.current = { w: st.clientWidth, h: st.clientHeight } }
+    }
+    const ro = new ResizeObserver(() => { measure(); renderXray(xT.current, true) })
     ro.observe(w)
+    if (segSvgRef.current) ro.observe(segSvgRef.current)
+    measure(); renderXray(xT.current, true)
     return () => ro.disconnect()
-  }, [pin, m])
+  }, [pin, m, renderXray])
   // cache dos elementos do raio-X (1×/render) + enquadramento + frame inicial
   useLayoutEffect(() => {
     const w = xwrapRef.current
@@ -475,7 +503,6 @@ export default function AIEngineer() {
     }
   })()
   xrayRef.current = xray
-  const dotR = xray ? Math.max(2.2, xray.roadW * 0.30) : 4
   const sign2 = (v: number) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2)
 
   return (
@@ -522,9 +549,9 @@ export default function AIEngineer() {
           <span className="ks" style={{ color: 'var(--ink-3)', fontSize: 11 }}>o que a média deixa na pista vs sua melhor volta</span>
           <div className="pw-aibar">
             {m.opps.map((o, i) => (
-              <i key={o.rank} style={{ width: go ? (o.cost / scaleBase * 100) + '%' : 0, background: OPP_COLORS[i], transitionDelay: i * 0.12 + 's' }} />
+              <i key={o.rank} style={{ width: (o.cost / scaleBase * 100) + '%', transform: go ? 'scaleX(1)' : 'scaleX(0)', background: OPP_COLORS[i], transitionDelay: i * 0.12 + 's' }} />
             ))}
-            <i style={{ width: go ? (outros / scaleBase * 100) + '%' : 0, background: 'var(--surface-3)', transitionDelay: '.36s' }} />
+            <i style={{ width: (outros / scaleBase * 100) + '%', transform: go ? 'scaleX(1)' : 'scaleX(0)', background: 'var(--surface-3)', transitionDelay: '.36s' }} />
           </div>
           <div className="pw-aileg">
             {m.opps.map((o, i) => <span key={o.rank}><i style={{ background: OPP_COLORS[i] }} />{o.insight.corner} +{o.cost.toFixed(2)}s</span>)}
@@ -572,9 +599,10 @@ export default function AIEngineer() {
                   <path d={xray.roadD} fill="none" stroke="rgba(244,247,246,.075)" strokeWidth={xray.roadW} strokeLinecap="round" strokeLinejoin="round" />
                   {xray.segB && <path d={xray.segB} fill="none" stroke="rgba(255,255,255,.5)" strokeWidth={1.3} strokeDasharray="4 5" vectorEffect="non-scaling-stroke" />}
                   <path d={xray.segA} fill="none" stroke="var(--accent)" strokeWidth={1.9} vectorEffect="non-scaling-stroke" opacity={.9} />
-                  <circle ref={dotB} r={dotR * 0.92} fill="#aab1bb" stroke="rgba(0,0,0,.45)" strokeWidth={dotR * 0.18} />
-                  <circle ref={dotA} r={dotR} fill="var(--accent)" stroke="rgba(0,0,0,.45)" strokeWidth={dotR * 0.18} />
                 </svg>
+                {/* dots em camada HTML compositada (fora do svg — replay não repinta o palco) */}
+                <div ref={dotB} className="pw-xdot" style={{ background: '#aab1bb' }} aria-hidden />
+                <div ref={dotA} className="pw-xdot" style={{ background: 'var(--accent)' }} aria-hidden />
                 <div className="pw-aixzoom">
                   <button onClick={() => zoomXray(1.35)} title="Aproximar (ou roda do mouse)">+</button>
                   <button onClick={() => zoomXray(1 / 1.35)} title="Afastar">−</button>
@@ -645,9 +673,13 @@ export default function AIEngineer() {
                     onClick={() => setSkillSel(s => (s === i ? null : i))}>
                     <svg width="58" height="58" viewBox="0 0 58 58">
                       <circle cx="29" cy="29" r={R} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="4.5" />
+                      {/* glow = halo translúcido (drop-shadow re-rasterizava o filtro a CADA frame da transição) */}
+                      <circle cx="29" cy="29" r={R} fill="none" stroke={sk.color} strokeWidth="10" strokeLinecap="round" opacity={0.16}
+                        strokeDasharray={C} strokeDashoffset={go ? C * (1 - sk.score / 100) : C}
+                        transform="rotate(-90 29 29)" style={{ transition: 'stroke-dashoffset 1.1s var(--ease)' }} />
                       <circle cx="29" cy="29" r={R} fill="none" stroke={sk.color} strokeWidth="4.5" strokeLinecap="round"
                         strokeDasharray={C} strokeDashoffset={go ? C * (1 - sk.score / 100) : C}
-                        transform="rotate(-90 29 29)" style={{ transition: 'stroke-dashoffset 1.1s var(--ease)', filter: `drop-shadow(0 0 5px ${sk.color})` }} />
+                        transform="rotate(-90 29 29)" style={{ transition: 'stroke-dashoffset 1.1s var(--ease)' }} />
                     </svg>
                     <b className="pw-gradel" style={{ color: sk.color }}>{sk.grade}</b>
                     <span className="kl">{sk.k}</span>
