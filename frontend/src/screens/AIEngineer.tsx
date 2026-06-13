@@ -168,7 +168,7 @@ export default function AIEngineer() {
   const segSvgRef = useRef<SVGSVGElement>(null)
   const zXf = useRef({ z: 1, cx: 0, cy: 0 })
   const xLastRank = useRef(-1)
-  const xEls = useRef<{ cursors: HTMLElement[]; vas: HTMLElement[]; vbs: HTMLElement[]; gap: HTMLElement | null }>({ cursors: [], vas: [], vbs: [], gap: null })
+  const xEls = useRef<{ cursors: Array<{ el: HTMLElement; w: number }>; vas: HTMLElement[]; vbs: HTMLElement[]; gap: HTMLElement | null }>({ cursors: [], vas: [], vbs: [], gap: null })
   const payloadRef = useRef<Payload | null>(null); payloadRef.current = payload
 
   const resumo = m
@@ -227,7 +227,9 @@ export default function AIEngineer() {
       dB = invTime(tau, mm.tMed)
     }
     if (dotB.current) { const b = posAt(g.ptsB || g.ptsA, dB); dotB.current.setAttribute('cx', b.x.toFixed(2)); dotB.current.setAttribute('cy', b.y.toFixed(2)) }
-    for (const c of xEls.current.cursors) c.style.left = (nt * 100).toFixed(2) + '%'
+    // transform (compositado), NUNCA style.left — left dispara layout da página
+    // inteira a cada frame e era o que deixava a tela toda lenta com o replay
+    for (const c of xEls.current.cursors) c.el.style.transform = `translate3d(${(nt * c.w).toFixed(1)}px,0,0)`
     const now = performance.now()
     if (!force && now - xLastText.current < 100) return
     xLastText.current = now
@@ -309,11 +311,20 @@ export default function AIEngineer() {
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
   }, [pin, m, zoomXray])
+  // larguras dos gráficos do raio-X acompanham resize (cursor por transform)
+  useEffect(() => {
+    const w = xwrapRef.current; if (!w) return
+    const ro = new ResizeObserver(() => {
+      for (const c of xEls.current.cursors) c.w = c.el.parentElement?.clientWidth || c.w
+    })
+    ro.observe(w)
+    return () => ro.disconnect()
+  }, [pin, m])
   // cache dos elementos do raio-X (1×/render) + enquadramento + frame inicial
   useLayoutEffect(() => {
     const w = xwrapRef.current
     xEls.current = w ? {
-      cursors: [...w.querySelectorAll('[data-xcur]')] as HTMLElement[],
+      cursors: ([...w.querySelectorAll('[data-xcur]')] as HTMLElement[]).map(el => ({ el, w: el.parentElement?.clientWidth || 0 })),
       vas: [...w.querySelectorAll('[data-xva]')] as HTMLElement[],
       vbs: [...w.querySelectorAll('[data-xvb]')] as HTMLElement[],
       gap: w.querySelector('[data-xgap]') as HTMLElement | null,
@@ -603,7 +614,7 @@ export default function AIEngineer() {
                     </svg>
                     <span className="pw-chlabel">{c.k}</span>
                     <span className="pw-xapex" style={{ left: xray.apexPct + '%' }} />
-                    <span className="tp-cursor" data-xcur style={{ left: 0 }} />
+                    <span className="tp-cursor" data-xcur style={{ left: 0, willChange: 'transform' }} />
                     <span className="pw-xvals"><b className="num" data-xva style={{ color: c.color }}>—</b><i>/</i><b className="num" data-xvb>—</b></span>
                   </div>
                 ))}
