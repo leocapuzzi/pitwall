@@ -34,6 +34,22 @@
   seguem na raiz (referências vivas).
 
 ## 1. ✅ CONCLUÍDO (e APROVADO pelo usuário)
+**Sessão 2026-06-12 (parte 4) — FLUIDEZ (tudo aprovado: "agora ficou top"):**
+- ✅ **Pods** (Telemetry/Lap/Comparison): barras throttle/brake saíram do bloco de texto
+  10 Hz → atualizam TODO frame com interpolação (transform); textos a ~15 Hz.
+- ✅ **Física REAL do play**: o player avançava fração de DISTÂNCIA linear no tempo (carro
+  na velocidade MÉDIA — acelerado nas curvas, lento nas retas; usuário notou na T7). Agora
+  avança TEMPO real e converte p/ distância (`sampleAt(ref_time)+dt → invTime`); clock = tempo
+  real na posição. Telemetry/Lap/Comparison (lado B) + pods do Stint.
+- ✅ **AI Engineer travada — CAUSA RAIZ = vidro físico** (commit b5ca315). Antes tentei (e
+  NÃO bastou): reservar altura do typewriter, cursores por transform, ping finito, dots do
+  replay em camada HTML, glow dos gauges sem drop-shadow, barra por scaleX. O que resolveu:
+  **modo "lite glass"** — `.pw-liteglass` (wrapper da AI) faz o motor PULAR o filtro SVG
+  físico dos 7 painéis → fallback `blur(16px)`. ⚠️ LIÇÃO: liquid glass físico só escala em
+  telas com POUCOS painéis (mapas); layout denso (AI) = vidro leve. Zerar os sliders do vidro
+  NÃO testa isso (o filtro continua no pipeline).
+- Commits: ced0dbc → 0eabe99 → f39fd1e → b5ca315 (todos pushados).
+
 **Sessão 2026-06-12 (parte 3) — SEASON STRIP no Dashboard (calendário da temporada):**
 - ✅ **`components/SeasonStrip.tsx` (novo)**: faixa full-width entre o topo e o corpo do
   Dashboard com o calendário 2026 S3 por série — tabs em vidro **MX-5 Cup / F1600 Rookie**

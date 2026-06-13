@@ -43,6 +43,13 @@ O mapa é o **fundo da tela inteira**; a UI flutua por cima em vidro.
   reconstroem os canvases (debounce 250ms). Resize de painel → rebuild (120ms).
 - O vidro só "aparece" quando algo passa por baixo (pista/linhas). Painel parado sobre
   fundo vazio fica escuro mesmo — é esperado.
+- ⚠️ **PERFORMANCE: o filtro físico só escala em telas com POUCOS painéis.** Cada
+  `backdrop-filter:url(#...)` é recomposto por frame quando há animação na tela; com muitos
+  painéis (a AI tinha 7) + animações contínuas, o FPS da tela inteira cai. Telas de layout
+  denso usam **vidro LEVE**: marque o wrapper com **`.pw-liteglass`** → o motor pula o filtro
+  SVG (`eligible()` via `closest`) e o CSS aplica `blur(16px)` (regra `.pw-liteglass .pw-glass2`).
+  Hoje só a **AI Engineer** é lite. NUNCA diagnostique esse custo zerando os sliders do meno
+  Settings — o filtro continua aplicado no pipeline; o teste real é lite vs físico.
 - ⚠️ Pegadinha: elemento de vidro que nasce SEM layout fica registrado como unidade
   nula até o ResizeObserver vê-lo com tamanho — guards `if (!u)` no applyLiveParams/
   scheduleRebuildAll são necessários.
