@@ -506,7 +506,7 @@ export default function AIEngineer() {
   const sign2 = (v: number) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2)
 
   return (
-    <div className="tp-wrap pw-ai">
+    <div className="tp-wrap pw-ai pw-liteglass">
       <div className="pw-pagebg" aria-hidden><i className="g1" /><i className="g2" /><i className="g3" /></div>
 
       {/* strip do engenheiro */}

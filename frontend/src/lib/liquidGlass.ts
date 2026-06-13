@@ -234,6 +234,16 @@ const GLASS_SELECTOR = [
   '.pw-scrubfloat .tp-scrub',
 ].join(', ')
 
+// Telas marcadas com .pw-liteglass NÃO recebem o filtro SVG físico (pesado de
+// compor): caem no fallback CSS de blur simples. Usado na tela AI Engineer, que
+// tem ~8 painéis de vidro + animações contínuas — o custo de recompor 8 filtros
+// físicos por frame derrubava o FPS de TODA a tela. O vidro físico segue nas
+// telas de mapa (poucos painéis, animação só no play).
+const LITE_ANCESTOR = '.pw-liteglass'
+function eligible(el: HTMLElement): boolean {
+  return !el.closest(LITE_ANCESTOR)
+}
+
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
 type Unit = {
@@ -411,6 +421,7 @@ function flushRebuilds() {
 
 function attach(el: HTMLElement) {
   if (units.has(el)) return
+  if (!eligible(el)) return            // tela lite → usa o fallback CSS (blur simples)
   const u = buildFilterFor(el)
   if (u) {
     units.set(el, u)
