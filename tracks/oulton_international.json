@@ -1,0 +1,48 @@
+{
+  "track_id": 180,
+  "track_name": "Oulton Park Circuit - International",
+  "config": "International",
+  "length_m": 4282,
+  "n_corners": 9,
+  "source": "Posicoes (apex_pct = fracao 0..1 da volta) derivadas da geometria Lat/Lon de uma volta de referencia do Garage61. Numeracao na ordem da volta. Refinavel.",
+  "corners": [
+    {
+      "n": 1,
+      "apex_pct": 0.069
+    },
+    {
+      "n": 2,
+      "apex_pct": 0.186
+    },
+    {
+      "n": 3,
+      "apex_pct": 0.315
+    },
+    {
+      "n": 4,
+      "apex_pct": 0.388
+    },
+    {
+      "n": 5,
+      "apex_pct": 0.485
+    },
+    {
+      "n": 6,
+      "apex_pct": 0.617
+    },
+    {
+      "n": 7,
+      "apex_pct": 0.643
+    },
+    {
+      "n": 8,
+      "apex_pct": 0.792
+    },
+    {
+      "n": 9,
+      "apex_pct": 0.924
+    }
+  ],
+  "sectors": [],
+  "sectors_status": "pendente — os 3 setores reais nao estao no .ibt (iRacing grava quartos genericos). Cadastrar quando houver API."
+}

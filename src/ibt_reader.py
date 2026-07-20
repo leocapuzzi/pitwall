@@ -166,9 +166,11 @@ def session_summary(session_info: dict) -> dict:
     drivers = di.get("Drivers", []) or []
     my_idx = di.get("DriverCarIdx")
     car = None
+    car_id = None
     for d in drivers:
         if d.get("CarIdx") == my_idx:
             car = d.get("CarScreenName")
+            car_id = d.get("CarID")
             break
     return {
         "track": wk.get("TrackDisplayName"),
@@ -176,6 +178,7 @@ def session_summary(session_info: dict) -> dict:
         "length": wk.get("TrackLength"),
         "track_id": wk.get("TrackID"),
         "car": car,
+        "car_id": car_id,
     }
 
 

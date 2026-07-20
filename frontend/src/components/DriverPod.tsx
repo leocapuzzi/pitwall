@@ -5,17 +5,18 @@ import Icon from './Icon'
 // Os valores são atualizados IMPERATIVAMENTE pela tela via [data-f] (thr/thrbar/brk/
 // brkbar/spd/gear/rpm/wheel/steerarc) — este componente é só o markup.
 // `onOpen` (opcional) torna o card clicável e mostra a seta de expandir (GO Fast).
-export default function DriverPod({ podRef, on, name, time, sub, onOpen }: {
+export default function DriverPod({ podRef, on, name, time, sub, onOpen, openTitle }: {
   podRef: React.RefObject<HTMLDivElement | null>
   on?: boolean
   name: string
   time: string
   sub: string
   onOpen?: () => void
+  openTitle?: string
 }) {
   return (
     <div className={'pw-pod pw-glass2' + (on ? ' on' : '') + (onOpen ? ' pw-open' : '')} ref={podRef}
-      onClick={onOpen} role={onOpen ? 'button' : undefined} title={onOpen ? 'Abrir a tabela do stint' : undefined}>
+      onClick={onOpen} role={onOpen ? 'button' : undefined} title={onOpen ? (openTitle || 'Abrir a tabela do stint') : undefined}>
       <span className="pw-wheelicon">
         <svg viewBox="0 0 32 32" width="36" height="36">
           <circle cx="16" cy="16" r="14.2" fill="none" stroke="rgba(255,255,255,.13)" strokeWidth="2.2" />

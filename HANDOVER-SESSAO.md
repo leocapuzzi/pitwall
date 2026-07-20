@@ -1,4 +1,4 @@
-# HANDOVER — PitWall (rebuild da UI em React) · atualizado 2026-06-12
+# HANDOVER — PitWall (rebuild da UI em React) · atualizado 2026-07-20
 
 > Ponte para a próxima sessão do Claude. **Leia ANTES o `COMECE-AQUI.md`** (guia único de
 > orientação: mapa de pastas/documentos, como rodar, regras). **Leia também:** as memórias do
@@ -34,6 +34,108 @@
   seguem na raiz (referências vivas).
 
 ## 1. ✅ CONCLUÍDO (e APROVADO pelo usuário)
+**Sessão 2026-07-20 — TRACK MAPS OFICIAIS implantados no Windows (doc: `TRACK-MAPS.md`):**
+- A pesquisa foi feita numa sessão paralela no Mac (2026-07-11), mas NADA tinha chegado aos
+  arquivos do projeto — só a pasta de cópias `_novos-track-maps/`. Nesta sessão tudo foi
+  implantado e re-validado no Windows:
+- ✅ Novos nos destinos: `TRACK-MAPS.md` (raiz), `tools/gerar_indice_trackmaps.py`,
+  `tools/casar_svg_oficial.py`, `tracks/iracing_track_maps_index.json` (424/424 configs,
+  13/13 da temporada). Vendor clonado (esparso) em `..\racing-track-maps-vector\`.
+- ✅ Modificações re-aplicadas: `src/webdata.py` (payload prefere anéis `official` como
+  `track_edges`), `tools/nova_pista.py` (etapa v3 chama o fit automaticamente),
+  `tools/gerar_calendario.py` (`thumb_oficial()`, prioridade real → oficial → OSM →
+  placeholder), `requirements.txt` (+svgpathtools, instalado no venv).
+- ✅ Fit de Winton re-rodado no Windows: média 1,09 m · p95 1,93 m · 100% da volta no anel
+  (idêntico ao Mac). Calendário re-gerado: ZERO placeholders (Oran Park via silhueta do "8").
+  15 thumbs conferidos visualmente; `/api/calendar` validado servindo `oficial_*`.
+- ✅ **Asfalto oficial VALIDADO no player real** (mesmo sem `.ibt` na máquina): como o
+  acesso à telemetria do Garage61 FOI LIBERADO (voltas vêm com `canViewTelemetry=true`),
+  uma volta real de Winton foi puxada e servida como sessão sintética por um servidor de
+  validação fora do produto (monkeypatch do ibt_reader; script no scratchpad da sessão
+  2026-07-20). Todas as telas abriram: Telemetry fullmap com o asfalto oficial + traçado
+  dentro da faixa + replay, Lap Analysis com numeração de curvas, Stint, e o Dashboard
+  com o SeasonStrip mostrando os thumbs oficiais nos cards. Front intacto (zero mudança).
+- 💡 Ideia derivada (decisão do Leo pendente): "abrir volta do Garage61 como sessão" no
+  próprio app (hoje o G61 só entra como referência na Comparison, ancorado numa sessão
+  local). A validação provou que o pipeline inteiro funciona com uma volta G61.
+
+**Sessão 2026-07-20 (parte 2) — PODS A/B GLOBAIS (comparação livre em TODAS as telas):**
+Decisão do Leo: clicar no pod "Sua melhor" (A) abre MINHAS voltas (sessões locais da
+mesma pista+carro OU minhas voltas do Garage61); clicar no pod "Média" (B) abre minha
+média (se houver limpas) OU uma volta do Garage61 (equipe). A troca re-analisa TUDO.
+- ✅ Backend: `webdata._assemble_payload()` extraído (payload a partir de 2 conjuntos de
+  sinais); `build_compare_payload(path, a, b)` com descritores
+  `{"type":"local","path","lap"}` / `{"type":"g61","lapId"}` / `{"type":"media"}`;
+  endpoint `GET /api/compare?path&a&b` (JSON url-encoded). `garage61.lap_signals()`
+  (extraído do lap_payload) + `list_my_laps()` + endpoint `/api/g61/mylaps`.
+- ⚠️ PEGADINHA G61: o filtro de voltas próprias é o LITERAL `drivers=me` — passar o
+  próprio id/slug devolve VAZIO (testado). E sem filtro `drivers`, /laps devolve pilotos
+  PÚBLICOS do mundo todo (não só a equipe), melhor por piloto com `group=driver`.
+- ✅ Front: `PodPicker.tsx` (novo, reusa classes do picker da Comparison); useSession
+  ganhou `compare/setCompare/resetCompare/applyPodPick` (payload inteiro trocado via
+  /api/compare; `load()` reseta p/ padrão); pods clicáveis em Telemetry + Lap Analysis
+  (`ctx.refName/refSub/compSub` novos no contexto); DriverPod ganhou `openTitle`.
+- ✅ Validado no app real (server sintético 8601): você (V1 local) vs Jussi (G61) na
+  Telemetry (delta +0.56, fantasma no mapa, canais tracejados) e você (G61 1:31.727) vs
+  Jussi (G61) na Lap Analysis (setores + insight de curva reais). Pneus/fuel nulos p/
+  fonte G61 (CSV tem só 18 canais — sem pneu/combustível; painel Tyres avisa).
+- NOTA semântica: o coaching (insights) descreve o lado B em relação ao A (herdado do
+  par melhor/média). Com B mais rápido, os insights apontam onde B perde para A; o
+  delta/setores continuam legíveis nos dois sentidos. Se o Leo quiser "coaching sobre
+  MIM contra o mais rápido", inverter a direção é refino futuro.
+- Front continua SEM mudança nas telas Stint/Comparison/AI (consomem o payload trocado;
+  Stint segue ancorada na sessão local — tabela de voltas não muda com o compare).
+
+**Sessão 2026-07-20 (parte 3) — SESSÕES VIRTUAIS do Garage61 (app abre SEM .ibt):**
+Motivação: o Leo abriu o `abrir_pitwall.bat` e viu "Sessão sem voltas válidas" (máquina
+sem telemetria; samples quebrados). Agora as MINHAS voltas do G61 viram sessões:
+- ✅ `garage61.list_my_sessions()`: pistas recentes de `/me/statistics` → melhor volta
+  minha por pista+carro (com telemetria) → entradas `{file: "pista|carro|tempo",
+  path: "g61:<lapId>"}` somadas ao `/api/sessions` (cache 120 s). No Leo: 8 sessões
+  virtuais (Winton FF1600 1:27.795, Rudskogen, VIR, Lédenon, Oulton FF1600 e Porsche
+  992, Navarra BMW M2, Interlagos W13).
+- ✅ `webdata.build_g61_session_payload()` (via `/api/session?path=g61:<id>`): A = a
+  volta, B = a mesma volta ("Comparar com…" no pod B convida a escolher); resumo via
+  `garage61.session_summary_for_lap()` (mapeia track/car g61 → IDs iRacing pelo
+  platform_id reverso) → pista fixa/mapa oficial/curvas ancoram (Winton: 439, official
+  1600 pts, 12 curvas). `_assemble_payload` tolera df/sessao None (sem stint/fuel/
+  setores oficiais — `sector_times` cai em terços). `build_compare_payload` aceita base
+  `g61:` e descritor local com path `g61:`.
+- ✅ Front: SessionMenu mostra "pista / Garage61 · carro · tempo"; `applyPodPick` com
+  padrões da sessão virtual (a própria volta nos 2 lados); PodPicker esconde média/
+  sessões locais quando a base é virtual. Validado no app real (8600): boot caiu numa
+  sessão virtual sozinho (Rudskogen), pods "Leonardo Capuzzi (G61)" + "Comparar com…".
+- Limitações da sessão virtual: sem pneus/combustível/stint/média (CSV de 18 canais,
+  1 volta), setores genéricos em terços. `/api/laps` não aceita path g61: (picker
+  local da Comparison não lista voltas da sessão virtual — usar os pods).
+- 🐛 CORRIGIDO ("fica em Carregando sessão…"): o boot varria TODAS as sessões atrás de
+  ≥2 voltas limpas — como sessão G61 nunca tem limpas, baixava as 8 voltas inteiras
+  (~40 s) antes de abrir. Agora a varredura de limpas é SÓ nas locais (com reuso do
+  payload no fallback) e as virtuais entram como último fallback (para na 1ª que abre).
+  Backend: `_lap_meta`/`lap_signals` cacheados (o boot pedia a mesma volta 2-3×) e
+  `list_my_sessions` paralelizado (ThreadPoolExecutor). Boot frio: ~40 s → ~5 s.
+
+**Sessão 2026-07-20 (parte 4) — 7 PISTAS CRIADAS a partir do Garage61 + carro no picker:**
+- 🐛 Os mapas das sessões virtuais degradavam ("traçado = linha do carro, escala errada")
+  porque só Winton tinha geometria criada. Causa raiz resolvida: **`tools/nova_pista_g61.py`
+  (novo)** — cria a pista usando a MINHA melhor volta do G61 como referência congelada
+  (mesmo pipeline v1→v2 OSM→v3 oficial do nova_pista.py; reusa detectar_curvas dele).
+- ✅ Criadas: rudskogen (11 curvas; entrou no manifesto, F1600 w3), interlagos_gp (10),
+  ledenon (12), vir_north (13), oulton_international (9), oulton_fosters (8),
+  navarra_speed (12). Fits do mapa oficial: Oulton ×2, VIR e Fosters = 100% da volta no
+  anel; Lédenon 92%; Interlagos 88% (volta de W13 usa MUITO kerb); **Navarra 75% → bloco
+  `official` REMOVIDO** (ficou só OSM; refazer fit com .ibt local: casar_svg_oficial).
+  Calendário re-gerado: 7 thumbs promovidos a centerline real.
+- ✅ Seletor de CARRO nos pickers dos pods (pedido do Leo): `garage61.list_track_cars`
+  (+`/api/g61/cars?trackId&mine`) → <select> no PodPicker (A: meus carros com contagem;
+  B: carros da atividade recente da pista + o carro da sessão sempre injetado na lista).
+  Trocar o carro refaz a lista de voltas. Permite comparar até carros DIFERENTES.
+- 🐛 Pegadinha Windows corrigida nos dois nova_pista*: `subprocess.run(text=True)` decodifica
+  em cp1252 e explode com acentos do output → `encoding="utf-8", errors="replace"`.
+- Quando vier um .ibt local dessas pistas, rodar `nova_pista.py <pista> --force` promove
+  a referência p/ a volta local (e refaz OSM+oficial).
+- `_novos-track-maps/` pode ser apagada quando o Leo quiser (tudo implantado; é só cópia).
+
 **Sessão 2026-06-12 (parte 4) — FLUIDEZ (tudo aprovado: "agora ficou top"):**
 - ✅ **Pods** (Telemetry/Lap/Comparison): barras throttle/brake saíram do bloco de texto
   10 Hz → atualizam TODO frame com interpolação (transform); textos a ~15 Hz.

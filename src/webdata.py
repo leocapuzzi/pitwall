@@ -184,11 +184,10 @@ def _laps_rows(df, infos, best, limpas, setores, grid=None) -> list[dict]:
 def build_session_payload(path: str, max_off: float = 1.07) -> dict:
     """Carrega + analisa uma sessao e devolve o payload do frontend.
 
-    Modo: sua MELHOR (referencia/rapida) vs sua MEDIA das voltas limpas (aluna/lenta).
+    Modo padrao: sua MELHOR (referencia/rapida) vs sua MEDIA das limpas (aluna/lenta).
     """
     df, sessao = _load(path)
     resumo = ibt_reader.session_summary(sessao)
-    modelo = TM.load_model(resumo.get("track_id"), resumo.get("config"))
     infos = A.split_laps(df)
     best = A.best_lap(infos)
     if best is None:
@@ -202,6 +201,123 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
     signs = CAL.calibrate_signs(sig_fast)
     sig_fast = S.enrich(CAL.apply_signs(sig_fast, signs))
     sig_slow = S.enrich(CAL.apply_signs(S.signals_from_laps(df, limpas, grid), signs))
+
+    labels = {
+        "suaMelhor": A.fmt_laptime(tempo[best]),
+        "referencia": f"Média ({len(limpas)} voltas)",
+        "refName": "Sua melhor", "refSub": "ref", "compSub": "média",
+    }
+    return _assemble_payload(path, sessao, resumo, df, infos, best, limpas,
+                             sig_fast, sig_slow, labels)
+
+
+def build_g61_session_payload(lap_id: str) -> dict:
+    """'Sessao virtual' do Garage61: UMA volta minha vira a sessao inteira.
+
+    A = a volta; B = a mesma volta (delta zero) ate o usuario escolher outra no
+    pod B. Ancora pista fixa/mapa oficial/curvas pelo track_id do iRacing.
+    Permite usar o app numa maquina SEM .ibt local.
+    """
+    import garage61 as G61  # import tardio (garage61 importa webdata)
+
+    sig, meta = G61.lap_signals(lap_id)
+    resumo = G61.session_summary_for_lap(lap_id)
+    labels = {
+        "suaMelhor": A.fmt_laptime(meta["lapTime"]),
+        "referencia": "Comparar com…",
+        "refName": f"{meta['driver'] or 'Você'} (G61)", "refSub": "Garage61",
+        "compSub": "Garage61",
+    }
+    return _assemble_payload(f"g61:{lap_id}", None, resumo, None, [], None, [],
+                             sig, sig, labels)
+
+
+def build_compare_payload(path: str, a: dict, b: dict, max_off: float = 1.07) -> dict:
+    """Payload completo com A/B LIVRES, ancorado na sessao base `path`.
+
+    a/b: {"type": "local", "path": <.ibt>, "lap": N}  (lap None = melhor valida)
+         {"type": "g61", "lapId": "..."}               (volta do Garage61)
+    b tambem aceita {"type": "media"} = media das limpas da sessao base.
+    `path` pode ser "g61:<lapId>" (sessao virtual — sem media/stint/pneus).
+    TODA a analitica (delta, setores, curvas, coaching, scorecard) e recalculada
+    para o par — as telas consomem o mesmo formato do payload padrao.
+    """
+    import garage61 as G61  # import tardio (garage61 importa webdata)
+
+    if path.startswith("g61:"):
+        df = sessao = None
+        infos, best, limpas = [], None, []
+        resumo = G61.session_summary_for_lap(path[4:])
+    else:
+        df, sessao = _load(path)
+        resumo = ibt_reader.session_summary(sessao)
+        infos = A.split_laps(df)
+        best = A.best_lap(infos)
+        limpas = A.clean_laps(infos, max_off) if best is not None else []
+    grid = A.GRID
+
+    def _local(desc: dict):
+        p = str(desc.get("path") or path)
+        if p.startswith("g61:"):
+            sig, meta = G61.lap_signals(p[4:])
+            return sig, float(meta["lapTime"]), meta["driver"] or "Garage61", "Garage61"
+        d, _ = _load(p)
+        inf = A.split_laps(d)
+        n = desc.get("lap")
+        if n is None:
+            n = A.best_lap(inf)
+            if n is None:
+                raise ValueError("Sessao escolhida nao tem volta valida.")
+        n = int(n)
+        info = next((i for i in inf if i.lap == n), None)
+        if info is None or not (np.isfinite(info.lap_time) and info.lap_time > 0):
+            raise ValueError(f"Volta {n} nao encontrada (ou sem tempo fechado).")
+        # calibracao pela MELHOR da sessao de origem (estavel), como no build_lap_payload
+        bb = A.best_lap(inf)
+        signs = CAL.calibrate_signs(S.signals_from_laps(d, [bb], grid)) if bb is not None else None
+        sig = S.signals_from_laps(d, [n], grid)
+        sig = S.enrich(CAL.apply_signs(sig, signs) if signs is not None else sig)
+        mesma = os.path.abspath(p) == os.path.abspath(path)
+        sub = f"V{n}" if mesma else f"V{n} · outra sessão"
+        return sig, float(info.lap_time), "Você", sub
+
+    def _resolve(desc: dict, lado: str):
+        t = (desc or {}).get("type")
+        if t == "media":
+            if df is None:
+                raise ValueError("Sessao do Garage61 nao tem media — escolha uma volta.")
+            if not limpas:
+                raise ValueError("A sessao base nao tem voltas limpas p/ compor a media.")
+            sig_best = S.signals_from_laps(df, [best], grid)
+            signs = CAL.calibrate_signs(sig_best)
+            sig = S.enrich(CAL.apply_signs(S.signals_from_laps(df, limpas, grid), signs))
+            ttd = sig["time_to_dist"]
+            return sig, float(ttd[-1]), f"Média ({len(limpas)} voltas)", "média"
+        if t == "local":
+            return _local(desc)
+        if t == "g61":
+            sig, meta = G61.lap_signals(desc["lapId"])
+            return sig, float(meta["lapTime"]), meta["driver"] or "Garage61", "Garage61"
+        raise ValueError(f"Descritor invalido no lado {lado}: {desc!r}")
+
+    sig_a, t_a, nome_a, sub_a = _resolve(a, "A")
+    sig_b, _t_b, nome_b, sub_b = _resolve(b, "B")
+
+    labels = {
+        "suaMelhor": A.fmt_laptime(t_a),
+        "referencia": nome_b,
+        "refName": nome_a, "refSub": sub_a, "compSub": sub_b,
+    }
+    return _assemble_payload(path, sessao, resumo, df, infos, best, limpas,
+                             sig_a, sig_b, labels)
+
+
+def _assemble_payload(path, sessao, resumo, df, infos, best, limpas,
+                      sig_fast, sig_slow, labels) -> dict:
+    """Monta o payload do frontend a partir de DOIS conjuntos de sinais no grid
+    (fast=A/referencia, slow=B/comparacao) + o contexto da sessao base."""
+    grid = A.GRID
+    modelo = TM.load_model(resumo.get("track_id"), resumo.get("config"))
 
     length_m = float(sig_fast["LapDist"][-1]) if "LapDist" in sig_fast else None
 
@@ -238,7 +354,17 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
         if sig_slow.get("Lat") is not None and sig_slow.get("Lon") is not None:
             sbx, sby = _project_with(sig_slow.get("Lat"), sig_slow.get("Lon"), lat0, lon0)
             racing_b_xy = {"x": _arr(sbx, 2), "y": _arr(sby, 2)}
-        if fixed.get("left") and fixed.get("right"):
+        # v3 (tools/casar_svg_oficial.py): contorno OFICIAL do iRacing georreferenciado
+        # tem prioridade visual sobre as bordas OSM (left=outer, right=inner). A largura
+        # segue a do OSM: a faixa desenhada no SVG oficial é estilizada (~40% mais larga).
+        official = fixed.get("official") or {}
+        if official.get("outer") and official.get("inner"):
+            ox, oy = _project_with(official["outer"]["lat"], official["outer"]["lon"], lat0, lon0)
+            ix, iy = _project_with(official["inner"]["lat"], official["inner"]["lon"], lat0, lon0)
+            track_edges = {"left": {"x": _arr(ox, 2), "y": _arr(oy, 2)},
+                           "right": {"x": _arr(ix, 2), "y": _arr(iy, 2)}}
+            track_width = fixed.get("width_m")
+        elif fixed.get("left") and fixed.get("right"):
             lx, ly = _project_with(fixed["left"]["lat"], fixed["left"]["lon"], lat0, lon0)
             rx, ry = _project_with(fixed["right"]["lat"], fixed["right"]["lon"], lat0, lon0)
             track_edges = {"left": {"x": _arr(lx, 2), "y": _arr(ly, 2)},
@@ -261,7 +387,7 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
     if resumo.get("config"):
         pista += f" ({resumo['config']})"
 
-    setores = ibt_reader.sector_starts(sessao)
+    setores = ibt_reader.sector_starts(sessao) if sessao else []
     st_ref = A.sector_times(sig_fast["time_to_dist"], setores, grid)
     st_med = A.sector_times(sig_slow["time_to_dist"], setores, grid)
     if setores and len(setores) >= 2:
@@ -275,9 +401,9 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
     }
 
     # Volta a volta (tela Stint): tempo, validade, setores e combustivel por volta.
-    laps_out = _laps_rows(df, infos, best, limpas, setores, grid)
+    laps_out = _laps_rows(df, infos, best, limpas, setores, grid) if df is not None else []
     fuel_fim = None
-    if "FuelLevel" in df.columns and len(df):
+    if df is not None and "FuelLevel" in df.columns and len(df):
         v = float(df["FuelLevel"].iloc[-1])
         if np.isfinite(v):
             fuel_fim = round(v, 2)
@@ -286,12 +412,16 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
         "contexto": {
             "carro": resumo.get("car"), "pista": pista, "comprimento": resumo.get("length"),
             "arquivo": os.path.basename(path),
-            "suaMelhor": A.fmt_laptime(tempo[best]),
-            "referencia": f"Média ({len(limpas)} voltas)",
+            "suaMelhor": labels["suaMelhor"],
+            "referencia": labels["referencia"],
+            "refName": labels.get("refName", "Sua melhor"),
+            "refSub": labels.get("refSub", "ref"),
+            "compSub": labels.get("compSub", "média"),
             "deltaTotal": f"{float(delta[-1]):+.2f}s",
             "voltasGravadas": len(infos), "voltasValidas": len([i for i in infos if i.valid]),
             "voltasLimpas": len(limpas), "cornersSrc": corners_src,
             "fuelFim": fuel_fim, "trackId": resumo.get("track_id"),
+            "carId": resumo.get("car_id"),
         },
         "eixoDist": _arr(sig_fast.get("LapDist"), 0),
         "delta": _arr(delta, 3),        # acumulado media-melhor (>0 = media perde ali)

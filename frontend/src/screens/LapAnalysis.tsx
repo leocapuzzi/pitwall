@@ -4,6 +4,7 @@ import type { PointerEvent as RPointerEvent } from 'react'
 import Icon from '../components/Icon'
 import SlideSeg from '../components/SlideSeg'
 import DriverPod from '../components/DriverPod'
+import PodPicker from '../components/PodPicker'
 import InteractiveTrack, { type TrackHandle } from '../components/InteractiveTrack'
 import MiniTrackMap from '../components/MiniTrackMap'
 import { useSession } from '../lib/useSession'
@@ -75,7 +76,8 @@ function buildModel(p: Payload): Model {
 const sign = (v: number, dec = 2) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(dec)
 
 export default function LapAnalysis() {
-  const { payload, loading, error } = useSession()
+  const { payload, loading, error, sessions, current, applyPodPick } = useSession()
+  const [podPick, setPodPick] = useState<'A' | 'B' | null>(null)
   const model = useMemo(() => (payload ? buildModel(payload) : null), [payload])
   const [playing, setPlaying] = useState(false)
   const [active, setActive] = useState<number | null>(null)
@@ -322,11 +324,16 @@ export default function LapAnalysis() {
         </div>
         </div>
 
-        {/* pods ao vivo (topo-direita) */}
+        {/* pods ao vivo (topo-direita) — clicar abre o picker global A/B */}
         <div className="pw-pods">
-          <DriverPod podRef={podA} on name="Sua melhor" time={ctx.suaMelhor} sub={`Volta ${m.top2[0]?.n ?? '—'}`} />
-          <DriverPod podRef={podB} name={ctx.referencia} time={fmtClock(m.lapSecs + m.totalD)} sub="média" />
+          <DriverPod podRef={podA} on name={ctx.refName || 'Sua melhor'} time={ctx.suaMelhor} sub={ctx.refSub || `Volta ${m.top2[0]?.n ?? '—'}`} onOpen={() => setPodPick('A')} openTitle="Escolher a sua volta (local ou Garage61)" />
+          <DriverPod podRef={podB} name={ctx.referencia} time={fmtClock(m.lapSecs + m.totalD)} sub={ctx.compSub || 'média'} onOpen={() => setPodPick('B')} openTitle="Escolher a comparação (média ou Garage61)" />
         </div>
+        {podPick && (
+          <PodPicker side={podPick} payload={payload} sessions={sessions} current={current}
+            onApply={d => applyPodPick(podPick, d)} onDefault={() => void applyPodPick(podPick, null)}
+            onClose={() => setPodPick(null)} />
+        )}
 
         {/* coluna direita: minimapa + INSIGHT da curva ativa (novo padrão) */}
         <div className="pw-rightcol">

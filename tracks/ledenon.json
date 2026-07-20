@@ -1,0 +1,60 @@
+{
+  "track_id": 489,
+  "track_name": "Circuit de Lédenon",
+  "config": null,
+  "length_m": 3088,
+  "n_corners": 12,
+  "source": "Posicoes (apex_pct = fracao 0..1 da volta) derivadas da geometria Lat/Lon de uma volta de referencia do Garage61. Numeracao na ordem da volta. Refinavel.",
+  "corners": [
+    {
+      "n": 1,
+      "apex_pct": 0.072
+    },
+    {
+      "n": 2,
+      "apex_pct": 0.16
+    },
+    {
+      "n": 3,
+      "apex_pct": 0.263
+    },
+    {
+      "n": 4,
+      "apex_pct": 0.372
+    },
+    {
+      "n": 5,
+      "apex_pct": 0.425
+    },
+    {
+      "n": 6,
+      "apex_pct": 0.507
+    },
+    {
+      "n": 7,
+      "apex_pct": 0.56
+    },
+    {
+      "n": 8,
+      "apex_pct": 0.654
+    },
+    {
+      "n": 9,
+      "apex_pct": 0.707
+    },
+    {
+      "n": 10,
+      "apex_pct": 0.739
+    },
+    {
+      "n": 11,
+      "apex_pct": 0.792
+    },
+    {
+      "n": 12,
+      "apex_pct": 0.857
+    }
+  ],
+  "sectors": [],
+  "sectors_status": "pendente — os 3 setores reais nao estao no .ibt (iRacing grava quartos genericos). Cadastrar quando houver API."
+}

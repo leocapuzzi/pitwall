@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Cria o modelo de uma pista nova a partir do 1o .ibt gravado nela (1 comando).
 
 Reproduz o processo que criou Winton:
@@ -264,7 +264,7 @@ def main() -> None:
     if os.path.exists(fp_osm):
         print(f"\nrodando build_track_from_osm.py {slug} {width} ...")
         r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "build_track_from_osm.py"),
-                            slug, str(width)], capture_output=True, text=True)
+                            slug, str(width)], capture_output=True, text=True, encoding="utf-8", errors="replace")
         print(r.stdout)
         if r.returncode != 0:
             print(r.stderr)
@@ -272,6 +272,22 @@ def main() -> None:
     else:
         print(f"\nsem {os.path.basename(fp_osm)} — rode: python tools/baixar_osm.py {circuito}\n"
               f"e depois: python tools/build_track_from_osm.py {slug} {width}")
+
+    # ---- v3: contorno OFICIAL do iRacing (ver TRACK-MAPS.md) ----
+    vendor = os.path.join(os.path.dirname(ROOT), "racing-track-maps-vector")
+    if os.path.isdir(os.path.join(vendor, "from-iracing")):
+        print(f"\nrodando casar_svg_oficial.py {slug} ...")
+        r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "casar_svg_oficial.py"),
+                            slug], capture_output=True, text=True, encoding="utf-8", errors="replace")
+        print(r.stdout)
+        if r.returncode != 0:
+            print(r.stderr)
+            print("fit do contorno oficial falhou — o app segue com o asfalto OSM; "
+                  "rode tools/casar_svg_oficial.py depois p/ tentar de novo")
+    else:
+        print(f"\nsem vendor de track maps em {vendor} — o app segue com o asfalto OSM.\n"
+              f"P/ o contorno oficial: clonar o vendor (TRACK-MAPS.md §2) e rodar "
+              f"python tools/casar_svg_oficial.py {slug}")
 
     print(f"\nPRONTO: '{slug}' criada. Confira no app (mapa + curvas) e ajuste width se a volta vazar das bordas.")
 

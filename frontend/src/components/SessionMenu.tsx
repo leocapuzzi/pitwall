@@ -35,8 +35,11 @@ export default function SessionMenu({ open, onClose }: { open: boolean; onClose:
         </div>
         <div className="pw-sess-list">
           {sessions.map((s, i) => {
-            const p = parseIbtName(s.file)
             const on = s.path === current
+            // sessão VIRTUAL do Garage61: path "g61:<lapId>", file "pista|carro|tempo"
+            const g61 = s.path.startsWith('g61:')
+            const [gTrack, gCar, gTime] = g61 ? s.file.split('|') : []
+            const p = g61 ? null : parseIbtName(s.file)
             return (
               <button key={s.path} className={'pw-sess-item' + (on ? ' on' : '')}
                 style={{ '--i': Math.min(i, 14) + 1 } as React.CSSProperties}
@@ -44,8 +47,8 @@ export default function SessionMenu({ open, onClose }: { open: boolean; onClose:
                 onClick={() => { if (!on) void load(s.path); onClose() }}>
                 <span className={'pw-sess-dot' + (on ? ' acc' : '')} />
                 <span className="pw-sess-main">
-                  <b>{p.track || p.car}</b>
-                  <small>{p.track ? p.car : 'arquivo de telemetria'}{p.when ? ` · ${p.when}` : ''}</small>
+                  <b>{g61 ? gTrack : (p!.track || p!.car)}</b>
+                  <small>{g61 ? `Garage61 · ${gCar} · ${gTime}` : `${p!.track ? p!.car : 'arquivo de telemetria'}${p!.when ? ` · ${p!.when}` : ''}`}</small>
                 </span>
                 {on && <span className="pw-sess-now">ATIVA</span>}
               </button>

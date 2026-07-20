@@ -1,0 +1,52 @@
+{
+  "track_id": 212,
+  "track_name": "Autódromo José Carlos Pace - Grand Prix",
+  "config": "Grand Prix",
+  "length_m": 4239,
+  "n_corners": 10,
+  "source": "Posicoes (apex_pct = fracao 0..1 da volta) derivadas da geometria Lat/Lon de uma volta de referencia do Garage61. Numeracao na ordem da volta. Refinavel.",
+  "corners": [
+    {
+      "n": 1,
+      "apex_pct": 0.085
+    },
+    {
+      "n": 2,
+      "apex_pct": 0.146
+    },
+    {
+      "n": 3,
+      "apex_pct": 0.332
+    },
+    {
+      "n": 4,
+      "apex_pct": 0.481
+    },
+    {
+      "n": 5,
+      "apex_pct": 0.546
+    },
+    {
+      "n": 6,
+      "apex_pct": 0.57
+    },
+    {
+      "n": 7,
+      "apex_pct": 0.64
+    },
+    {
+      "n": 8,
+      "apex_pct": 0.686
+    },
+    {
+      "n": 9,
+      "apex_pct": 0.756
+    },
+    {
+      "n": 10,
+      "apex_pct": 0.997
+    }
+  ],
+  "sectors": [],
+  "sectors_status": "pendente — os 3 setores reais nao estao no .ibt (iRacing grava quartos genericos). Cadastrar quando houver API."
+}

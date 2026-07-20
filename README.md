@@ -66,8 +66,8 @@ Em desenvolvimento, o frontend também roda com hot-reload:
 src/        motor de análise (leitura .ibt, voltas, setores, curvas, coaching)
             + server.py (FastAPI: /api/* e o build do frontend)
 frontend/   interface React+TS+Vite (build em frontend/dist)
-tracks/     geometria fixa das pistas (gerada do OpenStreetMap)
-tools/      build_track_from_osm.py (pipeline p/ adicionar circuito novo)
+tracks/     geometria fixa das pistas (OSM + contorno oficial do iRacing)
+tools/      nova_pista.py (pipeline p/ adicionar circuito novo, incl. mapa oficial)
 samples/    telemetria de exemplo (única que vai pro GitHub)
 data/       histórico local (SQLite+Parquet) — gerado, não versionado
 _arquivo-morto/  versões antigas (Streamlit etc.) — só consulta
@@ -80,6 +80,8 @@ _arquivo-morto/  versões antigas (Streamlit etc.) — só consulta
 - **`HANDOVER-SESSAO.md`** — estado vivo: o que está pronto e o que vem a seguir.
 - **`PLANO.md`** — plano-mestre: visão, decisões de arquitetura e roadmap.
 - **`ANALISES.md`** — catálogo dos canais de telemetria e análises possíveis.
+- **`TRACK-MAPS.md`** — pipeline dos track maps oficiais do iRacing (fonte,
+  georreferenciamento e integração no player/calendário).
 - **`frontend/DESIGN-UI.md`** e **`frontend/LIQUID-GLASS.md`** — guias técnicos da UI.
 
 ## Estado (jun/2026)

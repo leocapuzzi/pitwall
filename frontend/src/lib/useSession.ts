@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getSessions, getSession, type Payload, type SessionInfo } from './api'
+import { getSessions, getSession, getCompare, type CompareDesc, type Payload, type SessionInfo } from './api'
 
 // Store de módulo com subscribers: todas as instâncias do hook (telas, chrome)
 // enxergam a MESMA sessão e re-renderizam juntas quando ela troca.
@@ -7,10 +7,11 @@ type State = {
   sessions: SessionInfo[]
   payload: Payload | null
   current: string | null // path do .ibt carregado
+  compare: { a: CompareDesc; b: CompareDesc } | null // A/B livres (pods) ou null = padrão
   loading: boolean
   error: string | null
 }
-let state: State = { sessions: [], payload: null, current: null, loading: true, error: null }
+let state: State = { sessions: [], payload: null, current: null, compare: null, loading: true, error: null }
 const subs = new Set<() => void>()
 function set(patch: Partial<State>) { state = { ...state, ...patch }; subs.forEach(f => f()) }
 
@@ -27,15 +28,26 @@ async function boot() {
     set({ sessions: s })
     const saved = (() => { try { return sessionStorage.getItem(STORE_KEY) } catch { return null } })()
     const order = [...(saved ? s.filter(x => x.path === saved) : []), ...s]
-    // Padrão: 1ª sessão com >=2 voltas limpas (comparação significativa).
-    for (const x of order) {
+    // Sessões VIRTUAIS do Garage61 nunca têm "voltas limpas" — ficam FORA da
+    // varredura (senão o boot baixaria todas as voltas do G61 antes de abrir).
+    const locais = order.filter(x => !x.path.startsWith('g61:'))
+    const virtuais = order.filter(x => x.path.startsWith('g61:'))
+    const carregadas = new Map<string, Payload>()
+    // Padrão: 1ª sessão LOCAL com >=2 voltas limpas (comparação significativa).
+    for (const x of locais) {
       try {
         const p = await getSession(x.path)
+        carregadas.set(x.path, p)
         if ((p.contexto.voltasLimpas || 0) >= 2) { set({ payload: p, current: x.path, loading: false }); return }
       } catch { /* tenta a próxima */ }
     }
-    // Fallback: qualquer sessão válida.
-    for (const x of order) {
+    // Fallback 1: qualquer local válida (reusa o que já foi carregado acima).
+    for (const x of locais) {
+      const p = carregadas.get(x.path)
+      if (p) { set({ payload: p, current: x.path, loading: false }); return }
+    }
+    // Fallback 2: 1ª sessão virtual do Garage61 que carregar.
+    for (const x of virtuais) {
       try { const p = await getSession(x.path); set({ payload: p, current: x.path, loading: false }); return } catch { /* */ }
     }
     set({ error: 'Nenhuma sessão com voltas válidas', loading: false })
@@ -43,13 +55,56 @@ async function boot() {
 }
 
 export async function loadSession(path: string) {
-  if (state.current === path && state.payload) return
+  if (state.current === path && state.payload && !state.compare) return
   set({ loading: true, error: null })
   try {
     const p = await getSession(path)
     try { sessionStorage.setItem(STORE_KEY, path) } catch { /* ignore */ }
-    set({ payload: p, current: path, loading: false })
+    set({ payload: p, current: path, compare: null, loading: false })
   } catch (e: any) { set({ error: e?.message || 'Erro ao carregar sessão', loading: false }) }
+}
+
+// Comparação livre dos pods A/B: re-analisa o par no backend e troca o payload
+// inteiro (delta, setores, coaching…) — todas as telas atualizam juntas.
+export async function setCompare(a: CompareDesc, b: CompareDesc) {
+  if (!state.current) return
+  set({ loading: true, error: null })
+  try {
+    const p = await getCompare(state.current, a, b)
+    set({ payload: p, compare: { a, b }, loading: false })
+  } catch (e: any) {
+    set({ loading: false, error: null })
+    throw e // quem abriu o picker mostra o erro sem derrubar a tela atual
+  }
+}
+
+// Aplica a escolha de UM pod mantendo o outro lado; desc null = padrão do lado.
+// Padrões: A = melhor volta da sessão atual, B = média das limpas.
+export async function applyPodPick(side: 'A' | 'B', desc: CompareDesc | null) {
+  const cur = state.current
+  if (!cur) return
+  // Sessão VIRTUAL do Garage61 ("g61:<lapId>"): o padrão dos dois lados é a própria volta.
+  const virt = cur.startsWith('g61:')
+  const lapId = virt ? cur.slice(4) : ''
+  const defA: CompareDesc = virt ? { type: 'g61', lapId } : { type: 'local', path: cur, lap: null }
+  const defB: CompareDesc = virt ? { type: 'g61', lapId } : { type: 'media' }
+  const a = side === 'A' ? (desc ?? defA) : (state.compare?.a ?? defA)
+  const b = side === 'B' ? (desc ?? defB) : (state.compare?.b ?? defB)
+  const aDef = virt ? (a.type === 'g61' && a.lapId === lapId)
+    : (a.type === 'local' && a.path === cur && a.lap == null)
+  const bDef = virt ? (b.type === 'g61' && b.lapId === lapId) : b.type === 'media'
+  if (aDef && bDef) { if (state.compare) await resetCompare(); return }
+  await setCompare(a, b)
+}
+
+// Volta ao padrão da sessão (sua melhor vs média).
+export async function resetCompare() {
+  if (!state.current || !state.compare) return
+  set({ loading: true, error: null })
+  try {
+    const p = await getSession(state.current)
+    set({ payload: p, compare: null, loading: false })
+  } catch (e: any) { set({ error: e?.message || 'Erro ao recarregar sessão', loading: false }) }
 }
 
 export function useSession() {
@@ -62,6 +117,7 @@ export function useSession() {
   }, [])
   return {
     sessions: state.sessions, payload: state.payload, current: state.current,
-    loading: state.loading, error: state.error, load: loadSession,
+    compare: state.compare, loading: state.loading, error: state.error,
+    load: loadSession, setCompare, resetCompare, applyPodPick,
   }
 }

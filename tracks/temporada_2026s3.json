@@ -16,7 +16,8 @@
     {"semana": 10, "corrida": "2026-08-22", "track_id": 449, "nome": "Motorsport Arena Oschersleben",  "config": "Grand Prix",       "slug": "oschersleben_gp",    "circuito_osm": "oschersleben", "width_m": 12.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
     {"semana": 11, "corrida": "2026-08-29", "track_id": 181, "nome": "Oulton Park Circuit",            "config": "Fosters",          "slug": "oulton_fosters",     "circuito_osm": "oulton",       "width_m": 10.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
     {"semana": 12, "corrida": "2026-09-05", "track_id": 489, "nome": "Circuit de Lédenon",             "config": "",                 "slug": "ledenon",            "circuito_osm": "ledenon",      "width_m": 10.0, "status": "preparada (OSM ok) — aguardando 1º .ibt"},
-    {"semana": null, "corrida": null,       "track_id": 212, "nome": "Autódromo José Carlos Pace",     "config": "Grand Prix",       "slug": "interlagos_gp",      "circuito_osm": "interlagos",   "width_m": 14.0, "status": "preparada (OSM ok) — aguardando 1º .ibt", "nota": "fora do calendário — pedido do Leo"}
+    {"semana": null, "corrida": null,       "track_id": 212, "nome": "Autódromo José Carlos Pace",     "config": "Grand Prix",       "slug": "interlagos_gp",      "circuito_osm": "interlagos",   "width_m": 14.0, "status": "preparada (OSM ok) — aguardando 1º .ibt", "nota": "fora do calendário — pedido do Leo"},
+    {"semana": null, "corrida": null,       "track_id": 451, "nome": "Rudskogen Motorsenter",          "config": "",                 "slug": "rudskogen",          "circuito_osm": "rudskogen",    "width_m": 10.0, "status": "preparada (OSM ok)", "nota": "semana 3 da Formula 1600 Rookie Series (a outra série do Leo)"}
   ],
   "observacoes": [
     "width_m é um chute documentado por pista; o build_track_from_osm.py imprime a validação (offset lateral p5/p95 e % da volta dentro das bordas) — se a volta 'vazar', aumentar width e rodar de novo.",

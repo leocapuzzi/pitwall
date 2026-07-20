@@ -10,7 +10,7 @@ import { parseIbtName } from '../components/SessionMenu'
 import { LapTable } from './Stint'
 import { projectTrackPair, deltaGradientSegments, type TrackPair, type LineSegment } from '../lib/track'
 import { parseLap, fmtClock } from '../lib/fmt'
-import { getLaps, getLap, type Payload, type Channels, type LapsIndex, type LapData, type SessionInfo } from '../lib/api'
+import { getLaps, getLap, getG61Laps, getG61Lap, type Payload, type Channels, type LapsIndex, type LapData, type SessionInfo, type G61LapsIndex } from '../lib/api'
 
 // Comparison fullmap (padrão GO Fast). Por padrão: A = MÉDIA vs B = SUA MELHOR da
 // sessão atual; o picker (fluxo B do design handoff) deixa escolher QUALQUER volta
@@ -68,6 +68,13 @@ function defaultSides(p: Payload): { A: Side; B: Side } {
 
 // Volta escolhida no picker -> lado da comparação.
 function sideFromLap(d: LapData): Side {
+  // Volta de referência do Garage61: rotula pelo piloto (colega de equipe).
+  if (d.source === 'garage61') {
+    return {
+      label: d.driver || 'Referência', sub: 'Garage61', time: d.t, ch: d.ch,
+      timeArr: d.time?.length ? d.time : null, line: d.line, sectors: d.sectors || [],
+    }
+  }
   const pi = parseIbtName(d.arquivo)
   return {
     label: `Volta ${d.n}`, sub: pi.when ?? d.arquivo, time: d.t, ch: d.ch,
@@ -143,9 +150,11 @@ function LapPicker({ side, payload, sessions, current, onApply, onDefault, onClo
   const [idx, setIdx] = useState<LapsIndex | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [src, setSrc] = useState<'local' | 'g61'>('local')
+  const [g61, setG61] = useState<G61LapsIndex | null>(null)
 
   useEffect(() => {
-    if (!path) return
+    if (src !== 'local' || !path) return
     let cancel = false
     setBusy(true); setErr(null); setIdx(null)
     getLaps(path)
@@ -153,7 +162,25 @@ function LapPicker({ side, payload, sessions, current, onApply, onDefault, onClo
       .catch(e => { if (!cancel) setErr(e?.message || 'Falha ao listar voltas') })
       .finally(() => { if (!cancel) setBusy(false) })
     return () => { cancel = true }
-  }, [path])
+  }, [path, src])
+
+  // Voltas de referência do Garage61 (você + colegas), por pista+carro da sessão.
+  useEffect(() => {
+    if (src !== 'g61' || ctx.trackId == null) return
+    let cancel = false
+    setBusy(true); setErr(null); setG61(null)
+    getG61Laps(ctx.trackId, ctx.carId)
+      .then(r => { if (!cancel) setG61(r) })
+      .catch(e => { if (!cancel) setErr(e?.message || 'Falha ao buscar no Garage61') })
+      .finally(() => { if (!cancel) setBusy(false) })
+    return () => { cancel = true }
+  }, [src, ctx.trackId, ctx.carId])
+
+  const pickG61 = async (row: { id: string }) => {
+    setBusy(true); setErr(null)
+    try { onApply(await getG61Lap(row.id, ctx.trackId ?? null, payload.setores)) }
+    catch (e: any) { setErr(e?.message || 'Falha ao carregar a volta'); setBusy(false) }
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -189,23 +216,45 @@ function LapPicker({ side, payload, sessions, current, onApply, onDefault, onClo
           <span className="cbadge" style={{ width: 38, height: 38 }}><Icon n="car" s={18} /></span>
           <div style={{ minWidth: 0, flex: 1 }}>
             <b style={{ fontSize: 13.5, fontWeight: 800 }}>{idx?.carro || ctx.carro}</b>
-            <div className="muted" style={{ fontSize: 12 }}>{idx?.pista || ctx.pista}</div>
+            <div className="muted" style={{ fontSize: 12 }}>{(src === 'g61' ? g61?.track : idx?.pista) || ctx.pista}</div>
           </div>
-          <select className="pw-picksess" value={path} onChange={e => setPath(e.target.value)} aria-label="Sessão">
-            {compat.map(s => {
-              const pi = parseIbtName(s.file)
-              return <option key={s.path} value={s.path}>{(pi.when || s.file) + (s.path === current ? ' · atual' : '')}</option>
-            })}
-          </select>
+          {src === 'local'
+            ? <select className="pw-picksess" value={path} onChange={e => setPath(e.target.value)} aria-label="Sessão">
+                {compat.map(s => {
+                  const pi = parseIbtName(s.file)
+                  return <option key={s.path} value={s.path}>{(pi.when || s.file) + (s.path === current ? ' · atual' : '')}</option>
+                })}
+              </select>
+            : <span className="muted" style={{ fontSize: 12 }}>Melhor volta por piloto</span>}
+        </div>
+        <div style={{ padding: '0 14px 6px' }}>
+          <SlideSeg options={['Minhas sessões', 'Garage61 (equipe)']}
+            value={src === 'local' ? 'Minhas sessões' : 'Garage61 (equipe)'}
+            onChange={v => setSrc(v === 'Garage61 (equipe)' ? 'g61' : 'local')} />
         </div>
         <div className="pw-pickbody">
-          {busy && <div className="pw-pickmsg">Carregando voltas…</div>}
+          {busy && <div className="pw-pickmsg">{src === 'g61' ? 'Buscando no Garage61…' : 'Carregando voltas…'}</div>}
           {!busy && err && <div className="pw-pickmsg redt">{err}</div>}
-          {!busy && !err && wrongTrack && <div className="pw-pickmsg redt">Esta sessão é de OUTRA pista — só dá para comparar voltas da mesma pista.</div>}
-          {!busy && !err && idx && !wrongTrack && (
+          {!busy && !err && src === 'local' && wrongTrack && <div className="pw-pickmsg redt">Esta sessão é de OUTRA pista — só dá para comparar voltas da mesma pista.</div>}
+          {!busy && !err && src === 'local' && idx && !wrongTrack && (
             idx.laps.length
               ? <LapTable laps={idx.laps} bestN={bestRow?.n} bestT={bestRow?.t} bestSec={bestSec} nSec={nSec} onSel={pick} />
               : <div className="pw-pickmsg">Sessão sem voltas com tempo fechado.</div>
+          )}
+          {!busy && !err && src === 'g61' && g61 && (
+            g61.laps.length
+              ? <div className="pw-g61list">
+                  {g61.laps.map(l => (
+                    <button key={l.id} className="pw-g61row" disabled={!l.telemetry} onClick={() => l.telemetry && pickG61(l)}
+                      title={l.telemetry ? 'Usar esta volta' : 'Sem telemetria visível (piloto sem Pro)'}>
+                      <span className="pw-g61drv">{l.driver}</span>
+                      <b className="num">{fmtClock(l.lapTime)}</b>
+                      {l.clean ? <span className="pw-g61tag ok">limpa</span> : <span className="pw-g61tag">suja</span>}
+                      {!l.telemetry && <span className="pw-g61tag">sem telemetria</span>}
+                    </button>
+                  ))}
+                </div>
+              : <div className="pw-pickmsg">Nenhuma volta de referência para este carro + pista no Garage61.</div>
           )}
         </div>
         <div className="pw-pickfoot">

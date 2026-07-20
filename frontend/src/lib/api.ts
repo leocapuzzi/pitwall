@@ -57,6 +57,72 @@ export interface LapData {
   time: number[]                                  // tempo até cada ponto do grid
   line: { x: number[]; y: number[] } | null      // linha no referencial da pista fixa
   sectors: number[]
+  source?: string                                 // 'garage61' quando é volta de referência
+  driver?: string                                 // piloto (voltas do Garage61)
+  car?: string | null
+}
+
+// ---- Garage61: voltas de referência (você + colegas de equipe) ----
+export interface G61LapRow {
+  id: string; driver: string; lapTime: number
+  clean: boolean; telemetry: boolean; car: string | null
+}
+export interface G61LapsIndex {
+  track: string | null; car?: string | null
+  trackId?: number | string; laps: G61LapRow[]; error?: string
+}
+
+export async function getG61Laps(trackId: number | string, carId?: number | string | null): Promise<G61LapsIndex> {
+  const q = '/api/g61/laps?trackId=' + encodeURIComponent(String(trackId)) +
+    (carId != null ? '&carId=' + encodeURIComponent(String(carId)) : '')
+  const r = await fetch(q)
+  const j = await r.json()
+  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao listar voltas do Garage61')
+  return j
+}
+
+export interface G61Car { carId: number | null; car: string; laps: number }
+export async function getG61Cars(trackId: number | string, mine?: boolean): Promise<{ trackId: number; cars: G61Car[] }> {
+  const r = await fetch('/api/g61/cars?trackId=' + encodeURIComponent(String(trackId)) + (mine ? '&mine=1' : ''))
+  const j = await r.json()
+  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao listar carros do Garage61')
+  return j
+}
+
+export async function getG61MyLaps(trackId: number | string, carId?: number | string | null): Promise<G61LapsIndex> {
+  const q = '/api/g61/mylaps?trackId=' + encodeURIComponent(String(trackId)) +
+    (carId != null ? '&carId=' + encodeURIComponent(String(carId)) : '')
+  const r = await fetch(q)
+  const j = await r.json()
+  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao listar suas voltas do Garage61')
+  return j
+}
+
+// ---- Comparação livre GLOBAL (pods A/B): payload completo re-analisado ----
+export type CompareDesc =
+  | { type: 'local'; path: string; lap: number | null }
+  | { type: 'g61'; lapId: string }
+  | { type: 'media' }
+
+export async function getCompare(path: string, a: CompareDesc, b: CompareDesc, maxOff?: number): Promise<Payload> {
+  const q = '/api/compare?path=' + encodeURIComponent(path) +
+    '&a=' + encodeURIComponent(JSON.stringify(a)) +
+    '&b=' + encodeURIComponent(JSON.stringify(b)) +
+    (maxOff != null ? '&max_off=' + maxOff : '')
+  const r = await fetch(q)
+  const j = await r.json()
+  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao montar a comparação')
+  return j
+}
+
+export async function getG61Lap(lapId: string, trackId: number | string | null, sectors?: number[]): Promise<LapData> {
+  const q = '/api/g61/lap?lapId=' + encodeURIComponent(lapId) +
+    (trackId != null ? '&trackId=' + encodeURIComponent(String(trackId)) : '') +
+    (sectors && sectors.length ? '&sectors=' + sectors.join(',') : '')
+  const r = await fetch(q)
+  const j = await r.json()
+  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao carregar a volta do Garage61')
+  return j
 }
 
 export async function getSessions(): Promise<SessionInfo[]> {

@@ -4,8 +4,9 @@
 Dados das semanas: transcritos do PDF oficial de schedules (2026s3.pdf, pags 65 e 132).
 Thumbnails: por semana, a MELHOR geometria disponivel, nesta ordem:
   1. centerline REAL da config (tracks/<slug>.track.json v2 com 'center', casado por track_id)
-  2. silhueta do circuito no OSM (todas as ways de circuito do _osm_<localidade>_raw.json)
-  3. null (sem tracado — ex.: Oran Park, demolida; o front mostra placeholder)
+  2. centerline do track map OFICIAL do iRacing da config exata (vendor + indice — TRACK-MAPS.md)
+  3. silhueta do circuito no OSM (todas as ways de circuito do _osm_<localidade>_raw.json)
+  4. null (sem tracado; o front mostra placeholder)
 RE-RODAR este script depois de criar pistas novas (nova_pista.py) faz os cards
 "promoverem" a silhueta ao tracado real da config. Saida normalizada 0..100 (y de SVG).
 """
@@ -113,6 +114,61 @@ def thumb_de_track_json(track_id) -> tuple[str, list] | None:
     return None
 
 
+VENDOR = os.path.join(os.path.dirname(ROOT), "racing-track-maps-vector")
+_IDX_OFICIAL = None
+
+
+def _indice_oficial() -> dict:
+    global _IDX_OFICIAL
+    if _IDX_OFICIAL is None:
+        fp = os.path.join(TRACKS, "iracing_track_maps_index.json")
+        _IDX_OFICIAL = json.load(open(fp, encoding="utf-8")) if os.path.exists(fp) else {}
+    return _IDX_OFICIAL
+
+
+def thumb_oficial(track_id) -> list | None:
+    """Centerline do track map OFICIAL do iRacing da config exata (vendor de SVGs).
+
+    active.svg normal = anel (2 subpaths) -> centerline (ponto medio externo->interno).
+    active.svg com 1 subpath = tracado que cruza sobre si mesmo (ex.: Oran Park GP,
+    figura em "8") -> o contorno unico vira silhueta. Sem indice/vendor/svgpathtools,
+    devolve None e o fluxo degrada p/ OSM como antes.
+    """
+    ent = (_indice_oficial().get("configs") or {}).get(str(track_id))
+    if not ent:
+        return None
+    svg = os.path.join(VENDOR, "from-iracing", ent["svg_local_path"], "active.svg")
+    if not os.path.isfile(svg):
+        return None
+    try:
+        from svgpathtools import svg2paths
+    except ImportError:
+        return None
+    paths, _ = svg2paths(svg)
+    subs = sorted((sp for p in paths for sp in p.continuous_subpaths()),
+                  key=lambda s: -abs(s.length()))
+    subs = [s for s in subs if abs(s.length()) > 1.0]  # descarta residuos de comprimento ~0
+    if not subs:
+        return None
+
+    def pontos(sp, n):
+        zs = [sp.point(t) for t in np.linspace(0.0, 1.0, n, endpoint=False)]
+        return np.array([[z.real, -z.imag] for z in zs])  # y do SVG aponta p/ baixo
+
+    if len(subs) >= 2:
+        a, b = pontos(subs[0], 400), pontos(subs[1], 400)
+        d2 = ((a[:, None, :] - b[None, :, :]) ** 2).sum(-1)
+        pts = (a + b[d2.argmin(1)]) / 2.0
+    else:
+        pts = pontos(subs[0], 400)
+    x = np.append(pts[:, 0], pts[0, 0]); y = np.append(pts[:, 1], pts[0, 1])
+    total = float(np.linalg.norm(np.diff(np.column_stack([x, y]), axis=0), axis=1).sum())
+    if total <= 0:
+        return None
+    r = _resample(x, y, total / 380.0)
+    return _normalizar([r]) if r is not None else None
+
+
 def _componente_principal(bruto: list) -> list:
     """Mantem so o aglomerado de ways com maior comprimento total (o circuito
     principal) — descarta kartodromo/motocross/fragmentos distantes que sujam e
@@ -194,10 +250,16 @@ def main() -> None:
             if real:
                 chave, paths = real
                 thumbs.setdefault(chave, {"paths": paths, "fonte": "centerline real da config"})
-            elif loc not in thumbs and (t := thumb_de_osm(loc)):
-                thumbs[loc] = {"paths": t, "fonte": "silhueta OSM do circuito (todas as variantes)"}
-            if chave is None:
-                chave = loc if loc in thumbs else None
+            else:
+                ch_of = f"oficial_{tid}"
+                if ch_of not in thumbs and (t := thumb_oficial(tid)):
+                    thumbs[ch_of] = {"paths": t, "fonte": "track map oficial do iRacing (config exata)"}
+                if ch_of in thumbs:
+                    chave = ch_of
+                else:
+                    if loc not in thumbs and (t := thumb_de_osm(loc)):
+                        thumbs[loc] = {"paths": t, "fonte": "silhueta OSM do circuito (todas as variantes)"}
+                    chave = loc if loc in thumbs else None
             weeks.append({"w": w, "inicio": inicio, "corrida": corrida, "pista": pista,
                           "config": config, "track_id": tid, "temp_c": temp, "thumb": chave})
         series_out.append({**{k: v for k, v in s.items() if k != "weeks"}, "weeks": weeks})

@@ -1,0 +1,64 @@
+{
+  "track_id": 467,
+  "track_name": "Virginia International Raceway - North Course",
+  "config": "North Course",
+  "length_m": 3624,
+  "n_corners": 13,
+  "source": "Posicoes (apex_pct = fracao 0..1 da volta) derivadas da geometria Lat/Lon de uma volta de referencia do Garage61. Numeracao na ordem da volta. Refinavel.",
+  "corners": [
+    {
+      "n": 1,
+      "apex_pct": 0.112
+    },
+    {
+      "n": 2,
+      "apex_pct": 0.193
+    },
+    {
+      "n": 3,
+      "apex_pct": 0.232
+    },
+    {
+      "n": 4,
+      "apex_pct": 0.285
+    },
+    {
+      "n": 5,
+      "apex_pct": 0.307
+    },
+    {
+      "n": 6,
+      "apex_pct": 0.497
+    },
+    {
+      "n": 7,
+      "apex_pct": 0.555
+    },
+    {
+      "n": 8,
+      "apex_pct": 0.584
+    },
+    {
+      "n": 9,
+      "apex_pct": 0.624
+    },
+    {
+      "n": 10,
+      "apex_pct": 0.698
+    },
+    {
+      "n": 11,
+      "apex_pct": 0.719
+    },
+    {
+      "n": 12,
+      "apex_pct": 0.77
+    },
+    {
+      "n": 13,
+      "apex_pct": 0.802
+    }
+  ],
+  "sectors": [],
+  "sectors_status": "pendente — os 3 setores reais nao estao no .ibt (iRacing grava quartos genericos). Cadastrar quando houver API."
+}

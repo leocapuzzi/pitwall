@@ -1,0 +1,60 @@
+{
+  "track_id": 515,
+  "track_name": "Circuito de Navarra - Speed Circuit",
+  "config": "Speed Circuit",
+  "length_m": 3888,
+  "n_corners": 12,
+  "source": "Posicoes (apex_pct = fracao 0..1 da volta) derivadas da geometria Lat/Lon de uma volta de referencia do Garage61. Numeracao na ordem da volta. Refinavel.",
+  "corners": [
+    {
+      "n": 1,
+      "apex_pct": 0.177
+    },
+    {
+      "n": 2,
+      "apex_pct": 0.225
+    },
+    {
+      "n": 3,
+      "apex_pct": 0.333
+    },
+    {
+      "n": 4,
+      "apex_pct": 0.37
+    },
+    {
+      "n": 5,
+      "apex_pct": 0.398
+    },
+    {
+      "n": 6,
+      "apex_pct": 0.45
+    },
+    {
+      "n": 7,
+      "apex_pct": 0.592
+    },
+    {
+      "n": 8,
+      "apex_pct": 0.668
+    },
+    {
+      "n": 9,
+      "apex_pct": 0.708
+    },
+    {
+      "n": 10,
+      "apex_pct": 0.773
+    },
+    {
+      "n": 11,
+      "apex_pct": 0.844
+    },
+    {
+      "n": 12,
+      "apex_pct": 0.887
+    }
+  ],
+  "sectors": [],
+  "sectors_status": "pendente — os 3 setores reais nao estao no .ibt (iRacing grava quartos genericos). Cadastrar quando houver API."
+}

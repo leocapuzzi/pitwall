@@ -1,0 +1,44 @@
+{
+  "track_id": 181,
+  "track_name": "Oulton Park Circuit - Fosters",
+  "config": "Fosters",
+  "length_m": 2649,
+  "n_corners": 8,
+  "source": "Posicoes (apex_pct = fracao 0..1 da volta) derivadas da geometria Lat/Lon de uma volta de referencia do Garage61. Numeracao na ordem da volta. Refinavel.",
+  "corners": [
+    {
+      "n": 1,
+      "apex_pct": 0.109
+    },
+    {
+      "n": 2,
+      "apex_pct": 0.288
+    },
+    {
+      "n": 3,
+      "apex_pct": 0.337
+    },
+    {
+      "n": 4,
+      "apex_pct": 0.403
+    },
+    {
+      "n": 5,
+      "apex_pct": 0.423
+    },
+    {
+      "n": 6,
+      "apex_pct": 0.659
+    },
+    {
+      "n": 7,
+      "apex_pct": 0.872
+    },
+    {
+      "n": 8,
+      "apex_pct": 0.994
+    }
+  ],
+  "sectors": [],
+  "sectors_status": "pendente — os 3 setores reais nao estao no .ibt (iRacing grava quartos genericos). Cadastrar quando houver API."
+}

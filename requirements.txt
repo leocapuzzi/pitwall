@@ -7,3 +7,4 @@ toml
 pydantic
 fastapi
 uvicorn
+svgpathtools

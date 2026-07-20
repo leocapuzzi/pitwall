@@ -1,0 +1,56 @@
+{
+  "track_id": 451,
+  "track_name": "Rudskogen Motorsenter",
+  "config": null,
+  "length_m": 3159,
+  "n_corners": 11,
+  "source": "Posicoes (apex_pct = fracao 0..1 da volta) derivadas da geometria Lat/Lon de uma volta de referencia do Garage61. Numeracao na ordem da volta. Refinavel.",
+  "corners": [
+    {
+      "n": 1,
+      "apex_pct": 0.14
+    },
+    {
+      "n": 2,
+      "apex_pct": 0.425
+    },
+    {
+      "n": 3,
+      "apex_pct": 0.485
+    },
+    {
+      "n": 4,
+      "apex_pct": 0.512
+    },
+    {
+      "n": 5,
+      "apex_pct": 0.558
+    },
+    {
+      "n": 6,
+      "apex_pct": 0.611
+    },
+    {
+      "n": 7,
+      "apex_pct": 0.702
+    },
+    {
+      "n": 8,
+      "apex_pct": 0.752
+    },
+    {
+      "n": 9,
+      "apex_pct": 0.794
+    },
+    {
+      "n": 10,
+      "apex_pct": 0.845
+    },
+    {
+      "n": 11,
+      "apex_pct": 0.886
+    }
+  ],
+  "sectors": [],
+  "sectors_status": "pendente — os 3 setores reais nao estao no .ibt (iRacing grava quartos genericos). Cadastrar quando houver API."
+}
