@@ -70,6 +70,10 @@ export default function Dashboard() {
   const ctx = payload.contexto
   const maxCount = Math.max(1, ...m.week.map(d => d.count))
   const pctLimpas = m.total ? Math.round(m.limpas / m.total * 100) : 0
+  // Sessões VIRTUAIS do Garage61 (path "g61:") não estão "no disco" — separar a contagem.
+  const nLocal = sessions.filter(s => !s.path.startsWith('g61:')).length
+  const nG61 = sessions.length - nLocal
+  const virtual = ctx.fonte === 'garage61'  // uma volta do Garage61 servida como sessão
 
   return (
     <div className="tp-wrap pw-dash">
@@ -86,8 +90,8 @@ export default function Dashboard() {
           <span className="pw-kico" style={{ ['--c' as string]: 'var(--accent)' }}><Icon n="flag" s={17} /></span>
           <div>
             <span className="kl">Laps in session</span>
-            <b className="kv num">{m.total}</b>
-            <span className="ks">{m.limpas} clean · {m.validas} valid</span>
+            <b className="kv num">{virtual ? 1 : m.total}</b>
+            <span className="ks">{virtual ? 'Garage61 reference · single lap' : `${m.limpas} clean · ${m.validas} valid`}</span>
           </div>
         </div>
         <div className="pw-statpill pw-glass2">
@@ -95,7 +99,7 @@ export default function Dashboard() {
           <div>
             <span className="kl">Sessions · 30 days</span>
             <b className="kv num">{m.n30}</b>
-            <span className="ks">{sessions.length} on disk</span>
+            <span className="ks">{nLocal} on disk{nG61 ? ` · ${nG61} via Garage61` : ''}</span>
           </div>
         </div>
         <div className="pw-iracing pw-glass2">
@@ -149,17 +153,29 @@ export default function Dashboard() {
             </div>
             <div className="pw-dcard pw-glass2" style={{ flex: 1 }}>
               <span className="lbl">Session laps</span>
-              <div style={{ display: 'grid', placeItems: 'center', flex: 1, margin: '4px 0' }}>
-                <SegDonut segments={m.seg} center={pctLimpas + '%'} sub="CLEAN" size={148} />
-              </div>
-              <div className="col" style={{ gap: 8 }}>
-                {m.seg.map(([label, pct, color]) => (
-                  <div key={label} className="row between center">
-                    <span className="row center gap8"><span className="dot" style={{ background: color }}></span><span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span></span>
-                    <b className="num" style={{ fontSize: 12.5 }}>{Math.round(pct)}%</b>
+              {virtual ? (
+                <div style={{ display: 'grid', placeItems: 'center', flex: 1, textAlign: 'center', padding: '8px 6px', gap: 8 }}>
+                  <span className="cbadge" style={{ width: 40, height: 40 }}><Icon n="flag" s={18} /></span>
+                  <b style={{ fontSize: 13, fontWeight: 800 }}>Single Garage61 lap</b>
+                  <span className="muted" style={{ fontSize: 11.5, lineHeight: 1.4 }}>
+                    No local stint to break down here. Record a stint (Alt+L in iRacing) — or pick a comparison lap in the pods — for clean/valid analysis.
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'grid', placeItems: 'center', flex: 1, margin: '4px 0' }}>
+                    <SegDonut segments={m.seg} center={pctLimpas + '%'} sub="CLEAN" size={148} />
                   </div>
-                ))}
-              </div>
+                  <div className="col" style={{ gap: 8 }}>
+                    {m.seg.map(([label, pct, color]) => (
+                      <div key={label} className="row between center">
+                        <span className="row center gap8"><span className="dot" style={{ background: color }}></span><span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span></span>
+                        <b className="num" style={{ fontSize: 12.5 }}>{Math.round(pct)}%</b>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <div className="pw-dcard pw-glass2 pw-dweek">

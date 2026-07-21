@@ -408,6 +408,14 @@ def _assemble_payload(path, sessao, resumo, df, infos, best, limpas,
         if np.isfinite(v):
             fuel_fim = round(v, 2)
 
+    # Capacidades da sessao (o frontend usa p/ estados HONESTOS): de onde vem,
+    # se ha um stint local (voltas com tempo) e se A e B sao a MESMA volta (sem
+    # comparacao real — ex.: sessao virtual do Garage61 com 1 volta). Sem isso o
+    # AI Engineer/Dashboard mostram nota e "0 voltas" como se fosse analise real.
+    fonte = "garage61" if str(path).startswith("g61:") else "local"
+    has_stint = bool(df is not None and len(laps_out) > 0)
+    ab_equal = bool(sig_fast is sig_slow
+                    or (np.size(delta) and np.allclose(np.asarray(delta, dtype=float), 0.0, atol=1e-6)))
     return {
         "contexto": {
             "carro": resumo.get("car"), "pista": pista, "comprimento": resumo.get("length"),
@@ -422,6 +430,7 @@ def _assemble_payload(path, sessao, resumo, df, infos, best, limpas,
             "voltasLimpas": len(limpas), "cornersSrc": corners_src,
             "fuelFim": fuel_fim, "trackId": resumo.get("track_id"),
             "carId": resumo.get("car_id"),
+            "fonte": fonte, "hasStint": has_stint, "abEqual": ab_equal,
         },
         "eixoDist": _arr(sig_fast.get("LapDist"), 0),
         "delta": _arr(delta, 3),        # acumulado media-melhor (>0 = media perde ali)

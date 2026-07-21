@@ -47,13 +47,13 @@ const WS: { id: View; label: string }[] = [
   { id: 'comparison', label: 'Comparison' },
   { id: 'ai', label: 'AI Engineer' },
 ]
-export function SessionStrip({ view, go, label, onSessions, sessOn }: {
-  view: View; go: (v: View) => void; label?: string
+export function SessionStrip({ view, go, label, status, onSessions, sessOn }: {
+  view: View; go: (v: View) => void; label?: string; status?: string
   onSessions?: () => void; sessOn?: boolean
 }) {
   return (
     <div className="tabstrip">
-      <div className="stab idle"><span>Waiting for session</span></div>
+      <div className="stab idle"><span>{status || 'Waiting for session'}</span></div>
       <button className={'stab on pw-sessbtn' + (sessOn ? ' menuon' : '')} onClick={onSessions}
         title="Choose session" aria-label="Choose session" aria-expanded={!!sessOn}>
         <span className="dot acc"></span>

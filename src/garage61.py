@@ -41,6 +41,24 @@ def available() -> bool:
     return bool(_token())
 
 
+# Ultimo erro da integracao (p/ a UI mostrar em vez de sumir com o Garage61 calado).
+_LAST_ERROR: str | None = None
+
+
+def last_error() -> str | None:
+    return _LAST_ERROR
+
+
+def note_error(msg: str) -> None:
+    global _LAST_ERROR
+    _LAST_ERROR = msg
+
+
+def clear_error() -> None:
+    global _LAST_ERROR
+    _LAST_ERROR = None
+
+
 def _get(endpoint: str, **params) -> requests.Response:
     tok = _token()
     if not tok:

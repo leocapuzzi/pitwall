@@ -35,9 +35,19 @@ def api_sessions():
     if garage61.available():
         try:
             res = res + garage61.list_my_sessions()
-        except Exception:
-            pass  # sem rede/token com problema: o app segue so com o local
+            garage61.clear_error()
+        except Exception as e:
+            # Nao derruba o app (segue com o local), mas NAO some calado: registra
+            # o erro p/ a UI mostrar e loga p/ diagnostico.
+            garage61.note_error(str(e))
+            print(f"[PitWall] Garage61 session listing failed: {e}")
     return res
+
+
+@app.get("/api/g61/status")
+def api_g61_status():
+    """Saude da integracao Garage61: configurada? ultimo erro ao listar?"""
+    return {"available": garage61.available(), "error": garage61.last_error()}
 
 
 @app.get("/api/session")

@@ -1,6 +1,8 @@
 pyirsdk
 pandas
 numpy
+requests
+PyYAML
 iracingdataapi
 garage61api
 toml

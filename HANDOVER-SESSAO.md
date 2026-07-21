@@ -34,6 +34,42 @@
   seguem na raiz (referências vivas).
 
 ## 1. ✅ CONCLUÍDO (e APROVADO pelo usuário)
+**Sessão 2026-07-20 (parte 7) — CODEX REVIEW triado + BLOCO 1 "Honestidade" implantado:**
+Um review externo (pasta `CODEX REVIEW/` na raiz — 01-FULL-AUDIT / 02-VALIDATION-EVIDENCE /
+03-PRIORITIZED-ROADMAP, read-only) foi verificado ponto a ponto contra o código atual. Plano
+apresentado ao Leo separando ACATAR / ACATAR-ENXUTO / NÃO-ACATAR (filtro: bugs de confiança do
+dia a dia SIM; blindagem "de empresa" — CI/tipagem total/pyproject/a11y total/portabilidade —
+enxugar/adiar, é ferramenta pessoal local). Leo aprovou começar pelo **Bloco 1**. Implementado e
+validado no app real (8600, build novo; verificação por DOM — janela oculta não tira screenshot):
+- ✅ **A1 — estados honestos da sessão VIRTUAL do Garage61 (A=B / 1 volta).** Backend
+  (`webdata._assemble_payload`) passou a marcar no `contexto`: **`fonte`** ("garage61"|"local"),
+  **`hasStint`** (bool) e **`abEqual`** (A e B são a MESMA volta — `sig_fast is sig_slow` OU delta≈0).
+  `Dashboard.tsx`: "on disk" só conta locais (**"2 on disk · 8 via Garage61"**, era "10 no disco");
+  pill de voltas e donut viram "Single Garage61 lap" p/ sessão virtual. `AIEngineer.tsx`: com
+  `abEqual` esconde o texto "analisei suas 0 voltas", o Recovery plan, o Raio-X e as NOTAS
+  (scorecard) — troca por avisos "pick a lap in pod B"; `Avg Δ/lap = —`; `buildFacts` manda
+  `comparison_available:false`. Comparação real (`abEqual:false`, testado no /api/compare, Δ −2.65s)
+  restaura a tela normal (branch original intocado).
+- ✅ **A4 — "Waiting for session" preso.** `App.tsx` calcula status real → `StatusBar text=` (rodapé
+  "Ready · pista · carro") e `SessionStrip status=` (aba "Session ready"); `Chrome.tsx` usa o prop.
+- ✅ **A5 — deps faltando** no `requirements.txt`: **`requests`** e **`PyYAML`** (eram importados e
+  não declarados — `git clone` limpo quebrava). `pyarrow` fica p/ quando o histórico (store.py) ligar.
+- ✅ **B6 — Garage61 não some mais calado.** `server.py` `/api/sessions`: `except:pass` → loga +
+  `garage61.note_error()`; novo **`GET /api/g61/status`** `{available,error}`; `garage61.py` ganhou
+  `last_error/note_error/clear_error`; `SessionMenu.tsx` mostra banner "Garage61 unavailable" no erro
+  (oculto quando saudável — testado). `api.ts`: `getG61Status()`/`G61Status`.
+- ✅ **B1 — README/empty-state honestos.** README não promete mais que `samples/` gera sessão (eles
+  FALHAM — "sem voltas válidas") e atualiza o "Estado" (Garage61+Grok integrados, iRacing ainda
+  bloqueada). Vazio no boot (`useSession`) e no `SessionMenu` orientam (Alt+L / token do G61).
+- ⚠️ Sobraram strings PT na AI Engineer NÃO tocadas (fora do Bloco 1): "Tempo morto", "Raio-X das
+  perdas", "s / volta". Limpar num passe rápido depois.
+- 🔜 Blocos seguintes do plano (aprovados no conceito, ainda NÃO feitos): **Bloco 2** confiança do
+  motor — A2 validade real de volta (usar `PlayerTrackSurface`/`IsOnTrack`, JÁ gravados, p/ fora-de-
+  pista/incidente não virar referência; `analysis.py:87` hoje só checa completa+pit+tempo>0), A3
+  forçar mesma pista+carro na comparação no backend (regra travada do PLANO §12, hoje `server.py`
+  aceita qualquer par), B4 guard de dado velho ao trocar sessão (useSession sem AbortController/geração);
+  **Bloco 3** smoke test do sample + lint substantivo + guard loopback/limites + bat/assets.
+
 **Sessão 2026-07-20 — TRACK MAPS OFICIAIS implantados no Windows (doc: `TRACK-MAPS.md`):**
 - A pesquisa foi feita numa sessão paralela no Mac (2026-07-11), mas NADA tinha chegado aos
   arquivos do projeto — só a pasta de cópias `_novos-track-maps/`. Nesta sessão tudo foi
@@ -365,7 +401,7 @@ morreu). Design original mantido: IA = só a VOZ; o motor determinístico mede t
 ## 3. Contrato de dados ATUAL (payload de `/api/session`)
 ```
 { contexto{carro, pista, suaMelhor, referencia, deltaTotal, voltasGravadas/Validas/Limpas,
-           cornersSrc, fuelFim},
+           cornersSrc, fuelFim, fonte("garage61"|"local"), hasStint(bool), abEqual(bool=A é a mesma volta que B)},
   eixoDist[], delta[], ref{throttle,brake,speed,rpm,gear,steer}, media{...},
   track{x,y}(centerline FIXA), racing_line{x,y}(melhor), racing_line_b{x,y}(média),
   track_edges{left{x,y}, right{x,y}}, track_width_m, track_fixed,

@@ -125,6 +125,8 @@ function buildFacts(p: Payload) {
       lapA_reference: { name: c.refName || 'Your best', time: c.suaMelhor, source: c.refSub || 'local session' },
       lapB_comparison: { name: c.referencia, source: c.compSub || 'session average' },
       delta_total_B_minus_A: c.deltaTotal,
+      // A e B são a mesma volta (ex.: 1 volta do Garage61): NÃO há comparação/delta real.
+      comparison_available: !c.abEqual,
       lapsRecorded: c.voltasGravadas, lapsValid: c.voltasValidas, lapsClean: c.voltasLimpas,
       final_fuel_liters: c.fuelFim,
     },
@@ -235,9 +237,16 @@ export default function AIEngineer() {
   const xEls = useRef<{ cursors: Array<{ el: HTMLElement; w: number }>; vas: HTMLElement[]; vbs: HTMLElement[]; gap: HTMLElement | null }>({ cursors: [], vas: [], vbs: [], gap: null })
   const payloadRef = useRef<Payload | null>(null); payloadRef.current = payload
 
-  const resumo = m
-    ? `I analyzed your ${m.nVoltas} clean laps: the average leaves ${m.perda.toFixed(2)}s per lap on track vs your best${m.opps[0] ? ` — and ${Math.round(m.topSum / Math.max(0.001, m.perda) * 100)}% of it lives in ${m.opps.length} corners` : ''}${m.piorSetor ? `, almost all in ${m.piorSetor}` : ''}. Let's go get that time.`
-    : ''
+  // A e B são a MESMA volta (ex.: sessão virtual do Garage61 com 1 volta): não há
+  // delta nem comparação real → não inventar nota/plano/"analisei 0 voltas".
+  const noCompare = !!payload?.contexto?.abEqual
+  const isG61 = payload?.contexto?.fonte === 'garage61'
+  const ctxLap = payload?.contexto?.suaMelhor as string | undefined
+  const resumo = !m
+    ? ''
+    : noCompare
+      ? `This is a single ${isG61 ? 'Garage61 reference' : 'reference'} lap${ctxLap ? ` (${ctxLap})` : ''} — there's no comparison yet. Pick a lap in pod B (top bar) and I'll break the delta down corner by corner.`
+      : `I analyzed your ${m.nVoltas} clean laps: the average leaves ${m.perda.toFixed(2)}s per lap on track vs your best${m.opps[0] ? ` — and ${Math.round(m.topSum / Math.max(0.001, m.perda) * 100)}% of it lives in ${m.opps.length} corners` : ''}${m.piorSetor ? `, almost all in ${m.piorSetor}` : ''}. Let's go get that time.`
 
   // typewriter imperativo (sem re-render por tick)
   useEffect(() => {
@@ -601,7 +610,7 @@ export default function AIEngineer() {
         <div className="pw-aipills">
           <div className="pw-statpill pw-glass2">
             <span className="pw-kico" style={{ ['--c' as string]: 'var(--red)' }}><Icon n="telem" s={16} /></span>
-            <div><span className="kl">Avg Δ / lap</span><b className="kv num redt">+{m.perda.toFixed(2)}s</b><span className="ks">average vs your best</span></div>
+            <div><span className="kl">Avg Δ / lap</span><b className="kv num redt">{noCompare ? '—' : '+' + m.perda.toFixed(2) + 's'}</b><span className="ks">{noCompare ? 'pick a lap in pod B' : 'average vs your best'}</span></div>
           </div>
           <div className="pw-statpill pw-glass2">
             <span className="pw-kico" style={{ ['--c' as string]: 'var(--purple)' }}><Icon n="clock" s={16} /></span>
@@ -621,6 +630,16 @@ export default function AIEngineer() {
             <span className="lbl">Recovery plan</span>
             {m.consist != null && <span className="chip" style={{ padding: '2px 9px', fontSize: 10.5, cursor: 'default' }}>Consistency <b className="num" style={{ marginLeft: 4 }}>{m.consist.toFixed(0)}/100</b></span>}
           </div>
+          {noCompare ? (
+            <div style={{ display: 'grid', placeItems: 'center', flex: 1, textAlign: 'center', padding: '18px 10px', gap: 10 }}>
+              <span className="cbadge" style={{ width: 44, height: 44 }}><Icon n="telem" s={20} /></span>
+              <b style={{ fontFamily: 'var(--font-display)', fontSize: 15 }}>No comparison yet</b>
+              <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.5, maxWidth: 320 }}>
+                This session is a single {isG61 ? 'Garage61 reference' : 'reference'} lap, so there's no delta to recover.
+                Choose a comparison lap in <b>pod B</b> (top bar) — a teammate, another car, or your own average from a local stint — and the recovery plan fills in.
+              </p>
+            </div>
+          ) : (<>
           <div className="pw-aidelta redt">+<em ref={bigRef}>0.00</em><i>s / volta</i></div>
           <span className="ks" style={{ color: 'var(--ink-3)', fontSize: 11 }}>what the average leaves on track vs your best lap</span>
           <div className="pw-aibar">
@@ -649,6 +668,7 @@ export default function AIEngineer() {
               {m.avgClean != null && <> → projected average <b className="num green">{fmtClock(Math.max(m.bestT ?? 0, m.avgClean - m.topSum))}</b></>}
             </div>
           )}
+          </>)}
         </div>
 
         {/* raio-X das perdas: replay fantasma da curva fixada + evidência nos canais */}
@@ -659,7 +679,7 @@ export default function AIEngineer() {
               <Icon n="ext" s={11} /> Lap Analysis
             </button>
           </div>
-          {cur && xray ? (
+          {!noCompare && cur && xray ? (
             <div className="pw-aixwrap" ref={xwrapRef} key={cur.rank}>
               <div className="pw-aixhead">
                 <div className="row center gap8" style={{ minWidth: 0 }}>
@@ -733,13 +753,25 @@ export default function AIEngineer() {
               </div>
             </div>
           ) : (
-            <p className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>No opportunities to detail this session.</p>
+            <p className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>
+              {noCompare
+                ? 'Pick a comparison lap in pod B to replay the corners side by side.'
+                : 'No opportunities to detail this session.'}
+            </p>
           )}
         </div>
 
         {/* skills + chat */}
         <div className="pw-aicol">
           <div className="pw-aiskills pw-glass2">
+            {noCompare ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 4px' }}>
+                <span className="cbadge" style={{ width: 40, height: 40, flex: 'none' }}><Icon n="spark" s={18} /></span>
+                <p className="muted" style={{ fontSize: 12, lineHeight: 1.45, margin: 0 }}>
+                  Technique grades rate your lap against a reference. With a single lap there's nothing to grade against — pick a comparison lap in <b>pod B</b> to see per-corner braking, trail, min speed and rotation.
+                </p>
+              </div>
+            ) : (<>
             <div className="pw-gaugerow">
               {m.skills.map((sk, i) => {
                 const R = 24, C = 2 * Math.PI * R
@@ -793,6 +825,7 @@ export default function AIEngineer() {
                 <p className="pw-sktip">{evid.tip}</p>
               </div>
             )}
+            </>)}
           </div>
           <div className="pw-aichat pw-glass2">
             <div className="row between center" style={{ flex: 'none', marginBottom: 4 }}>

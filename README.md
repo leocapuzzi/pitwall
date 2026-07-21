@@ -54,8 +54,11 @@ npm --prefix frontend run build
 .venv/Scripts/python -m uvicorn server:app --app-dir src --port 8600
 ```
 
-Sem telemetria real, o app usa as voltas de exemplo de `samples/` (MX-5 em
-Winton). Para apontar outra pasta de `.ibt`: variável `PITWALL_TELEMETRY_DIR`.
+Sem `.ibt` locais, e com um **token do Garage61** em `secrets.toml`, o app abre
+suas voltas do Garage61 como sessões — dá para usar em uma máquina sem iRacing.
+As amostras em `samples/` servem para inspecionar o formato do `.ibt` e **podem
+não gerar uma sessão completa** (contêm poucas voltas válidas). Para apontar outra
+pasta de `.ibt`: variável `PITWALL_TELEMETRY_DIR`.
 
 Em desenvolvimento, o frontend também roda com hot-reload:
 `npm --prefix frontend run dev` (porta 5173, proxia `/api` → 8600).
@@ -84,15 +87,17 @@ _arquivo-morto/  versões antigas (Streamlit etc.) — só consulta
   georreferenciamento e integração no player/calendário).
 - **`frontend/DESIGN-UI.md`** e **`frontend/LIQUID-GLASS.md`** — guias técnicos da UI.
 
-## Estado (jun/2026)
+## Estado (jul/2026)
 
 - ✅ Análise completa com os **seus** dados: 6 telas prontas, tempos batendo com o
   oficial ao milésimo, pista real via OpenStreetMap, coaching por curva.
 - ✅ Selector de sessão na barra de abas; comparação livre de voltas (inclusive
   entre sessões); telemetria de pneus por banda na aba Tyres.
-- ⏸️ Comparação com outros pilotos (Garage61) e resultados/iRating (API do iRacing)
-  aguardam liberação de acesso das APIs.
-- 🔜 Coach de IA escrevendo o debrief (design pronto; aguardando janela de API).
+- ✅ **Garage61 integrado**: compare com pilotos da equipe e abra suas voltas do
+  Garage61 como sessões (pods A/B em todas as telas).
+- ✅ **Coach de IA (Grok)** escreve o debrief no chat do AI Engineer, com voz
+  offline do engenheiro (KittenTTS).
+- ⏸️ Resultados/iRating (API `/data` do iRacing) aguardam liberação (OAuth2 pausado).
 
 > Os `.ibt` são o acervo-fonte: nunca são apagados nem versionados (são pesados);
 > só `samples/` vai pro repositório.

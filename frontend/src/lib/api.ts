@@ -131,6 +131,16 @@ export async function getSessions(): Promise<SessionInfo[]> {
   return r.json()
 }
 
+// Saúde da integração Garage61 (mostrada na UI quando falha, em vez de sumir calado)
+export interface G61Status { available: boolean; error: string | null }
+export async function getG61Status(): Promise<G61Status> {
+  try {
+    const r = await fetch('/api/g61/status')
+    if (!r.ok) return { available: false, error: null }
+    return r.json()
+  } catch { return { available: false, error: null } }
+}
+
 export async function getSession(path: string): Promise<Payload> {
   const r = await fetch('/api/session?path=' + encodeURIComponent(path))
   const j = await r.json()

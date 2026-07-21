@@ -46,9 +46,13 @@ export default function App() {
   const [sessMenu, setSessMenu] = useState(false)
 
   // sessão ativa: alimenta o label da aba e remonta a tela quando troca
-  const { payload, current } = useSession()
+  const { payload, current, loading, error } = useSession()
   const ctx = payload?.contexto
   const sessLabel = ctx?.pista ? `${ctx.pista} · ${ctx.carro || ''}`.replace(/ · $/, '') : undefined
+  // status HONESTO (não deixar "Waiting for session" preso após carregar):
+  // curto p/ a aba lateral, completo p/ o rodapé.
+  const shortStatus = error ? 'Session error' : loading ? 'Loading…' : sessLabel ? 'Session ready' : 'Waiting for session'
+  const statusText = error ? error : loading ? 'Loading session…' : sessLabel ? `Ready · ${sessLabel}` : 'Waiting for session…'
 
   const Screen = SCREENS[view]
   // modo FULLMAP (estilo GO Fast): o mapa vive atrás de TUDO e a UI flutua em vidro.
@@ -62,7 +66,7 @@ export default function App() {
     <div className={'app' + (fullmap ? ' fullmap' : '')}>
       <TopNav view={view} go={setView} onSettings={() => setSettings(s => !s)} settingsOn={settings} />
       {view !== 'dashboard' && (
-        <SessionStrip view={view} go={setView} label={sessLabel}
+        <SessionStrip view={view} go={setView} label={sessLabel} status={shortStatus}
           onSessions={() => setSessMenu(s => !s)} sessOn={sessMenu} />
       )}
       <main className="stage">
@@ -78,7 +82,7 @@ export default function App() {
           <Screen />
         </div>
       </main>
-      <StatusBar />
+      <StatusBar text={statusText} />
       <SettingsMenu open={settings} onClose={() => setSettings(false)} />
       <SessionMenu open={sessMenu} onClose={() => setSessMenu(false)} />
     </div>

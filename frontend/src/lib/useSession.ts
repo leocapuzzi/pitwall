@@ -50,7 +50,7 @@ async function boot() {
     for (const x of virtuais) {
       try { const p = await getSession(x.path); set({ payload: p, current: x.path, loading: false }); return } catch { /* */ }
     }
-    set({ error: 'No session with valid laps', loading: false })
+    set({ error: 'No session with valid laps yet. Record 2–3 clean laps in iRacing (Alt+L to log telemetry), or add a Garage61 token in secrets.toml to open your Garage61 laps.', loading: false })
   } catch (e: any) { set({ error: e?.message || 'Error listing sessions', loading: false }) }
 }
 

@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Icon from './Icon'
 import { useSession } from '../lib/useSession'
+import { getG61Status, type G61Status } from '../lib/api'
 
 // Nome padrão do iRacing: "<carro>_<pista> <YYYY-MM-DD HH-MM-SS>.ibt"
 // (a pista e o carro "bonitos" só existem no payload carregado; na lista usamos o nome)
@@ -13,6 +14,9 @@ export function parseIbtName(file: string): { car: string; track: string; when: 
 
 export default function SessionMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { sessions, current, loading, load } = useSession()
+  // Saúde do Garage61: se configurado mas falhando, avisar (antes sumia calado).
+  const [g61, setG61] = useState<G61Status | null>(null)
+  useEffect(() => { if (open) getG61Status().then(setG61).catch(() => setG61(null)) }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -33,6 +37,11 @@ export default function SessionMenu({ open, onClose }: { open: boolean; onClose:
           </div>
           <button className="pw-set-x" onClick={onClose} aria-label="Close"><Icon n="x" s={15} /></button>
         </div>
+        {g61?.available && g61.error && (
+          <div style={{ margin: '0 14px 8px', padding: '8px 10px', borderRadius: 8, background: 'rgba(255,90,90,.10)', border: '1px solid rgba(255,90,90,.28)', fontSize: 11, lineHeight: 1.4, color: 'var(--ink-2)' }}>
+            <b style={{ color: 'var(--red)' }}>Garage61 unavailable</b> — couldn't list your laps ({g61.error}). Local sessions still work.
+          </div>
+        )}
         <div className="pw-sess-list">
           {sessions.map((s, i) => {
             const on = s.path === current
@@ -55,7 +64,9 @@ export default function SessionMenu({ open, onClose }: { open: boolean; onClose:
             )
           })}
           {!sessions.length && (
-            <div className="pw-sess-empty">Nenhum arquivo .ibt encontrado.</div>
+            <div className="pw-sess-empty">
+              No sessions yet. Record 2–3 clean laps in iRacing (Alt+L logs telemetry), or add a Garage61 token in secrets.toml to open your Garage61 laps here.
+            </div>
           )}
         </div>
       </div>
