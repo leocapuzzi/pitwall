@@ -53,7 +53,7 @@ export default function PodPicker({ side, payload, sessions, current, onApply, o
         // o carro da SESSÃO sempre aparece (a amostra da API é só a atividade recente)
         let lista = r.cars
         if (ctx.carId != null && !lista.some(c => String(c.carId) === String(ctx.carId)))
-          lista = [{ carId: ctx.carId, car: ctx.carro || 'Carro da sessão', laps: 0 }, ...lista]
+          lista = [{ carId: ctx.carId, car: ctx.carro || 'Session car', laps: 0 }, ...lista]
         setCars(lista)
         if (lista.length && !lista.some(c => c.carId != null && String(c.carId) === String(carSel ?? '')))
           setCarSel(lista[0].carId)
@@ -70,7 +70,7 @@ export default function PodPicker({ side, payload, sessions, current, onApply, o
     setBusy(true); setErr(null); setIdx(null)
     getLaps(path)
       .then(r => { if (!cancel) setIdx(r) })
-      .catch(e => { if (!cancel) setErr(e?.message || 'Falha ao listar voltas') })
+      .catch(e => { if (!cancel) setErr(e?.message || 'Failed to list laps') })
       .finally(() => { if (!cancel) setBusy(false) })
     return () => { cancel = true }
   }, [isA, path, src])
@@ -83,7 +83,7 @@ export default function PodPicker({ side, payload, sessions, current, onApply, o
     const fetcher = isA ? getG61MyLaps : getG61Laps
     fetcher(ctx.trackId, carSel)
       .then(r => { if (!cancel) setG61(r) })
-      .catch(e => { if (!cancel) setErr(e?.message || 'Falha ao buscar no Garage61') })
+      .catch(e => { if (!cancel) setErr(e?.message || 'Failed to fetch from Garage61') })
       .finally(() => { if (!cancel) setBusy(false) })
     return () => { cancel = true }
   }, [isA, src, ctx.trackId, carSel])
@@ -97,7 +97,7 @@ export default function PodPicker({ side, payload, sessions, current, onApply, o
   const apply = async (d: CompareDesc) => {
     setBusy(true); setErr(null)
     try { await onApply(d); onClose() }
-    catch (e: any) { setErr(e?.message || 'Falha ao montar a comparação'); setBusy(false) }
+    catch (e: any) { setErr(e?.message || 'Failed to build comparison'); setBusy(false) }
   }
 
   const wrongTrack = !!(idx && ctx.trackId != null && idx.trackId != null && String(idx.trackId) !== String(ctx.trackId))
@@ -108,8 +108,8 @@ export default function PodPicker({ side, payload, sessions, current, onApply, o
       <div className="pw-modalcard pw-glass2 pw-pickcard" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <div className="pw-modalhead">
           <span className="mic"><Icon n="telem" s={18} /></span>
-          <b className="ttl">{isA ? 'Sua volta (lado A)' : 'Comparar com (lado B)'}</b>
-          <button className="pw-modalx" onClick={onClose} aria-label="Fechar">
+          <b className="ttl">{isA ? 'Your lap (side A)' : 'Compare against (side B)'}</b>
+          <button className="pw-modalx" onClick={onClose} aria-label="Close">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
         </div>
@@ -120,31 +120,31 @@ export default function PodPicker({ side, payload, sessions, current, onApply, o
             <div className="muted" style={{ fontSize: 12 }}>{(src === 'g61' ? g61?.track : idx?.pista) || ctx.pista}</div>
           </div>
           {isA && src === 'local' && (
-            <select className="pw-picksess" value={path} onChange={e => setPath(e.target.value)} aria-label="Sessão">
+            <select className="pw-picksess" value={path} onChange={e => setPath(e.target.value)} aria-label="Session">
               {compat.map(s => {
                 const pi = parseIbtName(s.file)
-                return <option key={s.path} value={s.path}>{(pi.when || s.file) + (s.path === current ? ' · atual' : '')}</option>
+                return <option key={s.path} value={s.path}>{(pi.when || s.file) + (s.path === current ? ' · current' : '')}</option>
               })}
             </select>
           )}
           {src === 'g61' && (
             cars && cars.length
-              ? <select className="pw-picksess" value={carSel ?? ''} aria-label="Carro"
+              ? <select className="pw-picksess" value={carSel ?? ''} aria-label="Car"
                   onChange={e => setCarSel(e.target.value === '' ? null : Number(e.target.value))}>
                   {cars.map(c => (
                     <option key={String(c.carId)} value={c.carId ?? ''}>
-                      {c.car}{isA && c.laps > 0 ? ` · ${c.laps} volta${c.laps > 1 ? 's' : ''}` : ''}
+                      {c.car}{isA && c.laps > 0 ? ` · ${c.laps} lap${c.laps > 1 ? 's' : ''}` : ''}
                     </option>
                   ))}
                 </select>
-              : <span className="muted" style={{ fontSize: 12 }}>{isA ? 'Suas voltas no Garage61' : 'Melhor volta por piloto'}</span>
+              : <span className="muted" style={{ fontSize: 12 }}>{isA ? 'Your laps on Garage61' : 'Best lap per driver'}</span>
           )}
         </div>
         {isA && !virtBase && (
           <div style={{ padding: '0 14px 6px' }}>
-            <SlideSeg options={['Sessões locais', 'Garage61 (minhas)']}
-              value={src === 'local' ? 'Sessões locais' : 'Garage61 (minhas)'}
-              onChange={v => setSrc(v === 'Garage61 (minhas)' ? 'g61' : 'local')} />
+            <SlideSeg options={['Local sessions', 'Garage61 (mine)']}
+              value={src === 'local' ? 'Local sessions' : 'Garage61 (mine)'}
+              onChange={v => setSrc(v === 'Garage61 (mine)' ? 'g61' : 'local')} />
           </div>
         )}
         <div className="pw-pickbody">
@@ -153,33 +153,33 @@ export default function PodPicker({ side, payload, sessions, current, onApply, o
             <div className="pw-g61list" style={{ marginBottom: 6 }}>
               <button className="pw-g61row" disabled={!temMedia}
                 onClick={() => temMedia && apply({ type: 'media' })}
-                title={temMedia ? 'Média das voltas limpas da sessão' : 'A sessão não tem voltas limpas'}>
-                <span className="pw-g61drv">Minha média</span>
-                <b className="num">{temMedia ? `${ctx.voltasLimpas} limpas` : '—'}</b>
-                <span className={'pw-g61tag' + (temMedia ? ' ok' : '')}>{temMedia ? 'padrão' : 'sem limpas'}</span>
+                title={temMedia ? "Average of the session's clean laps" : 'The session has no clean laps'}>
+                <span className="pw-g61drv">My average</span>
+                <b className="num">{temMedia ? `${ctx.voltasLimpas} clean` : '—'}</b>
+                <span className={'pw-g61tag' + (temMedia ? ' ok' : '')}>{temMedia ? 'default' : 'no clean laps'}</span>
               </button>
             </div>
           )}
-          {busy && <div className="pw-pickmsg">{src === 'g61' ? 'Buscando no Garage61…' : 'Carregando…'}</div>}
+          {busy && <div className="pw-pickmsg">{src === 'g61' ? 'Fetching from Garage61…' : 'Loading…'}</div>}
           {!busy && err && <div className="pw-pickmsg redt">{err}</div>}
           {!busy && !err && isA && src === 'local' && wrongTrack &&
-            <div className="pw-pickmsg redt">Esta sessão é de OUTRA pista — só dá para comparar voltas da mesma pista.</div>}
+            <div className="pw-pickmsg redt">This session is from ANOTHER track — you can only compare laps from the same track.</div>}
           {!busy && !err && isA && src === 'local' && idx && !wrongTrack && (
             idx.laps.length
               ? <div className="pw-g61list">
                   {idx.laps.map(l => (
                     <button key={l.n} className="pw-g61row" onClick={() => apply({ type: 'local', path, lap: l.n })}
-                      title="Usar esta volta como A">
-                      <span className="pw-g61drv">Volta {l.n}</span>
+                      title="Use this lap as A">
+                      <span className="pw-g61drv">Lap {l.n}</span>
                       <b className="num">{fmtClock(l.t)}</b>
-                      {l.best && <span className="pw-g61tag ok">melhor</span>}
-                      {l.clean && !l.best && <span className="pw-g61tag ok">limpa</span>}
-                      {!l.valid && <span className="pw-g61tag">inválida</span>}
+                      {l.best && <span className="pw-g61tag ok">best</span>}
+                      {l.clean && !l.best && <span className="pw-g61tag ok">clean</span>}
+                      {!l.valid && <span className="pw-g61tag">invalid</span>}
                       {l.pit && <span className="pw-g61tag">pit</span>}
                     </button>
                   ))}
                 </div>
-              : <div className="pw-pickmsg">Sessão sem voltas com tempo fechado.</div>
+              : <div className="pw-pickmsg">Session has no laps with a completed time.</div>
           )}
           {!busy && !err && src === 'g61' && g61 && (
             g61.laps.length
@@ -187,22 +187,22 @@ export default function PodPicker({ side, payload, sessions, current, onApply, o
                   {g61.laps.map(l => (
                     <button key={l.id} className="pw-g61row" disabled={!l.telemetry}
                       onClick={() => l.telemetry && apply({ type: 'g61', lapId: l.id })}
-                      title={l.telemetry ? `Usar esta volta como ${side}` : 'Sem telemetria visível (piloto sem Pro)'}>
+                      title={l.telemetry ? `Use this lap as ${side}` : 'No visible telemetry (driver without Pro)'}>
                       <span className="pw-g61drv">{l.driver}</span>
                       <b className="num">{fmtClock(l.lapTime)}</b>
-                      {l.clean ? <span className="pw-g61tag ok">limpa</span> : <span className="pw-g61tag">suja</span>}
-                      {!l.telemetry && <span className="pw-g61tag">sem telemetria</span>}
+                      {l.clean ? <span className="pw-g61tag ok">clean</span> : <span className="pw-g61tag">dirty</span>}
+                      {!l.telemetry && <span className="pw-g61tag">no telemetry</span>}
                     </button>
                   ))}
                 </div>
-              : <div className="pw-pickmsg">{isA ? 'Você ainda não tem voltas desta pista + carro no Garage61.' : 'Nenhuma volta de referência para este carro + pista no Garage61.'}</div>
+              : <div className="pw-pickmsg">{isA ? "You don't have laps for this track + car on Garage61 yet." : 'No reference lap for this car + track on Garage61.'}</div>
           )}
         </div>
         <div className="pw-pickfoot">
           <button className="pw-set-reset" onClick={() => { onDefault(); onClose() }}>
-            Usar padrão ({virtBase ? 'a própria volta da sessão' : isA ? 'sua melhor da sessão' : 'média das limpas'})
+            Use default ({virtBase ? "the session's own lap" : isA ? 'your session best' : 'average of clean laps'})
           </button>
-          <span className="pw-set-note">Pneus e combustível só existem em voltas locais (.ibt)</span>
+          <span className="pw-set-note">Tyres &amp; fuel only exist in local laps (.ibt)</span>
         </div>
       </div>
     </div>,

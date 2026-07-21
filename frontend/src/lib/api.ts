@@ -77,7 +77,7 @@ export async function getG61Laps(trackId: number | string, carId?: number | stri
     (carId != null ? '&carId=' + encodeURIComponent(String(carId)) : '')
   const r = await fetch(q)
   const j = await r.json()
-  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao listar voltas do Garage61')
+  if (!r.ok || j.error) throw new Error(j.error || 'Failed to list Garage61 laps')
   return j
 }
 
@@ -85,7 +85,7 @@ export interface G61Car { carId: number | null; car: string; laps: number }
 export async function getG61Cars(trackId: number | string, mine?: boolean): Promise<{ trackId: number; cars: G61Car[] }> {
   const r = await fetch('/api/g61/cars?trackId=' + encodeURIComponent(String(trackId)) + (mine ? '&mine=1' : ''))
   const j = await r.json()
-  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao listar carros do Garage61')
+  if (!r.ok || j.error) throw new Error(j.error || 'Failed to list Garage61 cars')
   return j
 }
 
@@ -94,7 +94,7 @@ export async function getG61MyLaps(trackId: number | string, carId?: number | st
     (carId != null ? '&carId=' + encodeURIComponent(String(carId)) : '')
   const r = await fetch(q)
   const j = await r.json()
-  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao listar suas voltas do Garage61')
+  if (!r.ok || j.error) throw new Error(j.error || 'Failed to list your Garage61 laps')
   return j
 }
 
@@ -111,7 +111,7 @@ export async function getCompare(path: string, a: CompareDesc, b: CompareDesc, m
     (maxOff != null ? '&max_off=' + maxOff : '')
   const r = await fetch(q)
   const j = await r.json()
-  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao montar a comparação')
+  if (!r.ok || j.error) throw new Error(j.error || 'Failed to build the comparison')
   return j
 }
 
@@ -121,35 +121,75 @@ export async function getG61Lap(lapId: string, trackId: number | string | null, 
     (sectors && sectors.length ? '&sectors=' + sectors.join(',') : '')
   const r = await fetch(q)
   const j = await r.json()
-  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao carregar a volta do Garage61')
+  if (!r.ok || j.error) throw new Error(j.error || 'Failed to load the Garage61 lap')
   return j
 }
 
 export async function getSessions(): Promise<SessionInfo[]> {
   const r = await fetch('/api/sessions')
-  if (!r.ok) throw new Error('Falha ao listar sessões')
+  if (!r.ok) throw new Error('Failed to list sessions')
   return r.json()
 }
 
 export async function getSession(path: string): Promise<Payload> {
   const r = await fetch('/api/session?path=' + encodeURIComponent(path))
   const j = await r.json()
-  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao carregar sessão')
+  if (!r.ok || j.error) throw new Error(j.error || 'Failed to load session')
   return j
 }
 
 export async function getLaps(path: string): Promise<LapsIndex> {
   const r = await fetch('/api/laps?path=' + encodeURIComponent(path))
   const j = await r.json()
-  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao listar voltas')
+  if (!r.ok || j.error) throw new Error(j.error || 'Failed to list laps')
   return j
 }
 
 export async function getLap(path: string, lap: number): Promise<LapData> {
   const r = await fetch('/api/lap?path=' + encodeURIComponent(path) + '&lap=' + lap)
   const j = await r.json()
-  if (!r.ok || j.error) throw new Error(j.error || 'Falha ao carregar a volta')
+  if (!r.ok || j.error) throw new Error(j.error || 'Failed to load the lap')
   return j
+}
+
+// ---- Coach de IA (Grok) — chat do AI Engineer ----
+export interface ChatStatus { available: boolean; model: string | null }
+export async function getChatStatus(): Promise<ChatStatus> {
+  const r = await fetch('/api/chat/status')
+  if (!r.ok) return { available: false, model: null }
+  return r.json()
+}
+
+export async function postChat(facts: any, messages: { role: 'user' | 'assistant'; content: string }[]): Promise<string> {
+  const r = await fetch('/api/chat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ facts, messages }),
+  })
+  const j = await r.json()
+  if (!r.ok || j.error) throw new Error(j.error || 'AI coach failed')
+  return j.text
+}
+
+// ---- Engineer voice (KittenTTS, offline) ----
+export interface TtsStatus { available: boolean; voice: string | null }
+export async function getTtsStatus(): Promise<TtsStatus> {
+  const r = await fetch('/api/tts/status')
+  if (!r.ok) return { available: false, voice: null }
+  return r.json()
+}
+
+// Synthesize `text` and return an object URL for an <audio>/Audio element.
+export async function ttsUrl(text: string): Promise<string> {
+  const r = await fetch('/api/tts', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+  if (!r.ok) {
+    let msg = 'Voice synthesis failed'
+    try { msg = (await r.json()).error || msg } catch { /* non-JSON */ }
+    throw new Error(msg)
+  }
+  return URL.createObjectURL(await r.blob())
 }
 
 // ---- Calendário da temporada (tracks/calendario_2026s3.json) ----
@@ -172,7 +212,7 @@ export function getCalendar(): Promise<Calendar> {
   if (!_cal) {
     _cal = fetch('/api/calendar').then(async r => {
       const j = await r.json()
-      if (!r.ok || j.error) throw new Error(j.error || 'Falha ao carregar o calendário')
+      if (!r.ok || j.error) throw new Error(j.error || 'Failed to load the calendar')
       return j as Calendar
     })
     _cal.catch(() => { _cal = null })  // permite tentar de novo num erro

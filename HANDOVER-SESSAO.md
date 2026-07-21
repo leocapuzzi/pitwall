@@ -115,6 +115,30 @@ sem telemetria; samples quebrados). Agora as MINHAS voltas do G61 viram sessões
   Backend: `_lap_meta`/`lap_signals` cacheados (o boot pedia a mesma volta 2-3×) e
   `list_my_sessions` paralelizado (ThreadPoolExecutor). Boot frio: ~40 s → ~5 s.
 
+**Sessão 2026-07-20 (parte 6) — VOZ do engenheiro (KittenTTS) + APP TODO EM INGLÊS:**
+Pedido do Leo: usar o KittenTTS como voz do engenheiro. Como é só inglês, o app inteiro
+passou para inglês (UI + textos do motor + coach).
+- ✅ **Voz (offline):** `src/tts.py` (KittenTTS nano ONNX, ~25 MB, CPU; voz `expr-voice-2-m`,
+  trocável em secrets.toml `tts_voice`). PEGADINHA no Windows: além de `EspeakWrapper.set_library`,
+  é OBRIGATÓRIO setar `ESPEAK_DATA_PATH`/`PHONEMIZER_ESPEAK_LIBRARY` do espeakng_loader —
+  sem o data path o espeak-ng ABORTA o processo (matava o uvicorn). Endpoints
+  `GET /api/tts/status` e `POST /api/tts {text}` → WAV 24 kHz. Carrega 1× (~2 s), ~0,6-1,5 s/frase.
+- ✅ **Chat com voz:** AIEngineer fala cada resposta do coach (auto-speak com toggle
+  "Voice on/off" + botão de alto-falante por bolha; para o áudio anterior ao tocar outro).
+  Validado no app: coach respondeu em inglês e o /api/tts devolveu audio/wav em 613 ms.
+  (Autoplay do 1º áudio pode exigir 1 clique — política do browser; o botão resolve.)
+- ✅ **Tradução EN completa** (6 subagentes p/ as telas + edições diretas): todas as 6 telas,
+  componentes (SessionMenu/SettingsMenu/PodPicker/Chrome/DriverPod), libs (api/useSession),
+  e o BACKEND que gera texto: `webdata` (labels refName/referencia/compSub, erros),
+  `signatures._coach` + `_FLAG_TXT`, `coaching._RX` + insight what/phase (agora 'entry'/'exit'),
+  `garage61` (erros), `coach.py` persona (+ regra de texto puro). Corner name default
+  virou **"T{n}"** (era "Curva {n}") em track_model + corners. Requirements: +kittentts,
+  soundfile, espeakng-loader. Deps já instaladas no venv.
+- ⚠️ corners.py tem `_coach`/`corner_table` LEGADOS em PT — NÃO chegam à UI (o vivo é
+  signatures.py); deixados como estão. Comentários de código seguem em PT (intencional).
+- Pendente/refino: título do app e textos de marca; revisar frases longas do coach no ar
+  com dados reais (a sessão de teste era virtual G61 = delta zero).
+
 **Sessão 2026-07-20 (parte 4) — 7 PISTAS CRIADAS a partir do Garage61 + carro no picker:**
 - 🐛 Os mapas das sessões virtuais degradavam ("traçado = linha do carro, escala errada")
   porque só Winton tinha geometria criada. Causa raiz resolvida: **`tools/nova_pista_g61.py`
@@ -134,6 +158,25 @@ sem telemetria; samples quebrados). Agora as MINHAS voltas do G61 viram sessões
   em cp1252 e explode com acentos do output → `encoding="utf-8", errors="replace"`.
 - Quando vier um .ibt local dessas pistas, rodar `nova_pista.py <pista> --force` promove
   a referência p/ a volta local (e refaz OSM+oficial).
+
+**Sessão 2026-07-20 (parte 5) — COACH DE IA LIGADO (Grok/xAI) no chat do AI Engineer:**
+Mudança de rumo da Fase 3: o Leo trouxe uma chave da API do xAI (o plano MAX/Agent SDK
+morreu). Design original mantido: IA = só a VOZ; o motor determinístico mede tudo.
+- ✅ `secrets.toml`: `grok_api_key` (preenchida pelo Leo) + `grok_model` opcional
+  (padrão `grok-4.20-0309-non-reasoning` — rápido p/ chat; lineup em /v1/models).
+- ✅ `src/coach.py` (novo): persona engenheiro de pista + regras (só números do JSON,
+  máx 2-3 pontos, 2-6 frases, TEXTO PURO sem markdown) → POST api.x.ai/v1/chat/completions.
+- ✅ `server.py`: `GET /api/chat/status` e `POST /api/chat {facts, messages}` (histórico
+  limitado a 12 msgs, 4k chars cada).
+- ✅ `AIEngineer.tsx`: `buildFacts(payload)` monta os fatos DO QUE ESTÁ NA TELA (contexto
+  A/B, scorecard com nota de escala 0..1, setores, análise por curva, insights, voltas)
+  — funciona com compare dos pods e sessão virtual do G61; `send()` roteia p/ o Grok
+  com fallback na análise local (templates) em erro/sem chave; chip "Grok" + "coach de
+  IA online" quando disponível.
+- ✅ Validado ponta a ponta NO APP (sessão Rudskogen): pergunta real → plano citando
+  coasting 4,5 s/volta, trail 0.233 e curvas C1-C10 do modelo. Resposta em texto puro.
+- Refinos futuros: streaming (SSE), `pitwall_pilotagem.md` como base RAG no system
+  prompt, e o debrief automático ao abrir a sessão (o design da Fase 3 previa).
 - `_novos-track-maps/` pode ser apagada quando o Leo quiser (tudo implantado; é só cópia).
 
 **Sessão 2026-06-12 (parte 4) — FLUIDEZ (tudo aprovado: "agora ficou top"):**

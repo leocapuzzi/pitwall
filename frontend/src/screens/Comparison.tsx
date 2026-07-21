@@ -55,12 +55,12 @@ function defaultSides(p: Payload): { A: Side; B: Side } {
   const tB = p.ref_time?.length === N ? p.ref_time : null
   return {
     A: {
-      label: p.contexto.referencia || 'Média', time: aSecs, ch: p.media,
+      label: p.contexto.referencia || 'Average', time: aSecs, ch: p.media,
       timeArr: tB ? tB.map((v, i) => v + (p.delta[i] || 0)) : null,
       line: p.racing_line_b ?? null, sectors: st.media,
     },
     B: {
-      label: 'Sua melhor', time: bSecs, ch: p.ref,
+      label: 'Your best', time: bSecs, ch: p.ref,
       timeArr: tB, line: p.racing_line, sectors: st.ref,
     },
   }
@@ -71,13 +71,13 @@ function sideFromLap(d: LapData): Side {
   // Volta de referência do Garage61: rotula pelo piloto (colega de equipe).
   if (d.source === 'garage61') {
     return {
-      label: d.driver || 'Referência', sub: 'Garage61', time: d.t, ch: d.ch,
+      label: d.driver || 'Reference', sub: 'Garage61', time: d.t, ch: d.ch,
       timeArr: d.time?.length ? d.time : null, line: d.line, sectors: d.sectors || [],
     }
   }
   const pi = parseIbtName(d.arquivo)
   return {
-    label: `Volta ${d.n}`, sub: pi.when ?? d.arquivo, time: d.t, ch: d.ch,
+    label: `Lap ${d.n}`, sub: pi.when ?? d.arquivo, time: d.t, ch: d.ch,
     timeArr: d.time?.length ? d.time : null, line: d.line, sectors: d.sectors || [],
   }
 }
@@ -159,7 +159,7 @@ function LapPicker({ side, payload, sessions, current, onApply, onDefault, onClo
     setBusy(true); setErr(null); setIdx(null)
     getLaps(path)
       .then(r => { if (!cancel) setIdx(r) })
-      .catch(e => { if (!cancel) setErr(e?.message || 'Falha ao listar voltas') })
+      .catch(e => { if (!cancel) setErr(e?.message || 'Failed to list laps') })
       .finally(() => { if (!cancel) setBusy(false) })
     return () => { cancel = true }
   }, [path, src])
@@ -171,7 +171,7 @@ function LapPicker({ side, payload, sessions, current, onApply, onDefault, onClo
     setBusy(true); setErr(null); setG61(null)
     getG61Laps(ctx.trackId, ctx.carId)
       .then(r => { if (!cancel) setG61(r) })
-      .catch(e => { if (!cancel) setErr(e?.message || 'Falha ao buscar no Garage61') })
+      .catch(e => { if (!cancel) setErr(e?.message || 'Failed to fetch from Garage61') })
       .finally(() => { if (!cancel) setBusy(false) })
     return () => { cancel = true }
   }, [src, ctx.trackId, ctx.carId])
@@ -179,7 +179,7 @@ function LapPicker({ side, payload, sessions, current, onApply, onDefault, onClo
   const pickG61 = async (row: { id: string }) => {
     setBusy(true); setErr(null)
     try { onApply(await getG61Lap(row.id, ctx.trackId ?? null, payload.setores)) }
-    catch (e: any) { setErr(e?.message || 'Falha ao carregar a volta'); setBusy(false) }
+    catch (e: any) { setErr(e?.message || 'Failed to load the lap'); setBusy(false) }
   }
 
   useEffect(() => {
@@ -199,7 +199,7 @@ function LapPicker({ side, payload, sessions, current, onApply, onDefault, onClo
     const l = idx?.laps[i]; if (!l || wrongTrack) return
     setBusy(true); setErr(null)
     try { onApply(await getLap(path, l.n)) }
-    catch (e: any) { setErr(e?.message || 'Falha ao carregar a volta'); setBusy(false) }
+    catch (e: any) { setErr(e?.message || 'Failed to load the lap'); setBusy(false) }
   }
 
   return createPortal(
@@ -207,8 +207,8 @@ function LapPicker({ side, payload, sessions, current, onApply, onDefault, onClo
       <div className="pw-modalcard pw-glass2 pw-pickcard" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <div className="pw-modalhead">
           <span className="mic"><Icon n="telem" s={18} /></span>
-          <b className="ttl">Escolher volta {side}</b>
-          <button className="pw-modalx" onClick={onClose} aria-label="Fechar">
+          <b className="ttl">Choose lap {side}</b>
+          <button className="pw-modalx" onClick={onClose} aria-label="Close">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
         </div>
@@ -219,49 +219,49 @@ function LapPicker({ side, payload, sessions, current, onApply, onDefault, onClo
             <div className="muted" style={{ fontSize: 12 }}>{(src === 'g61' ? g61?.track : idx?.pista) || ctx.pista}</div>
           </div>
           {src === 'local'
-            ? <select className="pw-picksess" value={path} onChange={e => setPath(e.target.value)} aria-label="Sessão">
+            ? <select className="pw-picksess" value={path} onChange={e => setPath(e.target.value)} aria-label="Session">
                 {compat.map(s => {
                   const pi = parseIbtName(s.file)
-                  return <option key={s.path} value={s.path}>{(pi.when || s.file) + (s.path === current ? ' · atual' : '')}</option>
+                  return <option key={s.path} value={s.path}>{(pi.when || s.file) + (s.path === current ? ' · current' : '')}</option>
                 })}
               </select>
-            : <span className="muted" style={{ fontSize: 12 }}>Melhor volta por piloto</span>}
+            : <span className="muted" style={{ fontSize: 12 }}>Best lap per driver</span>}
         </div>
         <div style={{ padding: '0 14px 6px' }}>
-          <SlideSeg options={['Minhas sessões', 'Garage61 (equipe)']}
-            value={src === 'local' ? 'Minhas sessões' : 'Garage61 (equipe)'}
-            onChange={v => setSrc(v === 'Garage61 (equipe)' ? 'g61' : 'local')} />
+          <SlideSeg options={['Local sessions', 'Garage61 (team)']}
+            value={src === 'local' ? 'Local sessions' : 'Garage61 (team)'}
+            onChange={v => setSrc(v === 'Garage61 (team)' ? 'g61' : 'local')} />
         </div>
         <div className="pw-pickbody">
-          {busy && <div className="pw-pickmsg">{src === 'g61' ? 'Buscando no Garage61…' : 'Carregando voltas…'}</div>}
+          {busy && <div className="pw-pickmsg">{src === 'g61' ? 'Fetching from Garage61…' : 'Loading laps…'}</div>}
           {!busy && err && <div className="pw-pickmsg redt">{err}</div>}
-          {!busy && !err && src === 'local' && wrongTrack && <div className="pw-pickmsg redt">Esta sessão é de OUTRA pista — só dá para comparar voltas da mesma pista.</div>}
+          {!busy && !err && src === 'local' && wrongTrack && <div className="pw-pickmsg redt">This session is from ANOTHER track — you can only compare laps from the same track.</div>}
           {!busy && !err && src === 'local' && idx && !wrongTrack && (
             idx.laps.length
               ? <LapTable laps={idx.laps} bestN={bestRow?.n} bestT={bestRow?.t} bestSec={bestSec} nSec={nSec} onSel={pick} />
-              : <div className="pw-pickmsg">Sessão sem voltas com tempo fechado.</div>
+              : <div className="pw-pickmsg">Session has no laps with a completed time.</div>
           )}
           {!busy && !err && src === 'g61' && g61 && (
             g61.laps.length
               ? <div className="pw-g61list">
                   {g61.laps.map(l => (
                     <button key={l.id} className="pw-g61row" disabled={!l.telemetry} onClick={() => l.telemetry && pickG61(l)}
-                      title={l.telemetry ? 'Usar esta volta' : 'Sem telemetria visível (piloto sem Pro)'}>
+                      title={l.telemetry ? 'Use this lap' : 'No visible telemetry (driver without Pro)'}>
                       <span className="pw-g61drv">{l.driver}</span>
                       <b className="num">{fmtClock(l.lapTime)}</b>
-                      {l.clean ? <span className="pw-g61tag ok">limpa</span> : <span className="pw-g61tag">suja</span>}
-                      {!l.telemetry && <span className="pw-g61tag">sem telemetria</span>}
+                      {l.clean ? <span className="pw-g61tag ok">clean</span> : <span className="pw-g61tag">dirty</span>}
+                      {!l.telemetry && <span className="pw-g61tag">no telemetry</span>}
                     </button>
                   ))}
                 </div>
-              : <div className="pw-pickmsg">Nenhuma volta de referência para este carro + pista no Garage61.</div>
+              : <div className="pw-pickmsg">No reference lap for this car + track on Garage61.</div>
           )}
         </div>
         <div className="pw-pickfoot">
           <button className="pw-set-reset" onClick={onDefault}>
-            Usar padrão ({side === 'A' ? 'média das limpas' : 'sua melhor'})
+            Use default ({side === 'A' ? 'average of clean laps' : 'your best'})
           </button>
-          <span className="pw-set-note">Clique numa volta para usá-la como {side}</span>
+          <span className="pw-set-note">Click a lap to use it as {side}</span>
         </div>
       </div>
     </div>,
@@ -454,8 +454,8 @@ export default function Comparison() {
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up)
   }, [scrub])
 
-  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Carregando sessão…</div>
-  if (error || !model || !payload) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'Sem dados'}</div>
+  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Loading session…</div>
+  if (error || !model || !payload) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'No data'}</div>
 
   const m = model, ctx = payload.contexto
   const t0 = tRef.current
@@ -480,7 +480,7 @@ export default function Comparison() {
             <div className="pw-carmeta">
               <span>{ctx.pista}</span>
               <span><Icon n="clock" s={12} sw={2} /> {ctx.suaMelhor}</span>
-              <span><Icon n="telem" s={12} sw={2} /> {ctx.voltasLimpas} limpas</span>
+              <span><Icon n="telem" s={12} sw={2} /> {ctx.voltasLimpas} clean</span>
             </div>
           </div>
           {/* resumo A / Δ / B (chevron abre o picker de volta de cada lado) */}
@@ -490,13 +490,13 @@ export default function Comparison() {
                 <span className="pw-sidelbl" style={{ color: 'var(--accent)', fontWeight: 600, minWidth: 0 }}>A · {m.A.label}{m.A.sub && <i className="pw-sidewhen">{m.A.sub}</i>}</span>
                 <span className="row center gap6" style={{ flex: 'none' }}>
                   <b className="num">{fmtClock(m.A.time)}</b>
-                  <button className="pw-sidechg" onClick={() => setPicker('A')} title="Trocar a volta A" aria-label="Trocar a volta A"><Icon n="chevD" s={12} sw={2.4} /></button>
+                  <button className="pw-sidechg" onClick={() => setPicker('A')} title="Change lap A" aria-label="Change lap A"><Icon n="chevD" s={12} sw={2.4} /></button>
                 </span>
               </div>
               <div className="row between">
                 <span className="dim" style={{ fontWeight: 600 }}>Δ total</span>
                 <span className="row center gap6">
-                  {(lapA || lapB) && <button className="pw-sidereset" onClick={() => { setLapA(null); setLapB(null) }} title="Voltar ao padrão (média vs melhor)">↺ padrão</button>}
+                  {(lapA || lapB) && <button className="pw-sidereset" onClick={() => { setLapA(null); setLapB(null) }} title="Back to default (average vs best)">↺ default</button>}
                   <b className={'num ' + (m.totalD >= 0 ? 'redt' : 'green')}>{sign(m.totalD)}s</b>
                 </span>
               </div>
@@ -504,7 +504,7 @@ export default function Comparison() {
                 <span className="purple pw-sidelbl" style={{ fontWeight: 600, minWidth: 0 }}>B · {m.B.label}{m.B.sub && <i className="pw-sidewhen">{m.B.sub}</i>}</span>
                 <span className="row center gap6" style={{ flex: 'none' }}>
                   <b className="num purple">{fmtClock(m.B.time)}</b>
-                  <button className="pw-sidechg" onClick={() => setPicker('B')} title="Trocar a volta B" aria-label="Trocar a volta B"><Icon n="chevD" s={12} sw={2.4} /></button>
+                  <button className="pw-sidechg" onClick={() => setPicker('B')} title="Change lap B" aria-label="Change lap B"><Icon n="chevD" s={12} sw={2.4} /></button>
                 </span>
               </div>
             </div>
@@ -513,7 +513,7 @@ export default function Comparison() {
           <div className="pw-seccmp pw-glass2" style={{ marginTop: 'auto', width: 286 }}>
             <div className="row between center" style={{ marginBottom: 6 }}>
               <span className="lbl">Sector Comparison</span>
-              <span className="muted" style={{ fontSize: 10.5 }}>clique p/ focar o mapa</span>
+              <span className="muted" style={{ fontSize: 10.5 }}>click to focus the map</span>
             </div>
             {m.secRows.map(r => {
               const loss = r.d > 0, w = Math.min(50, Math.abs(r.d) / maxAbsSec * 50)
@@ -539,7 +539,7 @@ export default function Comparison() {
         {/* PAINEL: delta acumulado + canais A vs B + player */}
         <div className="pw-telpanel pw-glass2">
           <div className="pw-telhead">
-            <span className="lbl">Delta acumulado · A vs B</span>
+            <span className="lbl">Cumulative delta · A vs B</span>
             <div className="row center gap8" style={{ color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 600 }}>
               <b className="num redt" style={{ fontSize: 14 }}><span ref={dValRef}>{sign(m.totalD, 3)}</span><i style={{ fontStyle: 'normal', color: 'var(--ink-3)', fontWeight: 500, fontSize: 10.5 }}> s</i></b>
               <span className="row center gap6"><span className="dot acc"></span>A · {m.A.label}</span>
@@ -600,7 +600,7 @@ export default function Comparison() {
                 <span className="dim">Delta:</span> <b className="num redt" ref={deltaRef}>+0.000</b>
                 <span className="dim">↔</span> <b className="num" ref={gapRef} style={{ color: 'var(--red)' }}>+0 m</b>
               </div>
-              <button className={'pw-switch' + (camB ? ' on' : '')} title="Câmera: alternar entre os dois carros" onClick={() => setCamB(v => !v)} aria-label="Alternar câmera"><i /></button>
+              <button className={'pw-switch' + (camB ? ' on' : '')} title="Camera: switch between the two cars" onClick={() => setCamB(v => !v)} aria-label="Switch camera"><i /></button>
               <SlideSeg options={['Time', 'Distance']} value={mode} onChange={setMode} />
             </div>
           </div>

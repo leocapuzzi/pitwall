@@ -971,6 +971,11 @@ body.fullmap #root{pointer-events:none}
 .pw-aichat .ap-suggest .chip{padding:4px 10px; font-size:11px}
 .pw-localtag{display:block; width:fit-content; font-size:8.5px; font-weight:800; letter-spacing:.09em; text-transform:uppercase;
   color:var(--accent); border:1px solid var(--accent-line); border-radius:5px; padding:1.5px 6px; margin-bottom:6px}
+/* engineer voice (TTS) — small speaker button in the corner of eng bubbles */
+.pw-speakbtn{display:inline-flex; align-items:center; justify-content:center; float:right; margin:-2px -2px 0 6px;
+  width:22px; height:22px; border-radius:6px; border:1px solid var(--line); background:transparent; cursor:pointer;
+  color:var(--ink-3); transition:color .15s, border-color .15s, background .15s}
+.pw-speakbtn:hover{color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft, rgba(0,0,0,.04))}
 
 @media (max-width:1380px){
   .pw-aiskills{grid-template-columns:repeat(2, 1fr)}

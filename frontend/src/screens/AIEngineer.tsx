@@ -4,7 +4,7 @@ import { useSession } from '../lib/useSession'
 import { fmtClock, parseLap } from '../lib/fmt'
 import { setPendingFocus } from '../lib/bus'
 import { projectTrackPair, type TrackPair } from '../lib/track'
-import type { Insight, Payload } from '../lib/api'
+import { getChatStatus, postChat, getTtsStatus, ttsUrl, type ChatStatus, type Insight, type Payload } from '../lib/api'
 
 // Race Engineer AI — "central de missão" do engenheiro (coração do produto).
 // TUDO real: plano de recuperação (delta da média vs melhor, decomposto nas top-3
@@ -49,8 +49,8 @@ function buildModel(p: Payload): Model {
     }
   })
   const s = p.scorecard || {}
-  const skills: Skill[] = ([['Freada', s.brake_aggression ?? 0], ['Trail braking', s.trail_overlap ?? 0],
-    ['Uso do grip', s.circle_use ?? 0], ['Rotação', Math.min(1, s.rotation_eff ?? 0)]] as [string, number][])
+  const skills: Skill[] = ([['Braking', s.brake_aggression ?? 0], ['Trail braking', s.trail_overlap ?? 0],
+    ['Grip use', s.circle_use ?? 0], ['Rotation', Math.min(1, s.rotation_eff ?? 0)]] as [string, number][])
     .map(([k, v]) => ({ k, score: Math.round(v * 100), grade: grade(v), color: gradeColor(v) }))
   const st = p.sectorTimes
   let piorSetor: string | null = null, piorSetorD = 0
@@ -85,37 +85,61 @@ function buildModel(p: Payload): Model {
   }
 }
 
-// Chat de ANÁLISE LOCAL: responde do relatório (templates com dados reais).
-// Sem IA — quando não reconhece a pergunta, diz isso com honestidade.
+// LOCAL ANALYSIS chat: answers from the report (templates with real data).
+// No AI — when it doesn't recognize the question, it says so honestly.
 function localAnswer(q: string, m: Model): string | null {
   const s = q.toLowerCase()
   const o = m.opps[0]
-  if (/coast|morto|desaceler/.test(s))
-    return `Você roda ${m.coastS.toFixed(1)}s por volta em coasting (sem freio nem acelerador). Encurtar a transição freio→acelerador é tempo de graça — mire <1s.`
-  if (/combust|fuel|tanque|gasolina|consumo/.test(s))
+  if (/coast|dead time|decel/.test(s))
+    return `You run ${m.coastS.toFixed(1)}s per lap coasting (no brake, no throttle). Shortening the brake→throttle transition is free time — aim for <1s.`
+  if (/fuel|tank|gas|consum/.test(s))
     return m.fuelPorVolta != null
-      ? `Consumo médio: ${m.fuelPorVolta.toFixed(2)} L/volta${m.voltasRestantes != null ? ` — com o combustível que sobrou dá para ~${m.voltasRestantes} voltas` : ''}.`
-      : 'Esta sessão não tem dados de combustível por volta.'
-  if (/consist|regular|constân/.test(s))
+      ? `Average consumption: ${m.fuelPorVolta.toFixed(2)} L/lap${m.voltasRestantes != null ? ` — with the fuel left you can do ~${m.voltasRestantes} laps` : ''}.`
+      : 'This session has no per-lap fuel data.'
+  if (/consist|steady|regular/.test(s))
     return m.sigma != null
-      ? `Sua consistência está em ${m.consist!.toFixed(0)}/100: σ de ${m.sigma.toFixed(2)}s nas ${m.nVoltas} voltas limpas (média ${m.avgClean != null ? fmtClock(m.avgClean) : '—'} vs melhor ${m.bestT != null ? fmtClock(m.bestT) : '—'}). ${m.consist! >= 80 ? 'Agrupamento forte — dá para atacar o tempo.' : m.consist! >= 55 ? 'Variação moderada: repetir a volta boa vale mais que arriscar a volta perfeita.' : 'Voltas irregulares: estabilize as referências antes de buscar tempo.'}`
-      : 'Sem voltas limpas suficientes para medir consistência.'
-  if (/potencial|ótima|otima|alvo|optimal/.test(s))
+      ? `Your consistency is ${m.consist!.toFixed(0)}/100: σ of ${m.sigma.toFixed(2)}s across ${m.nVoltas} clean laps (avg ${m.avgClean != null ? fmtClock(m.avgClean) : '—'} vs best ${m.bestT != null ? fmtClock(m.bestT) : '—'}). ${m.consist! >= 80 ? 'Tight grouping — you can attack the time.' : m.consist! >= 55 ? 'Moderate variation: repeating the good lap is worth more than risking the perfect one.' : 'Irregular laps: lock in your references before chasing time.'}`
+      : 'Not enough clean laps to measure consistency.'
+  if (/potential|optimal|target|best possible/.test(s))
     return m.potencial != null
-      ? `Somando seus melhores setores desta sessão, a volta ótima é ${fmtClock(m.potencial)}${m.bestT != null ? ` — ${Math.max(0, m.bestT - m.potencial).toFixed(2)}s abaixo da sua melhor (${fmtClock(m.bestT)})` : ''}. Esse é o alvo realista.`
-      : 'Sem setores nesta sessão para calcular a volta ótima.'
-  if (/setor/.test(s))
+      ? `Adding up your best sectors this session, the optimal lap is ${fmtClock(m.potencial)}${m.bestT != null ? ` — ${Math.max(0, m.bestT - m.potencial).toFixed(2)}s under your best (${fmtClock(m.bestT)})` : ''}. That's the realistic target.`
+      : 'No sectors this session to compute the optimal lap.'
+  if (/sector/.test(s))
     return m.piorSetor
-      ? `O setor que mais custa é o ${m.piorSetor}: a média perde ${m.piorSetorD.toFixed(2)}s para a sua melhor ali. ${o ? `Dentro dele, o ponto crítico é ${o.insight.corner} (${o.insight.phase}).` : ''}`
-      : 'Sem tempos de setor nesta sessão.'
-  if (/onde|perd|perc|ganh|oportun|curva|tempo/.test(s) && o)
-    return `Sua maior oportunidade é ${o.insight.corner}: ${o.insight.what} — custa +${o.cost.toFixed(2)}s por volta vs sua melhor. Correção: ${o.insight.fix}${m.opps[1] ? ` Depois vêm ${m.opps[1].insight.corner} (+${m.opps[1].cost.toFixed(2)}s)${m.opps[2] ? ` e ${m.opps[2].insight.corner} (+${m.opps[2].cost.toFixed(2)}s)` : ''}.` : ''}`
+      ? `The costliest sector is ${m.piorSetor}: the average loses ${m.piorSetorD.toFixed(2)}s to your best there. ${o ? `Within it, the critical point is ${o.insight.corner} (${o.insight.phase}).` : ''}`
+      : 'No sector times this session.'
+  if (/where|los|gain|opportun|turn|corner|time/.test(s) && o)
+    return `Your biggest opportunity is ${o.insight.corner}: ${o.insight.what} — costs +${o.cost.toFixed(2)}s per lap vs your best. Fix: ${o.insight.fix}${m.opps[1] ? ` Next come ${m.opps[1].insight.corner} (+${m.opps[1].cost.toFixed(2)}s)${m.opps[2] ? ` and ${m.opps[2].insight.corner} (+${m.opps[2].cost.toFixed(2)}s)` : ''}.` : ''}`
   return null
 }
 
 interface Msg { role: 'me' | 'eng'; text: string; local?: boolean }
 
-const SUGGESTS = ['Onde perco mais tempo?', 'Como está minha consistência?', 'Qual meu potencial?', 'E o combustível?']
+// FATOS da sessão na tela p/ o coach de IA (Grok): a IA só redige sobre isso —
+// nunca inventa medida (regra no system prompt do backend, src/coach.py).
+function buildFacts(p: Payload) {
+  const c = p.contexto
+  return {
+    context: {
+      track: c.pista, car: c.carro,
+      lapA_reference: { name: c.refName || 'Your best', time: c.suaMelhor, source: c.refSub || 'local session' },
+      lapB_comparison: { name: c.referencia, source: c.compSub || 'session average' },
+      delta_total_B_minus_A: c.deltaTotal,
+      lapsRecorded: c.voltasGravadas, lapsValid: c.voltasValidas, lapsClean: c.voltasLimpas,
+      final_fuel_liters: c.fuelFim,
+    },
+    scorecard: {
+      note: 'fractions 0..1 (1 = ideal), except coasting_total_s in seconds per lap',
+      ...p.scorecard,
+    },
+    sectors: p.sectorTimes,
+    per_corner_analysis: p.analise_curvas,
+    prioritized_insights: p.insights,
+    laps: (p.laps || []).map(l => ({ n: l.n, t: l.t, valid: l.valid, clean: l.clean, best: l.best, fuel_L: l.fuel })),
+  }
+}
+
+const SUGGESTS = ['Where do I lose the most time?', 'How is my consistency?', "What's my potential?", 'And the fuel?']
 
 // geometria + timing do replay da curva fixada
 interface XrayGeom {
@@ -146,6 +170,41 @@ export default function AIEngineer() {
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [draft, setDraft] = useState('')
   const [typing, setTyping] = useState(false)
+  const [ai, setAi] = useState<ChatStatus | null>(null)  // coach Grok configurado?
+  useEffect(() => { getChatStatus().then(setAi).catch(() => setAi({ available: false, model: null })) }, [])
+  // Engineer voice (KittenTTS, offline): status + current audio + which msg speaks
+  const [voice, setVoice] = useState(false)          // available?
+  const [speakOn, setSpeakOn] = useState(true)       // auto-speak new replies (user toggle)
+  const [speaking, setSpeaking] = useState<number | null>(null)  // index of msg being spoken
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const speakOnRef = useRef(speakOn); speakOnRef.current = speakOn
+  useEffect(() => { getTtsStatus().then(s => setVoice(s.available)).catch(() => setVoice(false)) }, [])
+
+  // Speak a message index: fetch the WAV, play it, track state. Stops any prior audio.
+  const speak = useCallback(async (idx: number, text: string) => {
+    try {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+      const url = await ttsUrl(text)
+      const a = new Audio(url); audioRef.current = a
+      setSpeaking(idx)
+      a.onended = a.onerror = () => { setSpeaking(s => (s === idx ? null : s)); URL.revokeObjectURL(url) }
+      await a.play()
+    } catch { setSpeaking(s => (s === idx ? null : s)) }
+  }, [])
+  const stopSpeak = useCallback(() => {
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+    setSpeaking(null)
+  }, [])
+  useEffect(() => () => { if (audioRef.current) audioRef.current.pause() }, [])
+  // Auto-speak the newest engineer reply (skips the static intro bubble).
+  const spokenUpto = useRef(0)
+  useEffect(() => {
+    if (!voice || !speakOnRef.current) { spokenUpto.current = msgs.length; return }
+    if (msgs.length <= spokenUpto.current) return
+    const last = msgs[msgs.length - 1]
+    spokenUpto.current = msgs.length
+    if (last && last.role === 'eng') void speak(msgs.length - 1, last.text)
+  }, [msgs, voice, speak])
   const [pin, setPin] = useState<number>(0)            // rank-1 da oportunidade fixada
   const [go, setGo] = useState(false)                  // dispara gauges/barras (1 render)
   const [typedDone, setTypedDone] = useState(false)
@@ -177,7 +236,7 @@ export default function AIEngineer() {
   const payloadRef = useRef<Payload | null>(null); payloadRef.current = payload
 
   const resumo = m
-    ? `Analisei suas ${m.nVoltas} voltas limpas: a média deixa ${m.perda.toFixed(2)}s por volta na pista vs sua melhor${m.opps[0] ? ` — e ${Math.round(m.topSum / Math.max(0.001, m.perda) * 100)}% disso mora em ${m.opps.length} curvas` : ''}${m.piorSetor ? `, quase tudo no ${m.piorSetor}` : ''}. Vamos buscar esse tempo.`
+    ? `I analyzed your ${m.nVoltas} clean laps: the average leaves ${m.perda.toFixed(2)}s per lap on track vs your best${m.opps[0] ? ` — and ${Math.round(m.topSum / Math.max(0.001, m.perda) * 100)}% of it lives in ${m.opps.length} corners` : ''}${m.piorSetor ? `, almost all in ${m.piorSetor}` : ''}. Let's go get that time.`
     : ''
 
   // typewriter imperativo (sem re-render por tick)
@@ -400,22 +459,22 @@ export default function AIEngineer() {
     const minV = (v: number[], i0: number, i1: number) => { let mn = 1e9; for (let i = i0; i <= i1; i++) mn = Math.min(mn, v[i] ?? 1e9); return mn }
     const meanAbs = (a: number[], i0: number, i1: number) => { let s = 0; for (let i = i0; i <= i1; i++) s += Math.abs(a[i] || 0); return s / (i1 - i0 + 1) }
     const defs: SkillDef[] = [
-      { title: 'Pico de frenagem por curva', unit: tA ? 'm/s²' : '%', hi: true,
-        def: 'Quão perto do limite de frenagem do carro você chega: pico de desaceleração em cada zona de freio.',
+      { title: 'Peak braking per corner', unit: tA ? 'm/s²' : '%', hi: true,
+        def: "How close to the car's braking limit you get: peak deceleration in each brake zone.",
         f: (i0, i1, _ia, L) => peakDec(p[L].speed, L === 'ref' ? tA : tB, p[L].brake, i0, i1),
-        tip: ok => ok ? 'Frenagens perto do limite do carro — mantenha o padrão.' : 'Ataque o pedal com mais força no INÍCIO da frenagem (pico cedo, module depois) — as barras mostram onde a média freia mais fraco que a sua melhor.' },
-      { title: 'Trail braking por curva', unit: '%', hi: true,
-        def: 'Fração do turn-in com o freio ainda aplicado — carregar freio até o apex gera rotação.',
+        tip: ok => ok ? "Braking near the car's limit — keep the standard." : 'Hit the pedal harder at the START of braking (early peak, modulate after) — the bars show where the average brakes softer than your best.' },
+      { title: 'Trail braking per corner', unit: '%', hi: true,
+        def: 'Fraction of turn-in with the brake still applied — carrying brake to the apex generates rotation.',
         f: (i0, _i1, ia, L) => trailPct(p[L].steer, p[L].brake, i0, ia),
-        tip: ok => ok ? 'Bom overlap de freio no turn-in — siga assim.' : 'Não solte todo o freio antes de virar: carregue ~20–30% até perto do apex nas curvas onde a barra da média é curta.' },
-      { title: 'Velocidade mínima por curva', unit: 'km/h', hi: true,
-        def: 'Uso do grip visto pela velocidade que você carrega no ponto mais lento de cada curva.',
+        tip: ok => ok ? 'Good brake overlap at turn-in — keep it up.' : "Don't release all the brake before turning: carry ~20–30% to near the apex in the corners where the average bar is short." },
+      { title: 'Minimum speed per corner', unit: 'km/h', hi: true,
+        def: 'Grip use seen through the speed you carry at the slowest point of each corner.',
         f: (i0, i1, _ia, L) => minV(p[L].speed, i0, i1),
-        tip: ok => ok ? 'Você carrega bem a velocidade de curva.' : 'Há grip na mesa: nas curvas com barra menor, entre um tique mais rápido e confie no apoio — o carro aguenta vmin maior.' },
-      { title: 'Volante médio por curva', unit: '°', hi: false,
-        def: 'Eficiência de rotação: quanto MENOS volante para a mesma curva, melhor o carro gira (menos understeer).',
+        tip: ok => ok ? 'You carry corner speed well.' : 'Grip on the table: in the corners with a shorter bar, enter a touch faster and trust the platform — the car holds a higher vmin.' },
+      { title: 'Average steering per corner', unit: '°', hi: false,
+        def: 'Rotation efficiency: the LESS steering for the same corner, the better the car rotates (less understeer).',
         f: (i0, i1, _ia, L) => meanAbs(p[L].steer, i0, i1),
-        tip: ok => ok ? 'O carro gira com pouco volante — eficiente.' : 'Muito volante para a mesma curva: gere rotação na entrada (trail) em vez de adicionar esterço no meio.' },
+        tip: ok => ok ? 'The car rotates with little steering — efficient.' : 'Too much steering for the same corner: generate rotation on entry (trail) instead of adding lock mid-corner.' },
     ]
     const d = defs[skillSel]
     const rows = corners.map(c => {
@@ -434,7 +493,7 @@ export default function AIEngineer() {
     return { title: d.title, def: d.def, rows, max, worst, meanA, meanB, fmtV, tip: d.tip(m.skills[skillSel].score >= 70) }
   }, [payload, m, skillSel])
 
-  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Carregando sessão…</div>
+  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Loading session…</div>
   if (error || !payload || !m) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'Sem dados'}</div>
 
   const ctx = payload.contexto
@@ -444,13 +503,30 @@ export default function AIEngineer() {
 
   const send = (text: string) => {
     const q = (text || '').trim(); if (!q || typing) return
+    const hist = [...msgs, { role: 'me' as const, text: q }]
     setDraft(''); setMsgs(v => [...v, { role: 'me', text: q }]); setTyping(true)
+    // Coach de IA (Grok): a conversa vai com os FATOS da sessão; se a chamada
+    // falhar, cai na análise local (templates) como antes.
+    if (ai?.available && payload) {
+      const conv = hist.filter(x => !x.local)
+        .map(x => ({ role: x.role === 'me' ? 'user' as const : 'assistant' as const, content: x.text }))
+      postChat(buildFacts(payload), conv.slice(-12))
+        .then(t => setMsgs(v => [...v, { role: 'eng', text: t }]))
+        .catch(e => {
+          const local = localAnswer(q, m)
+          setMsgs(v => [...v, local
+            ? { role: 'eng', text: local, local: true }
+            : { role: 'eng', text: `The coach didn't respond just now (${e?.message || 'error'}). Try again in a moment.` }])
+        })
+        .finally(() => setTyping(false))
+      return
+    }
     timer.current = window.setTimeout(() => {
       setTyping(false)
       const local = localAnswer(q, m)
       setMsgs(v => [...v, local
         ? { role: 'eng', text: local, local: true }
-        : { role: 'eng', text: 'Essa eu ainda não respondo: o chat com IA de verdade entra em breve. Por enquanto eu falo do relatório desta sessão — me pergunte sobre perdas, setores, consistência, potencial ou combustível.' }])
+        : { role: 'eng', text: "I can't answer that one yet: set the Grok key in secrets.toml (grok_api_key) to switch on the AI coach. For now I speak from this session's report — ask me about losses, sectors, consistency, potential or fuel." }])
     }, 650)
   }
 
@@ -516,8 +592,8 @@ export default function AIEngineer() {
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="row center gap8" style={{ flexWrap: 'wrap' }}>
               <b style={{ fontFamily: 'var(--font-display)', fontSize: 16 }}>Race Engineer</b>
-              <span className="ap-live"><i className="ap-dot" />análise local ativa</span>
-              <span className="chip" style={{ padding: '2px 9px', fontSize: 10, cursor: 'default' }}>chat com IA em breve</span>
+              <span className="ap-live"><i className="ap-dot" />{ai?.available ? 'AI coach online' : 'local analysis active'}</span>
+              <span className="chip" style={{ padding: '2px 9px', fontSize: 10, cursor: 'default' }}>{ai?.available ? 'Grok' : 'AI chat soon'}</span>
             </div>
             <p className="pw-aisay"><span ref={sayRef} /><i className="caret" style={{ opacity: typedDone ? 0 : 1 }} /></p>
           </div>
@@ -525,11 +601,11 @@ export default function AIEngineer() {
         <div className="pw-aipills">
           <div className="pw-statpill pw-glass2">
             <span className="pw-kico" style={{ ['--c' as string]: 'var(--red)' }}><Icon n="telem" s={16} /></span>
-            <div><span className="kl">Δ médio / volta</span><b className="kv num redt">+{m.perda.toFixed(2)}s</b><span className="ks">média vs sua melhor</span></div>
+            <div><span className="kl">Avg Δ / lap</span><b className="kv num redt">+{m.perda.toFixed(2)}s</b><span className="ks">average vs your best</span></div>
           </div>
           <div className="pw-statpill pw-glass2">
             <span className="pw-kico" style={{ ['--c' as string]: 'var(--purple)' }}><Icon n="clock" s={16} /></span>
-            <div><span className="kl">Potencial (ótima)</span><b className="kv num purple">{m.potencial != null ? fmtClock(m.potencial) : '—'}</b><span className="ks">soma dos melhores setores</span></div>
+            <div><span className="kl">Potential (optimal)</span><b className="kv num purple">{m.potencial != null ? fmtClock(m.potencial) : '—'}</b><span className="ks">sum of best sectors</span></div>
           </div>
           <div className="pw-statpill pw-glass2">
             <span className="pw-kico" style={{ ['--c' as string]: 'var(--amber)' }}><Icon n="spark" s={16} /></span>
@@ -542,11 +618,11 @@ export default function AIEngineer() {
         {/* plano de recuperação */}
         <div className="pw-aiplan pw-glass2">
           <div className="row between center">
-            <span className="lbl">Plano de recuperação</span>
-            {m.consist != null && <span className="chip" style={{ padding: '2px 9px', fontSize: 10.5, cursor: 'default' }}>Consistência <b className="num" style={{ marginLeft: 4 }}>{m.consist.toFixed(0)}/100</b></span>}
+            <span className="lbl">Recovery plan</span>
+            {m.consist != null && <span className="chip" style={{ padding: '2px 9px', fontSize: 10.5, cursor: 'default' }}>Consistency <b className="num" style={{ marginLeft: 4 }}>{m.consist.toFixed(0)}/100</b></span>}
           </div>
           <div className="pw-aidelta redt">+<em ref={bigRef}>0.00</em><i>s / volta</i></div>
-          <span className="ks" style={{ color: 'var(--ink-3)', fontSize: 11 }}>o que a média deixa na pista vs sua melhor volta</span>
+          <span className="ks" style={{ color: 'var(--ink-3)', fontSize: 11 }}>what the average leaves on track vs your best lap</span>
           <div className="pw-aibar">
             {m.opps.map((o, i) => (
               <i key={o.rank} style={{ width: (o.cost / scaleBase * 100) + '%', transform: go ? 'scaleX(1)' : 'scaleX(0)', background: OPP_COLORS[i], transitionDelay: i * 0.12 + 's' }} />
@@ -565,12 +641,12 @@ export default function AIEngineer() {
                 <div className="gain redt">+{o.cost.toFixed(2)}s<div className="od" style={{ fontWeight: 500 }}>{o.insight.phase}</div></div>
               </button>
             ))}
-            {!m.opps.length && <p className="muted" style={{ fontSize: 13 }}>Sem oportunidades detectadas nesta sessão.</p>}
+            {!m.opps.length && <p className="muted" style={{ fontSize: 13 }}>No opportunities detected this session.</p>}
           </div>
           {m.opps.length > 0 && (
             <div className="pw-aiplanfoot">
               <Icon n="spark" s={13} /> Zerando as {m.opps.length} maiores: <b className="num green">−{Math.min(m.topSum, m.perda).toFixed(2)}s por volta</b>
-              {m.avgClean != null && <> → média projetada <b className="num green">{fmtClock(Math.max(m.bestT ?? 0, m.avgClean - m.topSum))}</b></>}
+              {m.avgClean != null && <> → projected average <b className="num green">{fmtClock(Math.max(m.bestT ?? 0, m.avgClean - m.topSum))}</b></>}
             </div>
           )}
         </div>
@@ -588,7 +664,7 @@ export default function AIEngineer() {
               <div className="pw-aixhead">
                 <div className="row center gap8" style={{ minWidth: 0 }}>
                   <b style={{ fontFamily: 'var(--font-display)', fontSize: 13.5, whiteSpace: 'nowrap' }}>{cur.insight.corner} · replay</b>
-                  <span className="pw-xleg"><i className="s" />melhor<i className="d" />média</span>
+                  <span className="pw-xleg"><i className="s" />best<i className="d" />average</span>
                 </div>
                 <b className="num redt" style={{ fontSize: 13.5 }}>+{cur.cost.toFixed(2)}s</b>
               </div>
@@ -620,7 +696,7 @@ export default function AIEngineer() {
                     </g>
                   ))}
                 </svg>
-                <span className="pw-aixgap"><i>gap média</i> <b className="num" data-xgap>—</b></span>
+                <span className="pw-aixgap"><i>avg gap</i> <b className="num" data-xgap>—</b></span>
                 <button className="pw-aixplay" onClick={() => setXplay(v => !v)} title={xplay ? 'Pausar replay' : 'Replay'}>
                   {xplay
                     ? <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.2" /><rect x="14" y="5" width="4" height="14" rx="1.2" /></svg>
@@ -628,8 +704,8 @@ export default function AIEngineer() {
                 </button>
               </div>
               <div className="pw-aixchips">
-                {xray.dIn != null && <span className="chip">entrada <b className={'num ' + (xray.dIn > 0 ? 'redt' : 'green')}>{sign2(xray.dIn)}</b></span>}
-                {xray.dOut != null && <span className="chip">saída <b className={'num ' + (xray.dOut > 0 ? 'redt' : 'green')}>{sign2(xray.dOut)}</b></span>}
+                {xray.dIn != null && <span className="chip">entry <b className={'num ' + (xray.dIn > 0 ? 'redt' : 'green')}>{sign2(xray.dIn)}</b></span>}
+                {xray.dOut != null && <span className="chip">exit <b className={'num ' + (xray.dOut > 0 ? 'redt' : 'green')}>{sign2(xray.dOut)}</b></span>}
                 {xray.vmin != null && <span className="chip">vmin <b className="num">{Math.round(xray.vmin)} km/h</b></span>}
                 <span className="chip">fase: <b>{cur.insight.phase}</b></span>
               </div>
@@ -649,15 +725,15 @@ export default function AIEngineer() {
               </div>
               <div className="pw-aipin">
                 <p style={{ margin: '0 0 9px' }}>
-                  <b style={{ color: 'var(--ink-2)' }}>O quê:</b> {cur.insight.what}<br />
-                  <b style={{ color: 'var(--ink-2)' }}>Por quê:</b> {cur.insight.why}<br />
+                  <b style={{ color: 'var(--ink-2)' }}>What:</b> {cur.insight.what}<br />
+                  <b style={{ color: 'var(--ink-2)' }}>Why:</b> {cur.insight.why}<br />
                   <b style={{ color: 'var(--ink-2)' }}>Corrigir:</b> {cur.insight.fix}<br />
                   <b style={{ color: 'var(--ink-2)' }}>Validar:</b> {cur.insight.validate}</p>
                 <button className="chip" onClick={() => openInTelemetry(cur)}><Icon n="telem" s={12} /> Abrir trecho na Telemetry</button>
               </div>
             </div>
           ) : (
-            <p className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>Sem oportunidades para detalhar nesta sessão.</p>
+            <p className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>No opportunities to detail this session.</p>
           )}
         </div>
 
@@ -669,7 +745,7 @@ export default function AIEngineer() {
                 const R = 24, C = 2 * Math.PI * R
                 return (
                   <button key={sk.k} type="button" className={'pw-gauge' + (skillSel === i ? ' on' : '')}
-                    title={`${sk.k}: ${sk.score}/100 — clique para ver a evidência por curva`}
+                    title={`${sk.k}: ${sk.score}/100 — click to see per-corner evidence`}
                     onClick={() => setSkillSel(s => (s === i ? null : i))}>
                     <svg width="58" height="58" viewBox="0 0 58 58">
                       <circle cx="29" cy="29" r={R} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="4.5" />
@@ -696,13 +772,13 @@ export default function AIEngineer() {
                   </span>
                   <span className="pw-skchips">
                     <span><i className="sa" />melhor {evid.fmtV(evid.meanA)}</span>
-                    <span><i className="sb" />média {evid.fmtV(evid.meanB)}</span>
+                    <span><i className="sb" />avg {evid.fmtV(evid.meanB)}</span>
                   </span>
                 </div>
                 <div className="pw-skbars">
                   {evid.rows.map((r, i) => (
                     <div key={r.n} className={'pw-skcol' + (r.oppIdx >= 0 ? ' link' : '')}
-                      title={`${r.name} — melhor ${evid.fmtV(r.a)} · média ${evid.fmtV(r.b)}${r.oppIdx >= 0 ? ' · clique p/ abrir no replay' : ''}`}
+                      title={`${r.name} — best ${evid.fmtV(r.a)} · avg ${evid.fmtV(r.b)}${r.oppIdx >= 0 ? ' · click to open in replay' : ''}`}
                       style={{ ['--d' as string]: (i * 0.04) + 's' }}
                       onClick={r.oppIdx >= 0 ? () => setPin(r.oppIdx) : undefined}>
                       {evid.worst === i && <span className="pw-skworst" />}
@@ -720,18 +796,35 @@ export default function AIEngineer() {
           </div>
           <div className="pw-aichat pw-glass2">
             <div className="row between center" style={{ flex: 'none', marginBottom: 4 }}>
-              <span className="lbl">Chat com o engenheiro</span>
-              <span className="muted" style={{ fontSize: 10.5 }}>respostas do relatório · IA em breve</span>
+              <span className="lbl">Chat with the engineer</span>
+              <span className="row center gap8">
+                {voice && (
+                  <button className={'chip' + (speakOn ? ' solid' : '')} style={{ padding: '2px 9px', fontSize: 10, cursor: 'pointer', border: 0 }}
+                    onClick={() => { setSpeakOn(o => { if (o) stopSpeak(); return !o }) }}
+                    title={speakOn ? 'Engineer voice on — click to mute' : 'Engineer voice off — click to unmute'}>
+                    <Icon n={speakOn ? 'telem' : 'clock'} s={11} /> {speakOn ? 'Voice on' : 'Voice off'}
+                  </button>
+                )}
+                <span className="muted" style={{ fontSize: 10.5 }}>{ai?.available ? 'AI over the real report · Grok' : 'report answers · AI soon'}</span>
+              </span>
             </div>
             <div className="ap-thread" ref={scrollRef}>
               <div className="msg eng"><span className="av mascot"><img src="/assets/engineer-mascot.png" alt="Engineer" /></span>
-                <div className="bubble"><b>Engineer</b>O coach com IA entra em breve. Enquanto isso, eu respondo com o relatório REAL desta sessão — pergunte sobre <i>perdas, setores, consistência, potencial ou combustível</i>.</div></div>
+                <div className="bubble"><b>Engineer</b>{ai?.available
+                  ? <>AI coach online. I can see the REAL report for this session (corners, sectors, coaching) — ask me anything: <i>where I lose time, how to attack T3, a plan for the next race…</i></>
+                  : <>The AI coach is coming soon. Meanwhile, I answer from the REAL report of this session — ask about <i>losses, sectors, consistency, potential or fuel</i>.</>}</div></div>
               {msgs.map((msg, i) => (
                 <div key={i} className={'msg ' + (msg.role === 'me' ? 'me' : 'eng')}>
                   {msg.role === 'eng' && <span className="av mascot"><img src="/assets/engineer-mascot.png" alt="Engineer" /></span>}
                   <div className="bubble">
-                    {msg.role === 'eng' && (msg.local ? <span className="pw-localtag">análise local · do relatório</span> : <b>Engineer</b>)}
+                    {msg.role === 'eng' && (msg.local ? <span className="pw-localtag">local analysis · from report</span> : <b>Engineer</b>)}
                     {msg.text}
+                    {msg.role === 'eng' && voice && (
+                      <button className="pw-speakbtn" title={speaking === i ? 'Stop' : 'Play engineer voice'}
+                        onClick={() => (speaking === i ? stopSpeak() : speak(i, msg.text))}>
+                        <Icon n={speaking === i ? 'clock' : 'telem'} s={12} />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -741,8 +834,8 @@ export default function AIEngineer() {
               {SUGGESTS.map(sg => <button key={sg} className="chip" onClick={() => send(sg)}>{sg}</button>)}
             </div>
             <form className="chatinput ap-input" onSubmit={(e) => { e.preventDefault(); send(draft) }}>
-              <input placeholder={`Pergunte sobre a sessão em ${ctx.pista}…`} value={draft} onChange={(e) => setDraft(e.target.value)} />
-              <button type="submit" className="chip solid" style={{ padding: '7px 14px', border: 0, cursor: 'pointer' }}><Icon n="send" s={13} /> Enviar</button>
+              <input placeholder={`Ask about the session at ${ctx.pista}…`} value={draft} onChange={(e) => setDraft(e.target.value)} />
+              <button type="submit" className="chip solid" style={{ padding: '7px 14px', border: 0, cursor: 'pointer' }}><Icon n="send" s={13} /> Send</button>
             </form>
           </div>
         </div>

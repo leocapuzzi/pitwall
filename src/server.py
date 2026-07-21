@@ -13,10 +13,13 @@ from __future__ import annotations
 import os
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
+import coach
 import garage61
+import tts
 import webdata
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -132,6 +135,58 @@ def api_g61_lap(lapId: str, trackId: int | None = None, sectors: str | None = No
     try:
         secs = [float(s) for s in sectors.split(",") if s.strip()] if sectors else None
         return garage61.lap_payload(lapId, trackId, secs)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+class ChatBody(BaseModel):
+    messages: list[dict]  # [{"role": "user"|"assistant", "content": str}, ...]
+    facts: dict           # fatos da sessao na tela (montados pelo frontend)
+
+
+@app.get("/api/chat/status")
+def api_chat_status():
+    """O coach de IA (Grok) esta configurado? (chave no secrets.toml)"""
+    ok = coach.available()
+    return {"available": ok, "model": coach.model() if ok else None}
+
+
+class TtsBody(BaseModel):
+    text: str
+    speed: float = 1.0
+
+
+@app.get("/api/tts/status")
+def api_tts_status():
+    """Is the offline engineer voice (KittenTTS) available?"""
+    ok = tts.available()
+    return {"available": ok, "voice": tts.voice() if ok else None}
+
+
+@app.post("/api/tts")
+def api_tts(body: TtsBody):
+    """Synthesize the engineer's voice for `text` → WAV audio (offline, English)."""
+    if not tts.available():
+        return JSONResponse({"error": "KittenTTS not installed (pip install kittentts)."},
+                            status_code=400)
+    try:
+        wav = tts.synth_wav(body.text, body.speed)
+        return Response(content=wav, media_type="audio/wav")
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+@app.post("/api/chat")
+def api_chat(body: ChatBody):
+    """Chat do AI Engineer: IA redige sobre os FATOS medidos (nunca inventa)."""
+    if not coach.available():
+        return JSONResponse({"error": "Sem chave do Grok em secrets.toml (grok_api_key)."},
+                            status_code=400)
+    try:
+        msgs = [{"role": m["role"], "content": str(m.get("content", ""))[:4000]}
+                for m in body.messages
+                if m.get("role") in ("user", "assistant") and m.get("content")]
+        return {"text": coach.chat(msgs[-12:], body.facts)}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 

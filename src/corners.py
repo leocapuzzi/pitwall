@@ -80,7 +80,7 @@ def _regions_from_apex_idxs(v: np.ndarray, grid: np.ndarray, apexes: list[int],
         next_a = apexes[k + 1] if k < len(apexes) - 1 else n - 1
         i_entry = prev_a + int(np.argmax(v[prev_a:a + 1])) if a > prev_a else prev_a
         i_exit = a + int(np.argmax(v[a:next_a + 1])) if next_a > a else next_a
-        name = names[k] if names and k < len(names) else f"Curva {k + 1}"
+        name = names[k] if names and k < len(names) else f"T{k + 1}"
         regions.append(CornerRegion(
             n=k + 1, name=name, i_entry=i_entry, i_apex=a, i_exit=i_exit,
             entry_pct=float(grid[i_entry]), apex_pct=float(grid[a]),

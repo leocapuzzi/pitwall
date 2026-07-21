@@ -44,7 +44,7 @@ def available() -> bool:
 def _get(endpoint: str, **params) -> requests.Response:
     tok = _token()
     if not tok:
-        raise RuntimeError("Sem token do Garage61 em secrets.toml (garage61_token).")
+        raise RuntimeError("No Garage61 token in secrets.toml (garage61_token).")
     p = {k: v for k, v in params.items() if v is not None}
     return requests.get(_BASE + endpoint, headers={"Authorization": f"Bearer {tok}"},
                         params=p, timeout=60)
@@ -66,7 +66,7 @@ def _cars_by_iracing() -> dict[str, dict]:
 def _driver_name(d: dict) -> str:
     d = d or {}
     nome = " ".join(x for x in [d.get("firstName"), d.get("lastName")] if x).strip()
-    return nome or d.get("slug") or "Piloto"
+    return nome or d.get("slug") or "Driver"
 
 
 def _track_by_g61_id(gid) -> tuple[str | None, dict]:
@@ -196,7 +196,7 @@ def list_reference_laps(ir_track_id: int, ir_car_id: int | None = None,
     """
     g61t = _tracks_by_iracing().get(str(ir_track_id))
     if not g61t:
-        return {"error": "Esta pista ainda nao tem correspondente no Garage61.",
+        return {"error": "This track has no Garage61 counterpart yet.",
                 "track": None, "laps": []}
     params = {"tracks": g61t["id"], "limit": limit, "group": "driver"}
     car_name = None
@@ -232,7 +232,7 @@ def list_my_laps(ir_track_id: int, ir_car_id: int | None = None,
     """
     g61t = _tracks_by_iracing().get(str(ir_track_id))
     if not g61t:
-        return {"error": "Esta pista ainda nao tem correspondente no Garage61.",
+        return {"error": "This track has no Garage61 counterpart yet.",
                 "track": None, "laps": []}
     # O filtro correto e o literal drivers="me" (id/slug proprios devolvem vazio).
     params = {"tracks": g61t["id"], "limit": limit, "drivers": "me"}

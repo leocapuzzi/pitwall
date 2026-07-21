@@ -63,7 +63,7 @@ export default function SettingsMenu({ open, onClose }: { open: boolean; onClose
         <div className="pw-set-head">
           <div>
             <div className="pw-set-title">SETTINGS</div>
-            <div className="pw-set-sub">Ajustes do PitWall</div>
+            <div className="pw-set-sub">PitWall settings</div>
           </div>
           <button className="pw-set-x" onClick={onClose} aria-label="Fechar">
             <Icon n="x" s={15} />
@@ -76,15 +76,15 @@ export default function SettingsMenu({ open, onClose }: { open: boolean; onClose
         {MAIN.map((r, i) => <Slider key={r.k} row={r} value={p[r.k]} i={i + 1} />)}
 
         <div className="pw-set-sec" style={{ '--i': 7 } as React.CSSProperties}>
-          <span>FÍSICA DO VIDRO</span><i />
+          <span>GLASS PHYSICS</span><i />
         </div>
         {PHYS.map((r, i) => <Slider key={r.k} row={r} value={p[r.k]} i={i + 8} />)}
 
         <div className="pw-set-foot" style={{ '--i': 13 } as React.CSSProperties}>
           <button className="pw-set-reset" disabled={isDefault} onClick={resetGlassParams}>
-            Restaurar padrão
+            Restore default
           </button>
-          <span className="pw-set-note">Tempo real · salvo neste navegador</span>
+          <span className="pw-set-note">Real time · saved in this browser</span>
         </div>
       </div>
     </>

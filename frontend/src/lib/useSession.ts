@@ -50,8 +50,8 @@ async function boot() {
     for (const x of virtuais) {
       try { const p = await getSession(x.path); set({ payload: p, current: x.path, loading: false }); return } catch { /* */ }
     }
-    set({ error: 'Nenhuma sessão com voltas válidas', loading: false })
-  } catch (e: any) { set({ error: e?.message || 'Erro ao listar sessões', loading: false }) }
+    set({ error: 'No session with valid laps', loading: false })
+  } catch (e: any) { set({ error: e?.message || 'Error listing sessions', loading: false }) }
 }
 
 export async function loadSession(path: string) {
@@ -61,7 +61,7 @@ export async function loadSession(path: string) {
     const p = await getSession(path)
     try { sessionStorage.setItem(STORE_KEY, path) } catch { /* ignore */ }
     set({ payload: p, current: path, compare: null, loading: false })
-  } catch (e: any) { set({ error: e?.message || 'Erro ao carregar sessão', loading: false }) }
+  } catch (e: any) { set({ error: e?.message || 'Error loading session', loading: false }) }
 }
 
 // Comparação livre dos pods A/B: re-analisa o par no backend e troca o payload
@@ -104,7 +104,7 @@ export async function resetCompare() {
   try {
     const p = await getSession(state.current)
     set({ payload: p, compare: null, loading: false })
-  } catch (e: any) { set({ error: e?.message || 'Erro ao recarregar sessão', loading: false }) }
+  } catch (e: any) { set({ error: e?.message || 'Error reloading session', loading: false }) }
 }
 
 export function useSession() {

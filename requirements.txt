@@ -8,3 +8,6 @@ pydantic
 fastapi
 uvicorn
 svgpathtools
+kittentts
+soundfile
+espeakng-loader

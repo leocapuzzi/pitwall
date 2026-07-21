@@ -55,12 +55,12 @@ export function SessionStrip({ view, go, label, onSessions, sessOn }: {
     <div className="tabstrip">
       <div className="stab idle"><span>Waiting for session</span></div>
       <button className={'stab on pw-sessbtn' + (sessOn ? ' menuon' : '')} onClick={onSessions}
-        title="Escolher sessão" aria-label="Escolher sessão" aria-expanded={!!sessOn}>
+        title="Choose session" aria-label="Choose session" aria-expanded={!!sessOn}>
         <span className="dot acc"></span>
-        <span className="pw-sesslabel">{label || 'Sessão'}</span>
+        <span className="pw-sesslabel">{label || 'Session'}</span>
         <span className="x pw-sesschev"><Icon n="chevD" s={13} sw={2.2} /></span>
       </button>
-      <div className="add" onClick={onSessions} role="button" aria-label="Escolher sessão">
+      <div className="add" onClick={onSessions} role="button" aria-label="Choose session">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
       </div>
       {/* atalhos à direita (réplica GO Fast): stint / telemetria / lap */}

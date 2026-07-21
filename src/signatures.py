@@ -431,86 +431,86 @@ def compare_corner(sig_slow, sig_fast, region, delta_curve, length_m=None) -> di
 
 
 _FLAG_TXT = {
-    "lockup": "travou roda na freada",
-    "abs": "ABS atuou (freou além do limite)",
-    "understeer_ffb": "subesterço na entrada (dianteira não virou)",
-    "wheelspin": "patinou a traseira na saída",
-    "countersteer": "traseira saiu (contra-esterço), atrasou a tração",
-    "lift_coast": "tempo morto (sem freio nem acelerador)",
-    "kerb": "pegou a zebra",
-    "offtrack": "saiu da pista",
-    "early_apex": "apex cedo",
-    "line_tight": "linha mais fechada",
-    "line_wide": "linha mais aberta",
+    "lockup": "locked a wheel under braking",
+    "abs": "ABS engaged (braked past the limit)",
+    "understeer_ffb": "understeer on entry (front wouldn't turn)",
+    "wheelspin": "spun the rears on exit",
+    "countersteer": "rear stepped out (countersteer), delayed traction",
+    "lift_coast": "dead time (no brake, no throttle)",
+    "kerb": "caught the kerb",
+    "offtrack": "went off track",
+    "early_apex": "early apex",
+    "line_tight": "tighter line",
+    "line_wide": "wider line",
 }
 
 
 def _coach(dt, dt_entry, dt_exit, dv_min, dv_exit, d_brake, d_thr_on, d_rot,
            flags, fs, d_circle=None, d_under=None, wider=None, d_turnin=None) -> str:
-    """Frase de coaching: fase dominante + causas cruzadas, em PT-BR."""
+    """Coaching sentence: dominant phase + cross-referenced causes, in English."""
     if dt <= -_DT_SIG:
-        return f"Curva forte — você ganha {abs(dt):.2f}s aqui."
+        return f"Strong corner — you gain {abs(dt):.2f}s here."
     if abs(dt) < _DT_SIG:
-        return "Equilibrada — diferença pequena."
+        return "Balanced — small difference."
 
-    # Onde perdeu mais: entrada ou saida?
-    fase = ("na entrada" if dt_entry >= dt_exit + _DT_SIG else
-            "na saída" if dt_exit >= dt_entry + _DT_SIG else "no conjunto")
+    # Where did you lose most: entry or exit?
+    fase = ("on entry" if dt_entry >= dt_exit + _DT_SIG else
+            "on exit" if dt_exit >= dt_entry + _DT_SIG else "overall")
 
     motivos: list[str] = []
     entrada = dt_entry >= dt_exit
-    # Tracado (vale nas duas fases — entra cedo na lista por ser muito acionavel).
+    # Line (applies to both phases — comes early in the list, very actionable).
     if "line_tight" in flags:
-        motivos.append(f"linha ~{abs(wider)*100:.0f} cm mais fechada (raio menor — joga velocidade fora)")
+        motivos.append(f"line ~{abs(wider)*100:.0f} cm tighter (smaller radius — throws speed away)")
     elif "line_wide" in flags:
-        motivos.append(f"linha ~{abs(wider)*100:.0f} cm mais aberta que a referência")
+        motivos.append(f"line ~{abs(wider)*100:.0f} cm wider than the reference")
     if d_turnin is not None and d_turnin <= -_POS_SIG_M:
-        motivos.append(f"virou ~{abs(d_turnin):.0f} m antes (turn-in cedo)")
+        motivos.append(f"turned in ~{abs(d_turnin):.0f} m earlier (early turn-in)")
     elif d_turnin is not None and d_turnin >= _POS_SIG_M:
-        motivos.append(f"virou ~{d_turnin:.0f} m depois (turn-in tarde)")
+        motivos.append(f"turned in ~{d_turnin:.0f} m later (late turn-in)")
     understeer = ("understeer_ffb" in flags or (d_rot is not None and d_rot < -0.05)
                   or (d_under is not None and d_under > 0.20))
-    # Causas de ENTRADA
+    # ENTRY causes
     if entrada:
         if "lockup" in flags:
             w = fs.get("lockup_wheels")
-            motivos.append("travou " + ("/".join(w) if w else "a dianteira") + " na freada")
+            motivos.append("locked " + ("/".join(w) if w else "the front") + " under braking")
         if "abs" in flags:
             motivos.append(_FLAG_TXT["abs"])
         if understeer:
-            motivos.append("subesterço (dianteira não virou para o raio)")
+            motivos.append("understeer (front wouldn't turn to the radius)")
         if "early_apex" in flags:
-            motivos.append("apex cedo (entrou cedo, correu largo)")
+            motivos.append("early apex (turned in early, ran wide)")
         if dv_min is not None and dv_min <= -_V_SIG:
-            motivos.append(f"carregou {abs(dv_min):.0f} km/h a menos no ápice")
+            motivos.append(f"carried {abs(dv_min):.0f} km/h less at the apex")
         if d_brake is not None and d_brake <= -_POS_SIG_M:
-            motivos.append(f"freou ~{abs(d_brake):.0f} m antes")
-    # Causas de SAIDA
+            motivos.append(f"braked ~{abs(d_brake):.0f} m earlier")
+    # EXIT causes
     else:
         if "wheelspin" in flags:
             motivos.append(_FLAG_TXT["wheelspin"])
         if "countersteer" in flags:
-            motivos.append("traseira saiu na saída (contra-esterço)")
+            motivos.append("rear stepped out on exit (countersteer)")
         if "early_apex" in flags:
-            motivos.append("apex cedo forçou fechar o volante na saída")
+            motivos.append("early apex forced you to wind on steering at exit")
         if d_thr_on is not None and d_thr_on >= _POS_SIG_M:
-            motivos.append(f"voltou ao acelerador ~{d_thr_on:.0f} m depois")
+            motivos.append(f"back to throttle ~{d_thr_on:.0f} m later")
         if dv_exit is not None and dv_exit <= -_V_SIG:
-            motivos.append(f"saiu {abs(dv_exit):.0f} km/h mais devagar")
+            motivos.append(f"exited {abs(dv_exit):.0f} km/h slower")
         if dv_min is not None and dv_min >= _V_SIG:
-            motivos.append("entrou rápido demais e comprometeu a saída")
-    # Gerais (valem nas duas fases)
+            motivos.append("entered too fast and compromised the exit")
+    # General (both phases)
     if "lift_coast" in flags:
-        motivos.append("tempo morto (sem freio nem acelerador)")
+        motivos.append("dead time (no brake, no throttle)")
     if "offtrack" in flags:
-        motivos.append("saiu da pista")
-    # Rede de seguranca: grip sobrando (vetor dentro do circulo) explica perda difusa.
+        motivos.append("went off track")
+    # Safety net: grip left on the table (vector inside the circle) explains diffuse loss.
     if not motivos and d_circle is not None and d_circle <= -0.04:
-        motivos.append("deixou grip na mesa (não usou toda a aderência disponível)")
+        motivos.append("left grip on the table (didn't use all the available grip)")
 
-    cabeca = f"Perdeu {dt:.2f}s {fase}"
+    cabeca = f"Lost {dt:.2f}s {fase}"
     if not motivos:
-        return cabeca + " (causa difusa)."
+        return cabeca + " (diffuse cause)."
     return cabeca + ": " + "; ".join(motivos[:3]) + "."
 
 

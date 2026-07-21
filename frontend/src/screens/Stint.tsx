@@ -66,12 +66,12 @@ function buildModel(p: Payload): Model | null {
 }
 
 function lapTip(l: LapRow, isBest: boolean) {
-  const parts = [l.valid ? 'válida' : 'inválida']
-  if (l.clean) parts.push('limpa')
+  const parts = [l.valid ? 'valid' : 'invalid']
+  if (l.clean) parts.push('clean')
   if (l.pit) parts.push('pit/out lap')
-  if (isBest) parts.push('melhor do stint')
+  if (isBest) parts.push('best of stint')
   if (l.fuel != null) parts.push(l.fuel.toFixed(2) + ' L')
-  return 'Volta ' + l.n + ' · ' + parts.join(' · ')
+  return 'Lap ' + l.n + ' · ' + parts.join(' · ')
 }
 
 // Tabela de voltas (tela e popup compartilham; o popup vai sem a coluna de fuel;
@@ -226,8 +226,8 @@ export default function Stint() {
     return () => window.removeEventListener('keydown', onKey)
   }, [cmpOpen])
 
-  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Carregando sessão…</div>
-  if (error || !payload || !m) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'Sem voltas com tempo nesta sessão'}</div>
+  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Loading session…</div>
+  if (error || !payload || !m) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'No timed laps in this session'}</div>
 
   const ctx = payload.contexto
   lapSecsRef.current = parseLap(ctx.suaMelhor)
@@ -254,7 +254,7 @@ export default function Stint() {
   const optY = st.optimal != null ? y(st.optimal) : null
 
   const fuelTxt = st.fuelTotal != null && st.fuelPerLap != null
-    ? `${st.fuelTotal.toFixed(2)}L − ${st.fuelPerLap.toFixed(2)}L/volta` : null
+    ? `${st.fuelTotal.toFixed(2)}L − ${st.fuelPerLap.toFixed(2)}L/lap` : null
 
   return (
     <div className="tp-wrap pw-stint">
@@ -272,14 +272,14 @@ export default function Stint() {
             </div>
           </div>
           <div className="pw-carmeta">
-            <span title="Tempo em pista (soma das voltas)"><Icon n="clock" s={12} sw={2} /> {fmtDur(m.trackTime)}</span>
-            <span><Icon n="road" s={12} sw={2} /> {m.totalLaps} voltas</span>
-            <span><Icon n="telem" s={12} sw={2} /> {ctx.voltasLimpas} limpas</span>
+            <span title="Track time (sum of laps)"><Icon n="clock" s={12} sw={2} /> {fmtDur(m.trackTime)}</span>
+            <span><Icon n="road" s={12} sw={2} /> {m.totalLaps} laps</span>
+            <span><Icon n="telem" s={12} sw={2} /> {ctx.voltasLimpas} clean</span>
           </div>
         </div>
         <div className="pw-stintpods">
-          <DriverPod podRef={podA} on name="L. Capuzzi" time={fmtT(parseLap(ctx.suaMelhor))} sub={`melhor · V${bestSession?.n ?? '—'}`} onOpen={() => { setCmpMin(false); setCmpOpen(true) }} />
-          <DriverPod podRef={podB} name={ctx.referencia} time={m.avgClean != null ? fmtT(m.avgClean) : '—'} sub="média" />
+          <DriverPod podRef={podA} on name="L. Capuzzi" time={fmtT(parseLap(ctx.suaMelhor))} sub={`best · L${bestSession?.n ?? '—'}`} onOpen={() => { setCmpMin(false); setCmpOpen(true) }} />
+          <DriverPod podRef={podB} name={ctx.referencia} time={m.avgClean != null ? fmtT(m.avgClean) : '—'} sub="avg" />
         </div>
       </div>
 
@@ -287,13 +287,13 @@ export default function Stint() {
       <div className="pw-stintmain">
         <div className="pw-railcol">
           <div className="pw-rail pw-glass2 pw-stintrail">
-            <button title="Focar a melhor volta" onClick={() => { if (bestIdx >= 0) setSel(bestIdx) }}><Icon n="flag" s={15} /></button>
-            <button title="Abrir na Telemetry" onClick={() => window.dispatchEvent(new CustomEvent('pw:go', { detail: 'telemetry' }))}><Icon n="sliders" s={15} /></button>
-            <button title="Combustível" onClick={() => setShowFuel(s => !s)}><Icon n="fuel" s={15} /></button>
+            <button title="Focus best lap" onClick={() => { if (bestIdx >= 0) setSel(bestIdx) }}><Icon n="flag" s={15} /></button>
+            <button title="Open in Telemetry" onClick={() => window.dispatchEvent(new CustomEvent('pw:go', { detail: 'telemetry' }))}><Icon n="sliders" s={15} /></button>
+            <button title="Fuel" onClick={() => setShowFuel(s => !s)}><Icon n="fuel" s={15} /></button>
           </div>
           {showFuel && (
             <div className="pw-fuelchip pw-glass2 pw-stintfuel">
-              <Icon n="fuel" s={13} /> {st.fuelPerLap != null ? <>{st.fuelPerLap.toFixed(2)} L/volta{voltasRestantes != null ? ` · ~${voltasRestantes} voltas restantes` : ''}</> : 'sem dados de combustível'}
+              <Icon n="fuel" s={13} /> {st.fuelPerLap != null ? <>{st.fuelPerLap.toFixed(2)} L/lap{voltasRestantes != null ? ` · ~${voltasRestantes} laps remaining` : ''}</> : 'no fuel data'}
             </div>
           )}
         </div>
@@ -302,7 +302,7 @@ export default function Stint() {
           <div className="pw-sthead">
             <b className="pw-stttl">Stint {st.k}</b>
             <div className="pw-stmeta">
-              <span><Icon n="flag" s={13} sw={2} /> {st.laps.length} voltas</span>
+              <span><Icon n="flag" s={13} sw={2} /> {st.laps.length} laps</span>
               {fuelTxt && <span><Icon n="fuel" s={13} sw={2} /> {fuelTxt}</span>}
             </div>
           </div>
@@ -312,22 +312,22 @@ export default function Stint() {
             <div className="pw-kpi" style={{ ['--c' as string]: 'var(--accent)' }}>
               <span className="kt"><span className="pw-kico"><Icon n="clock" s={18} /></span><span className="kl">Fastest Lap</span></span>
               <b className="kv num">{st.best ? fmtT(st.best.t) : '—'}</b>
-              <span className="ks">{st.best ? `volta ${st.best.n}` : 'sem volta válida'}</span>
+              <span className="ks">{st.best ? `lap ${st.best.n}` : 'no valid lap'}</span>
             </div>
             <div className="pw-kpi" style={{ ['--c' as string]: 'var(--purple)' }}>
               <span className="kt"><span className="pw-kico"><Icon n="clock" s={18} /></span><span className="kl">Optimal Lap</span></span>
               <b className="kv num">{st.optimal != null ? fmtT(st.optimal) : '—'}</b>
-              <span className="ks">{st.optimal != null && st.best ? `−${Math.max(0, st.best.t - st.optimal).toFixed(2)}s vs melhor` : 'sem setores'}</span>
+              <span className="ks">{st.optimal != null && st.best ? `−${Math.max(0, st.best.t - st.optimal).toFixed(2)}s vs best` : 'no sectors'}</span>
             </div>
             <div className="pw-kpi" style={{ ['--c' as string]: 'var(--cyan)' }}>
-              <span className="kt"><span className="pw-kico"><Icon n="telem" s={18} /></span><span className="kl">Average (limpas)</span></span>
+              <span className="kt"><span className="pw-kico"><Icon n="telem" s={18} /></span><span className="kl">Average (clean)</span></span>
               <b className="kv num">{st.avg != null ? fmtT(st.avg) : '—'}</b>
               <span className="ks">{st.sigma != null ? `σ ${st.sigma.toFixed(2)}s` : '—'}</span>
             </div>
             <div className="pw-kpi acc" style={{ ['--c' as string]: 'var(--accent)' }}>
               <span className="kt"><span className="pw-kico"><Icon n="fuel" s={18} /></span><span className="kl">Average Fuel Usage</span></span>
               <b className="kv num">{st.fuelPerLap != null ? st.fuelPerLap.toFixed(2) + ' L' : '—'}</b>
-              <span className="ks">{st.fuelPerLap == null ? 'sem dados de combustível' : voltasRestantes != null ? `~${voltasRestantes} voltas de tanque` : 'por volta (sem pit)'}</span>
+              <span className="ks">{st.fuelPerLap == null ? 'no fuel data' : voltasRestantes != null ? `~${voltasRestantes} laps of fuel` : 'per lap (no pit)'}</span>
             </div>
           </div>
 
@@ -336,8 +336,8 @@ export default function Stint() {
             <div className="row between center" style={{ marginBottom: 2 }}>
               <span className="lbl">Average Laptime</span>
               <div className="row center" style={{ gap: 12 }}>
-                {st.consist != null && <span className="chip" style={{ padding: '3px 10px', fontSize: 11, cursor: 'default' }}>Consistência <b className="num" style={{ marginLeft: 5 }}>{st.consist.toFixed(0)}/100</b></span>}
-                {st.optimal != null && <span className="row center gap6" style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)' }}><span className="sp-key dash" style={{ borderColor: 'var(--purple)' }}></span>Ótima {fmtClock(st.optimal)}</span>}
+                {st.consist != null && <span className="chip" style={{ padding: '3px 10px', fontSize: 11, cursor: 'default' }}>Consistency <b className="num" style={{ marginLeft: 5 }}>{st.consist.toFixed(0)}/100</b></span>}
+                {st.optimal != null && <span className="row center gap6" style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)' }}><span className="sp-key dash" style={{ borderColor: 'var(--purple)' }}></span>Optimal {fmtClock(st.optimal)}</span>}
               </div>
             </div>
             <div className="sp-plot" onPointerLeave={() => setHover(null)}>
@@ -368,8 +368,8 @@ export default function Stint() {
               onClick={() => { setStintSel(i); setSel(null); setHover(null) }}>
               <b className="stn">Stint {s.k}</b>
               <span className="num purple"><Icon n="clock" s={12} sw={2} /> {s.best ? fmtT(s.best.t) : '—'}</span>
-              <span><Icon n="flag" s={12} sw={2} /> {s.laps.length} voltas</span>
-              {s.fuelTotal != null && s.fuelPerLap != null && <span><Icon n="fuel" s={12} sw={2} /> {s.fuelTotal.toFixed(2)}L − {s.fuelPerLap.toFixed(2)}L/volta</span>}
+              <span><Icon n="flag" s={12} sw={2} /> {s.laps.length} laps</span>
+              {s.fuelTotal != null && s.fuelPerLap != null && <span><Icon n="fuel" s={12} sw={2} /> {s.fuelTotal.toFixed(2)}L − {s.fuelPerLap.toFixed(2)}L/lap</span>}
             </button>
           ))}
         </div>
@@ -382,7 +382,7 @@ export default function Stint() {
             <div className="pw-modalhead">
               <span className="mic"><Icon n="wheel" s={20} /></span>
               <b className="ttl">Comparison 1</b>
-              <button className="pw-modalx" onClick={() => setCmpOpen(false)} aria-label="Fechar">
+              <button className="pw-modalx" onClick={() => setCmpOpen(false)} aria-label="Close">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
               </button>
             </div>
@@ -395,7 +395,7 @@ export default function Stint() {
               <div className="pw-stmeta">
                 <span className="purple" style={{ color: 'var(--purple)' }}><Icon n="clock" s={13} sw={2} /> <b className="num">{st.best ? fmtT(st.best.t) : '—'}</b></span>
                 {fuelTxt && <span><Icon n="fuel" s={13} sw={2} /> {fuelTxt}</span>}
-                <button className="pw-modalmin" onClick={() => setCmpMin(v => !v)} title={cmpMin ? 'Expandir' : 'Recolher'}>{cmpMin ? '+' : '−'}</button>
+                <button className="pw-modalmin" onClick={() => setCmpMin(v => !v)} title={cmpMin ? 'Expand' : 'Collapse'}>{cmpMin ? '+' : '−'}</button>
               </div>
             </div>
             {!cmpMin && (

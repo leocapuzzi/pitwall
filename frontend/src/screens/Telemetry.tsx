@@ -410,8 +410,8 @@ export default function Telemetry() {
     })
   }, [model, viewDefs, zoom])
 
-  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Carregando sessão…</div>
-  if (error || !model || !payload) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'Sem dados'}</div>
+  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Loading session…</div>
+  if (error || !model || !payload) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'No data'}</div>
 
   const m = model, ctx = payload.contexto
   const t0 = tRef.current
@@ -443,31 +443,31 @@ export default function Telemetry() {
             <div className="pw-carmeta">
               <span>{ctx.pista}</span>
               <span><Icon n="clock" s={12} sw={2} /> {ctx.suaMelhor}</span>
-              <span><Icon n="road" s={12} sw={2} /> {ctx.voltasGravadas} voltas</span>
-              <span><Icon n="telem" s={12} sw={2} /> {ctx.voltasLimpas} limpas</span>
+              <span><Icon n="road" s={12} sw={2} /> {ctx.voltasGravadas} laps</span>
+              <span><Icon n="telem" s={12} sw={2} /> {ctx.voltasLimpas} clean</span>
             </div>
           </div>
           <SlideSeg options={['Segments', 'Sectors']} value={view} onChange={(v) => { setView(v); setSegIdx(null) }} />
           <div className="pw-rail pw-glass2">
-            <button title="Voltar à largada" onClick={() => { setPlaying(false); tRef.current = 0; renderFrame(0, true) }}><Icon n="flag" s={15} /></button>
-            <button title="Reset zoom dos gráficos" onClick={() => applySeg(null)}><Icon n="sliders" s={15} /></button>
-            <button title="Combustível" onClick={() => setShowFuel(s => !s)}><Icon n="fuel" s={15} /></button>
+            <button title="Back to start/finish" onClick={() => { setPlaying(false); tRef.current = 0; renderFrame(0, true) }}><Icon n="flag" s={15} /></button>
+            <button title="Reset chart zoom" onClick={() => applySeg(null)}><Icon n="sliders" s={15} /></button>
+            <button title="Fuel" onClick={() => setShowFuel(s => !s)}><Icon n="fuel" s={15} /></button>
           </div>
           {showFuel && (
             <div className="pw-fuelchip pw-glass2">
-              <Icon n="fuel" s={13} /> {fuelPorVolta != null ? <>{fuelPorVolta.toFixed(2)} L/volta{ctx.fuelFim != null ? ` · ~${Math.floor(ctx.fuelFim / fuelPorVolta)} voltas restantes` : ''}</> : 'sem dados de combustível'}
+              <Icon n="fuel" s={13} /> {fuelPorVolta != null ? <>{fuelPorVolta.toFixed(2)} L/lap{ctx.fuelFim != null ? ` · ~${Math.floor(ctx.fuelFim / fuelPorVolta)} laps remaining` : ''}</> : 'no fuel data'}
             </div>
           )}
           {/* navegador de segmentos + tempos A/B */}
           <div className="pw-segnav pw-glass2">
             <div className="row center" style={{ gap: 8 }}>
-              <button className="pw-nav" onClick={() => stepSeg(-1)} aria-label="Anterior"><Icon n="chevL" s={13} /></button>
+              <button className="pw-nav" onClick={() => stepSeg(-1)} aria-label="Previous"><Icon n="chevL" s={13} /></button>
               <b className="pw-seglabel">{seg ? seg.label : 'All'}</b>
               <b className={'num ' + ((seg ? seg.d : m.totalD) >= 0 ? 'redt' : 'green')} style={{ fontSize: 12.5 }}>{sign(seg ? seg.d : m.totalD)}</b>
-              <button className="pw-nav" onClick={() => stepSeg(1)} aria-label="Próximo" style={{ marginLeft: 'auto' }}><Icon n="chevR" s={13} /></button>
+              <button className="pw-nav" onClick={() => stepSeg(1)} aria-label="Next" style={{ marginLeft: 'auto' }}><Icon n="chevR" s={13} /></button>
             </div>
             <div className="pw-segrows">
-              <div className="row between"><span style={{ color: 'var(--accent)', fontWeight: 600 }}>Sua melhor <Icon n="info" s={11} sw={2} /></span><b className="num">{ctx.suaMelhor}</b></div>
+              <div className="row between"><span style={{ color: 'var(--accent)', fontWeight: 600 }}>Your best <Icon n="info" s={11} sw={2} /></span><b className="num">{ctx.suaMelhor}</b></div>
               <div className="row between"><span className="purple" style={{ fontWeight: 600 }}>{ctx.referencia} <Icon n="info" s={11} sw={2} /></span><b className="num purple">{fmtClock(m.mediaSecs)}</b></div>
             </div>
           </div>
@@ -475,8 +475,8 @@ export default function Telemetry() {
 
         {/* PODS ao vivo — clicar abre o picker (local/Garage61 no A, média/Garage61 no B) */}
         <div className="pw-pods">
-          <DriverPod podRef={podA} on name={ctx.refName || 'Sua melhor'} time={ctx.suaMelhor} sub={ctx.refSub || 'ref'} onOpen={() => setPodPick('A')} openTitle="Escolher a sua volta (local ou Garage61)" />
-          <DriverPod podRef={podB} name={ctx.referencia} time={fmtClock(m.mediaSecs)} sub={ctx.compSub || 'média'} onOpen={() => setPodPick('B')} openTitle="Escolher a comparação (média ou Garage61)" />
+          <DriverPod podRef={podA} on name={ctx.refName || 'Your best'} time={ctx.suaMelhor} sub={ctx.refSub || 'ref'} onOpen={() => setPodPick('A')} openTitle="Choose your lap (local or Garage61)" />
+          <DriverPod podRef={podB} name={ctx.referencia} time={fmtClock(m.mediaSecs)} sub={ctx.compSub || 'avg'} onOpen={() => setPodPick('B')} openTitle="Choose the comparison (average or Garage61)" />
         </div>
         {podPick && (
           <PodPicker side={podPick} payload={payload} sessions={sessions} current={current}
@@ -494,43 +494,43 @@ export default function Telemetry() {
             <div className="utabs" style={{ border: 0, gap: 18 }}>
               <button className={panel === 'tel' ? 'on' : ''} onClick={() => setPanel('tel')}>Telemetry</button>
               <button className={panel === 'tyres' ? 'on' : ''} onClick={() => setPanel('tyres')}
-                disabled={!payload.tyres?.ref} title={payload.tyres?.ref ? undefined : 'Este carro não grava canais de pneu'}>Tyres</button>
+                disabled={!payload.tyres?.ref} title={payload.tyres?.ref ? undefined : 'This car does not log tyre channels'}>Tyres</button>
             </div>
             <div className="row center gap8" style={{ color: 'var(--ink-3)' }}>
               {panel === 'tel' && zoomed && <button className="chip" style={{ padding: '3px 9px' }} onClick={() => applySeg(null)}><Icon n="refresh" s={11} /> Reset zoom</button>}
               {panel === 'tel' && (
                 <button className={'chip pw-chcfgbtn' + (chCfg ? ' on' : '')} style={{ padding: '3px 9px' }}
-                  onClick={() => setChCfg(v => !v)} title="Mostrar/ocultar e reordenar canais">
-                  <Icon n="sliders" s={11} /> Canais
+                  onClick={() => setChCfg(v => !v)} title="Show/hide and reorder channels">
+                  <Icon n="sliders" s={11} /> Channels
                 </button>
               )}
-              <span className="tp-leg"><span className="dot acc" />Melhor</span>
-              <span className="tp-leg"><span className="tp-dash" />Média</span>
+              <span className="tp-leg"><span className="dot acc" />Best</span>
+              <span className="tp-leg"><span className="tp-dash" />Average</span>
             </div>
           </div>
           {chCfg && panel === 'tel' && (
             <div className="pw-chcfg pw-glass2">
               <div className="pw-tycal-head">
-                <span>CANAIS</span>
-                <button className="pw-set-x" onClick={() => setChCfg(false)} aria-label="Fechar"><Icon n="x" s={13} /></button>
+                <span>CHANNELS</span>
+                <button className="pw-set-x" onClick={() => setChCfg(false)} aria-label="Close"><Icon n="x" s={13} /></button>
               </div>
               {[...m.defs].sort((a, b) => chPrefs.order.indexOf(a.kind) - chPrefs.order.indexOf(b.kind)).map((d, i, arr) => {
                 const hidden = chPrefs.hidden.includes(d.kind)
                 const lastVisible = !hidden && arr.length - chPrefs.hidden.length <= 1
                 return (
                   <div className={'pw-chcfg-row' + (hidden ? ' off' : '')} key={d.kind}>
-                    <button className="mv" onClick={() => moveChannel(d.kind, -1)} disabled={i === 0} aria-label="Subir"><Icon n="chevD" s={11} sw={2.4} /></button>
-                    <button className="mv dn" onClick={() => moveChannel(d.kind, 1)} disabled={i === arr.length - 1} aria-label="Descer"><Icon n="chevD" s={11} sw={2.4} /></button>
+                    <button className="mv" onClick={() => moveChannel(d.kind, -1)} disabled={i === 0} aria-label="Move up"><Icon n="chevD" s={11} sw={2.4} /></button>
+                    <button className="mv dn" onClick={() => moveChannel(d.kind, 1)} disabled={i === arr.length - 1} aria-label="Move down"><Icon n="chevD" s={11} sw={2.4} /></button>
                     <span className="nm" style={{ color: d.color }}>{d.name}</span>
                     <button className={'pw-switch' + (!hidden ? ' on' : '')} onClick={() => toggleChannel(d.kind)}
-                      disabled={lastVisible} title={lastVisible ? 'Pelo menos um canal visível' : (hidden ? 'Mostrar' : 'Ocultar')} aria-label="Visível"><i /></button>
+                      disabled={lastVisible} title={lastVisible ? 'At least one channel visible' : (hidden ? 'Show' : 'Hide')} aria-label="Visible"><i /></button>
                   </div>
                 )
               })}
               <div className="pw-tycal-foot">
                 <button className="pw-set-reset" onClick={resetChannelPrefs}
-                  disabled={chPrefs.hidden.length === 0 && chPrefs.order.join() === CHANNEL_ORDER.join()}>Padrão</button>
-                <span className="pw-set-note">Ordem e visibilidade · salvo neste navegador</span>
+                  disabled={chPrefs.hidden.length === 0 && chPrefs.order.join() === CHANNEL_ORDER.join()}>Default</button>
+                <span className="pw-set-note">Order and visibility · saved in this browser</span>
               </div>
             </div>
           )}
@@ -555,7 +555,7 @@ export default function Telemetry() {
                           <g key={b}>
                             <rect data-tyb={`${src}-${k}-${b}`} x={bx} y={wb.y} width={BW} height={L.h} rx={3}
                               fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" strokeWidth="1">
-                              <title>{`${k.toUpperCase()} · banda ${b === 'o' ? 'EXTERNA' : b === 'm' ? 'do MEIO' : 'INTERNA'}`}</title>
+                              <title>{`${k.toUpperCase()} · ${b === 'o' ? 'OUTER' : b === 'm' ? 'MID' : 'INNER'} band`}</title>
                             </rect>
                             <text className="pw-tytemps" x={bx + BW / 2} y={wb.y + L.h / 2 + 4.5} textAnchor="middle">
                               <tspan data-ty={`${src}-${k}-${b}`}>—</tspan>
@@ -573,7 +573,7 @@ export default function Telemetry() {
                   <div className="pw-tycarbox" key={src}>
                     <div className="pw-tytitle">
                       {src === 'ref'
-                        ? <><span className="dot acc" />Melhor · <b className="num">{ctx.suaMelhor}</b></>
+                        ? <><span className="dot acc" />Best · <b className="num">{ctx.suaMelhor}</b></>
                         : <><span className="tp-dash" />{ctx.referencia}{mediaSecs != null && <> · <b className="num">{fmtClock(mediaSecs)}</b></>}</>}
                     </div>
                     <svg className="pw-tycarsvg" viewBox="48 10 504 580">
@@ -584,24 +584,24 @@ export default function Telemetry() {
                 )
               })}
               <div className="pw-tylegend">
-                <span>Temperatura (°C) por banda — de fora p/ dentro: <b>EXT · MEIO · INT</b> · pressão (kPa) ao lado</span>
+                <span>Temperature (°C) per band — outer to inner: <b>OUT · MID · IN</b> · pressure (kPa) beside</span>
                 <button className={'chip pw-tycalbtn' + (tyCal ? ' on' : '')} onClick={() => setTyCal(v => !v)}>
-                  <Icon n="gear" s={11} /> Ajustar posição
+                  <Icon n="gear" s={11} /> Adjust position
                 </button>
               </div>
               {tyCal && (
                 <div className="pw-tycal pw-glass2">
                   <div className="pw-tycal-head">
-                    <span>POSIÇÃO DAS RODAS</span>
-                    <button className="pw-set-x" onClick={() => setTyCal(false)} aria-label="Fechar"><Icon n="x" s={13} /></button>
+                    <span>WHEEL POSITIONS</span>
+                    <button className="pw-set-x" onClick={() => setTyCal(false)} aria-label="Close"><Icon n="x" s={13} /></button>
                   </div>
                   {([
-                    { k: 'yF', label: 'Eixo diant. (alt.)', min: 30, max: 180 },
-                    { k: 'yR', label: 'Eixo tras. (alt.)', min: 320, max: 500 },
-                    { k: 'trackF', label: 'Bitola diant.', min: 50, max: 150 },
-                    { k: 'trackR', label: 'Bitola tras.', min: 50, max: 150 },
-                    { k: 'w', label: 'Largura roda', min: 28, max: 86 },
-                    { k: 'h', label: 'Altura roda', min: 30, max: 96 },
+                    { k: 'yF', label: 'Front axle (height)', min: 30, max: 180 },
+                    { k: 'yR', label: 'Rear axle (height)', min: 320, max: 500 },
+                    { k: 'trackF', label: 'Front track', min: 50, max: 150 },
+                    { k: 'trackR', label: 'Rear track', min: 50, max: 150 },
+                    { k: 'w', label: 'Wheel width', min: 28, max: 86 },
+                    { k: 'h', label: 'Wheel height', min: 30, max: 96 },
                   ] as Array<{ k: keyof TyreLayout; label: string; min: number; max: number }>).map(r => (
                     <div className="pw-tycal-row" key={r.k}>
                       <label>{r.label}</label>
@@ -613,9 +613,9 @@ export default function Telemetry() {
                   <div className="pw-tycal-foot">
                     <button className="pw-set-reset" onClick={resetTyreLayout}
                       disabled={(Object.keys(TYRE_DEFAULTS) as Array<keyof TyreLayout>).every(k => tyLay[k] === TYRE_DEFAULTS[k])}>
-                      Padrão
+                      Default
                     </button>
-                    <span className="pw-set-note">Quando ficar bom, me avisa — eu fixo como padrão</span>
+                    <span className="pw-set-note">When it looks right, tell me — I'll lock it as default</span>
                   </div>
                 </div>
               )}
@@ -655,12 +655,12 @@ export default function Telemetry() {
                 {playing ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.2" /><rect x="14" y="5" width="4" height="14" rx="1.2" /></svg> : <Icon n="play" s={14} fill="currentColor" />}
               </button>
               <b className="num tp-clock" ref={clockRef}>{fmtClock(t0 * m.lapSecs)}</b>
-              <button className="pw-replay" title="Replay do trecho" onClick={replaySeg}><Icon n="refresh" s={13} /></button>
+              <button className="pw-replay" title="Replay section" onClick={replaySeg}><Icon n="refresh" s={13} /></button>
               <div className="pw-delta">
                 <span className="dim">Delta:</span> <b className="num redt" ref={deltaRef}>+0.000</b>
                 <span className="dim">↔</span> <b className="num" ref={gapRef} style={{ color: 'var(--red)' }}>+0 m</b>
               </div>
-              <button className={'pw-switch' + (camB ? ' on' : '')} title="Câmera: alternar entre os dois carros" onClick={() => setCamB(v => !v)} aria-label="Alternar câmera"><i /></button>
+              <button className={'pw-switch' + (camB ? ' on' : '')} title="Camera: switch between the two cars" onClick={() => setCamB(v => !v)} aria-label="Switch camera"><i /></button>
               <SlideSeg options={['Time', 'Distance']} value={mode} onChange={setMode} />
             </div>
           </div>

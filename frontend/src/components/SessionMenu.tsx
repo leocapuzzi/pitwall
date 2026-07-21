@@ -25,13 +25,13 @@ export default function SessionMenu({ open, onClose }: { open: boolean; onClose:
     <>
       {open && <div className="pw-set-veil" onClick={onClose} />}
       <div className={'pw-sessmenu pw-glass2' + (open ? ' open' : '')} role="dialog"
-        aria-label="Escolher sessão" aria-hidden={!open}>
+        aria-label="Choose session" aria-hidden={!open}>
         <div className="pw-sess-head" style={{ '--i': 0 } as React.CSSProperties}>
           <div>
-            <div className="pw-set-title">SESSÕES</div>
-            <div className="pw-set-sub">{sessions.length} gravadas · mais recente primeiro</div>
+            <div className="pw-set-title">SESSIONS</div>
+            <div className="pw-set-sub">{sessions.length} recorded · newest first</div>
           </div>
-          <button className="pw-set-x" onClick={onClose} aria-label="Fechar"><Icon n="x" s={15} /></button>
+          <button className="pw-set-x" onClick={onClose} aria-label="Close"><Icon n="x" s={15} /></button>
         </div>
         <div className="pw-sess-list">
           {sessions.map((s, i) => {

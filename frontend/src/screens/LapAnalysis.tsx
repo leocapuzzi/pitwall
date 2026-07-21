@@ -244,8 +244,8 @@ export default function LapAnalysis() {
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up)
   }, [scrub])
 
-  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Carregando sessão…</div>
-  if (error || !model || !payload) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'Sem dados'}</div>
+  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Loading session…</div>
+  if (error || !model || !payload) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'No data'}</div>
 
   const m = model, ctx = payload.contexto
   const t0 = tRef.current
@@ -271,8 +271,8 @@ export default function LapAnalysis() {
           <div className="pw-carmeta">
             <span>{ctx.pista}</span>
             <span><Icon n="clock" s={12} sw={2} /> {ctx.suaMelhor}</span>
-            <span><Icon n="road" s={12} sw={2} /> {ctx.voltasGravadas} voltas</span>
-            <span><Icon n="telem" s={12} sw={2} /> {ctx.voltasLimpas} limpas</span>
+            <span><Icon n="road" s={12} sw={2} /> {ctx.voltasGravadas} laps</span>
+            <span><Icon n="telem" s={12} sw={2} /> {ctx.voltasLimpas} clean</span>
           </div>
         </div>
 
@@ -283,7 +283,7 @@ export default function LapAnalysis() {
               <div key={l.n} className="pw-leadrow">
                 <span className="num pos">{i + 1}</span>
                 <span className="av"><Icon n="wheel" s={12} /></span>
-                <span className="nm">Volta {l.n}</span>
+                <span className="nm">Lap {l.n}</span>
                 <b className="num tm">{i === 0 ? fmtClock(l.t) : '+' + (l.t - m.top2[0].t).toFixed(3)}</b>
               </div>
             ))}
@@ -292,13 +292,13 @@ export default function LapAnalysis() {
 
         {/* rail de ações (esquerda) */}
         <div className="pw-rail pw-glass2">
-          <button title="Voltar à largada" onClick={() => { setPlaying(false); tRef.current = 0; renderFrame(0, true) }}><Icon n="flag" s={15} /></button>
-          <button title="Abrir o trecho ativo na Telemetry" onClick={() => active != null && openSegment(active)}><Icon n="sliders" s={15} /></button>
-          <button title="Combustível" onClick={() => setShowFuel(s => !s)}><Icon n="fuel" s={15} /></button>
+          <button title="Back to start" onClick={() => { setPlaying(false); tRef.current = 0; renderFrame(0, true) }}><Icon n="flag" s={15} /></button>
+          <button title="Open active section in Telemetry" onClick={() => active != null && openSegment(active)}><Icon n="sliders" s={15} /></button>
+          <button title="Fuel" onClick={() => setShowFuel(s => !s)}><Icon n="fuel" s={15} /></button>
         </div>
         {showFuel && (
           <div className="pw-fuelchip pw-glass2">
-            <Icon n="fuel" s={13} /> {m.fuelPorVolta != null ? <>{m.fuelPorVolta.toFixed(2)} L/volta{ctx.fuelFim != null ? ` · ~${Math.floor(ctx.fuelFim / m.fuelPorVolta)} voltas restantes` : ''}</> : 'sem dados de combustível'}
+            <Icon n="fuel" s={13} /> {m.fuelPorVolta != null ? <>{m.fuelPorVolta.toFixed(2)} L/lap{ctx.fuelFim != null ? ` · ~${Math.floor(ctx.fuelFim / m.fuelPorVolta)} laps remaining` : ''}</> : 'no fuel data'}
           </div>
         )}
 
@@ -306,7 +306,7 @@ export default function LapAnalysis() {
         <div className="pw-seccmp pw-glass2">
           <div className="row between center" style={{ marginBottom: 9 }}>
             <span className="lbl">Sector Comparison</span>
-            <button className="pw-nav" title="Abrir na Telemetry" onClick={() => window.dispatchEvent(new CustomEvent('pw:go', { detail: 'telemetry' }))}><Icon n="ext" s={11} /></button>
+            <button className="pw-nav" title="Open in Telemetry" onClick={() => window.dispatchEvent(new CustomEvent('pw:go', { detail: 'telemetry' }))}><Icon n="ext" s={11} /></button>
           </div>
           <div className="pw-secgrid">
             <span></span>
@@ -326,8 +326,8 @@ export default function LapAnalysis() {
 
         {/* pods ao vivo (topo-direita) — clicar abre o picker global A/B */}
         <div className="pw-pods">
-          <DriverPod podRef={podA} on name={ctx.refName || 'Sua melhor'} time={ctx.suaMelhor} sub={ctx.refSub || `Volta ${m.top2[0]?.n ?? '—'}`} onOpen={() => setPodPick('A')} openTitle="Escolher a sua volta (local ou Garage61)" />
-          <DriverPod podRef={podB} name={ctx.referencia} time={fmtClock(m.lapSecs + m.totalD)} sub={ctx.compSub || 'média'} onOpen={() => setPodPick('B')} openTitle="Escolher a comparação (média ou Garage61)" />
+          <DriverPod podRef={podA} on name={ctx.refName || 'Your best'} time={ctx.suaMelhor} sub={ctx.refSub || `Lap ${m.top2[0]?.n ?? '—'}`} onOpen={() => setPodPick('A')} openTitle="Pick your lap (local or Garage61)" />
+          <DriverPod podRef={podB} name={ctx.referencia} time={fmtClock(m.lapSecs + m.totalD)} sub={ctx.compSub || 'average'} onOpen={() => setPodPick('B')} openTitle="Pick the comparison (average or Garage61)" />
         </div>
         {podPick && (
           <PodPicker side={podPick} payload={payload} sessions={sessions} current={current}
@@ -340,20 +340,20 @@ export default function LapAnalysis() {
           <MiniTrackMap className="pw-minimap pw-inflow" pair={m.pair} active={active}
             corners={m.rows.map(r => ({ n: r.n, apex: r.apex, d: r.d }))}
             onPick={openSegment} carDotRef={el => { mmDot.current = el }}
-            footer={activeRow ? { label: `Segmento T${activeRow.n}`, value: sign(activeRow.d), danger: activeRow.d > 0 } : undefined} />
+            footer={activeRow ? { label: `Segment T${activeRow.n}`, value: sign(activeRow.d), danger: activeRow.d > 0 } : undefined} />
           {activeRow && (
             <div className="pw-insight pw-glass2" key={activeRow.n}>
               <div className="row between center">
                 <span className="lbl">Insight · T{activeRow.n}</span>
                 <b className={'num ' + (activeRow.d > 0 ? 'redt' : 'green')} style={{ fontSize: 13 }}>{sign(activeRow.d)}s</b>
               </div>
-              <p>{activeRow.coach || 'Sem leitura de coaching para esta curva nesta sessão.'}</p>
+              <p>{activeRow.coach || 'No coaching read for this turn in this session.'}</p>
               <div className="row gap8" style={{ flexWrap: 'wrap', fontSize: 11 }}>
                 <span className="chip" style={{ padding: '2px 8px' }}>vmin <b className="num" style={{ marginLeft: 4 }}>{activeRow.vmin != null ? Math.round(activeRow.vmin) : '—'}</b></span>
-                <span className="chip" style={{ padding: '2px 8px' }}>entrada <b className={'num ' + (activeRow.dIn > 0 ? 'redt' : 'green')} style={{ marginLeft: 4 }}>{sign(activeRow.dIn)}</b></span>
-                <span className="chip" style={{ padding: '2px 8px' }}>saída <b className={'num ' + (activeRow.dOut > 0 ? 'redt' : 'green')} style={{ marginLeft: 4 }}>{sign(activeRow.dOut)}</b></span>
+                <span className="chip" style={{ padding: '2px 8px' }}>entry <b className={'num ' + (activeRow.dIn > 0 ? 'redt' : 'green')} style={{ marginLeft: 4 }}>{sign(activeRow.dIn)}</b></span>
+                <span className="chip" style={{ padding: '2px 8px' }}>exit <b className={'num ' + (activeRow.dOut > 0 ? 'redt' : 'green')} style={{ marginLeft: 4 }}>{sign(activeRow.dOut)}</b></span>
               </div>
-              <button className="chip" style={{ marginTop: 10 }} onClick={() => openSegment(activeRow.n)}><Icon n="telem" s={12} /> Abrir trecho na Telemetry</button>
+              <button className="chip" style={{ marginTop: 10 }} onClick={() => openSegment(activeRow.n)}><Icon n="telem" s={12} /> Open section in Telemetry</button>
             </div>
           )}
         </div>
@@ -370,12 +370,12 @@ export default function LapAnalysis() {
               {playing ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.2" /><rect x="14" y="5" width="4" height="14" rx="1.2" /></svg> : <Icon n="play" s={14} fill="currentColor" />}
             </button>
             <b className="num tp-clock" ref={clockRef}>{fmtClock(t0 * m.lapSecs)}</b>
-            <button className="pw-replay" title="Replay do segmento ativo" onClick={replaySeg}><Icon n="refresh" s={13} /></button>
+            <button className="pw-replay" title="Replay active segment" onClick={replaySeg}><Icon n="refresh" s={13} /></button>
             <div className="pw-delta">
               <span className="dim">Delta:</span> <b className="num redt" ref={deltaRef}>+0.000</b>
               <span className="dim">↔</span> <b className="num" ref={gapRef} style={{ color: 'var(--red)' }}>+0 m</b>
             </div>
-            <button className={'pw-switch' + (camB ? ' on' : '')} title="Câmera: alternar entre os dois carros" onClick={() => setCamB(v => !v)} aria-label="Alternar câmera"><i /></button>
+            <button className={'pw-switch' + (camB ? ' on' : '')} title="Camera: toggle between the two cars" onClick={() => setCamB(v => !v)} aria-label="Toggle camera"><i /></button>
             <SlideSeg options={['Time', 'Distance']} value={mode} onChange={setMode} />
           </div>
         </div>

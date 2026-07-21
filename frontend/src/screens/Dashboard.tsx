@@ -33,7 +33,7 @@ function SegDonut({ segments, center, sub, size = 162 }: { segments: [string, nu
   )
 }
 
-const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 function buildWeek(sessions: SessionInfo[]) {
   const now = new Date(); now.setHours(0, 0, 0, 0)
@@ -51,9 +51,9 @@ function buildModel(p: Payload, sessions: SessionInfo[]) {
   const ctx = p.contexto
   const total = ctx.voltasGravadas || 0, validas = ctx.voltasValidas || 0, limpas = ctx.voltasLimpas || 0
   const seg: [string, number, string][] = total ? [
-    ['Limpas', limpas / total * 100, 'var(--accent)'],
-    ['Válidas (sujas)', Math.max(0, validas - limpas) / total * 100, 'var(--cyan)'],
-    ['Descartadas', Math.max(0, total - validas) / total * 100, 'var(--ink-3)'],
+    ['Clean', limpas / total * 100, 'var(--accent)'],
+    ['Valid (dirty)', Math.max(0, validas - limpas) / total * 100, 'var(--cyan)'],
+    ['Discarded', Math.max(0, total - validas) / total * 100, 'var(--ink-3)'],
   ] : []
   const cut = Date.now() / 1000 - 30 * 86400
   const n30 = sessions.filter(s => s.mtime >= cut).length
@@ -64,8 +64,8 @@ export default function Dashboard() {
   const { payload, sessions, loading, error } = useSession()
   const m = useMemo(() => (payload ? buildModel(payload, sessions) : null), [payload, sessions])
 
-  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Carregando sessão…</div>
-  if (error || !payload || !m) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'Sem dados'}</div>
+  if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Loading session…</div>
+  if (error || !payload || !m) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'No data'}</div>
 
   const ctx = payload.contexto
   const maxCount = Math.max(1, ...m.week.map(d => d.count))
@@ -79,30 +79,30 @@ export default function Dashboard() {
       {/* topo: saudação + pills + iRating honesto */}
       <div className="pw-dashtop">
         <div className="pw-greet">
-          <span className="lbl">Bem-vindo de volta</span>
-          <b className="pw-greet-h">Pronto para acelerar?</b>
+          <span className="lbl">Welcome back</span>
+          <b className="pw-greet-h">Ready to push?</b>
         </div>
         <div className="pw-statpill pw-glass2">
           <span className="pw-kico" style={{ ['--c' as string]: 'var(--accent)' }}><Icon n="flag" s={17} /></span>
           <div>
-            <span className="kl">Voltas na sessão</span>
+            <span className="kl">Laps in session</span>
             <b className="kv num">{m.total}</b>
-            <span className="ks">{m.limpas} limpas · {m.validas} válidas</span>
+            <span className="ks">{m.limpas} clean · {m.validas} valid</span>
           </div>
         </div>
         <div className="pw-statpill pw-glass2">
           <span className="pw-kico" style={{ ['--c' as string]: 'var(--accent)' }}><Icon n="clock" s={17} /></span>
           <div>
-            <span className="kl">Sessões · 30 dias</span>
+            <span className="kl">Sessions · 30 days</span>
             <b className="kv num">{m.n30}</b>
-            <span className="ks">{sessions.length} no disco</span>
+            <span className="ks">{sessions.length} on disk</span>
           </div>
         </div>
         <div className="pw-iracing pw-glass2">
           <span className="pw-kico" style={{ ['--c' as string]: 'var(--purple)' }}><Icon n="diamond" s={16} /></span>
           <div>
-            <b>iRating &amp; Licenças</b>
-            <span>aguardando a API do iRacing — OAuth pausado; os cards ligam quando o acesso abrir</span>
+            <b>iRating &amp; Licenses</b>
+            <span>waiting for the iRacing API — OAuth paused; the cards light up when access opens</span>
           </div>
         </div>
       </div>
@@ -116,9 +116,9 @@ export default function Dashboard() {
           <div className="pw-heroinfo">
             <span className="kicker">LIGMA Racing · PitWall</span>
             <h1 className="pw-heroh">Performance Tools</h1>
-            <p className="pw-herosub">Telemetria e análise pós-sessão com dados reais do iRacing — abra o Race Engineer para destrinchar a última sessão.</p>
+            <p className="pw-herosub">Post-session telemetry and analysis with real iRacing data — open the Race Engineer to break down your last session.</p>
             <button className="chip solid" onClick={() => window.dispatchEvent(new CustomEvent('pw:go', { detail: 'telemetry' }))}>
-              Abrir Race Engineer <Icon n="chevR" s={13} />
+              Open Race Engineer <Icon n="chevR" s={13} />
             </button>
           </div>
           <img className="pw-herocar" src="/assets/ligma-car.png" alt="LIGMA Racing #64" />
@@ -131,7 +131,7 @@ export default function Dashboard() {
         <div className="pw-dashright">
           <div className="pw-dashrow">
             <div className="pw-dcard pw-glass2" style={{ flex: 1.15 }}>
-              <span className="lbl">Última sessão</span>
+              <span className="lbl">Last session</span>
               <div className="row center gap10" style={{ margin: '10px 0 2px' }}>
                 <span className="cbadge" style={{ width: 38, height: 38 }}><Icon n="car" s={18} /></span>
                 <div><b style={{ fontSize: 13.5, fontWeight: 800 }}>{ctx.carro}</b><div className="muted" style={{ fontSize: 11.5 }}>{ctx.pista}</div></div>
@@ -142,15 +142,15 @@ export default function Dashboard() {
                 </svg>
               </div>
               <div className="col" style={{ gap: 7 }}>
-                <div className="row between center"><span className="pw-drlbl">Melhor volta</span><b className="num" style={{ fontSize: 12.5 }}>{ctx.suaMelhor}</b></div>
-                <div className="row between center"><span className="pw-drlbl">Delta p/ média</span><b className="num redt" style={{ fontSize: 12.5 }}>{ctx.deltaTotal}</b></div>
+                <div className="row between center"><span className="pw-drlbl">Best lap</span><b className="num" style={{ fontSize: 12.5 }}>{ctx.suaMelhor}</b></div>
+                <div className="row between center"><span className="pw-drlbl">Delta to average</span><b className="num redt" style={{ fontSize: 12.5 }}>{ctx.deltaTotal}</b></div>
                 <div className="row between center"><span className="pw-drlbl">Leaderboard</span><b className="num dim" style={{ fontSize: 12.5 }}>— <i>API iRacing</i></b></div>
               </div>
             </div>
             <div className="pw-dcard pw-glass2" style={{ flex: 1 }}>
-              <span className="lbl">Voltas da sessão</span>
+              <span className="lbl">Session laps</span>
               <div style={{ display: 'grid', placeItems: 'center', flex: 1, margin: '4px 0' }}>
-                <SegDonut segments={m.seg} center={pctLimpas + '%'} sub="LIMPAS" size={148} />
+                <SegDonut segments={m.seg} center={pctLimpas + '%'} sub="CLEAN" size={148} />
               </div>
               <div className="col" style={{ gap: 8 }}>
                 {m.seg.map(([label, pct, color]) => (
@@ -164,12 +164,12 @@ export default function Dashboard() {
           </div>
           <div className="pw-dcard pw-glass2 pw-dweek">
             <div className="row between center" style={{ flex: 'none' }}>
-              <span className="lbl">Minha atividade semanal</span>
-              <span className="chip" style={{ cursor: 'default' }}>últimos 7 dias</span>
+              <span className="lbl">My weekly activity</span>
+              <span className="chip" style={{ cursor: 'default' }}>last 7 days</span>
             </div>
             <div className="pw-wkbars">
               {m.week.map((d, i) => (
-                <div key={i} className={'wk' + (i === 6 ? ' on' : '')} title={`${d.count} ${d.count === 1 ? 'sessão' : 'sessões'}`}>
+                <div key={i} className={'wk' + (i === 6 ? ' on' : '')} title={`${d.count} ${d.count === 1 ? 'session' : 'sessions'}`}>
                   <div className="slot"><i style={{ height: Math.max(8, d.count / maxCount * 100) + '%' }} /></div>
                   <span>{d.label}</span>
                 </div>

@@ -191,7 +191,7 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
     infos = A.split_laps(df)
     best = A.best_lap(infos)
     if best is None:
-        raise ValueError("Sessao sem voltas validas.")
+        raise ValueError("Session has no valid laps.")
     limpas = A.clean_laps(infos, max_off)
     tempo = {i.lap: i.lap_time for i in infos}
     grid = A.GRID
@@ -204,8 +204,8 @@ def build_session_payload(path: str, max_off: float = 1.07) -> dict:
 
     labels = {
         "suaMelhor": A.fmt_laptime(tempo[best]),
-        "referencia": f"Média ({len(limpas)} voltas)",
-        "refName": "Sua melhor", "refSub": "ref", "compSub": "média",
+        "referencia": f"Average ({len(limpas)} laps)",
+        "refName": "Your best", "refSub": "ref", "compSub": "avg",
     }
     return _assemble_payload(path, sessao, resumo, df, infos, best, limpas,
                              sig_fast, sig_slow, labels)
@@ -224,8 +224,8 @@ def build_g61_session_payload(lap_id: str) -> dict:
     resumo = G61.session_summary_for_lap(lap_id)
     labels = {
         "suaMelhor": A.fmt_laptime(meta["lapTime"]),
-        "referencia": "Comparar com…",
-        "refName": f"{meta['driver'] or 'Você'} (G61)", "refSub": "Garage61",
+        "referencia": "Compare against…",
+        "refName": f"{meta['driver'] or 'You'} (G61)", "refSub": "Garage61",
         "compSub": "Garage61",
     }
     return _assemble_payload(f"g61:{lap_id}", None, resumo, None, [], None, [],
@@ -267,32 +267,32 @@ def build_compare_payload(path: str, a: dict, b: dict, max_off: float = 1.07) ->
         if n is None:
             n = A.best_lap(inf)
             if n is None:
-                raise ValueError("Sessao escolhida nao tem volta valida.")
+                raise ValueError("The chosen session has no valid lap.")
         n = int(n)
         info = next((i for i in inf if i.lap == n), None)
         if info is None or not (np.isfinite(info.lap_time) and info.lap_time > 0):
-            raise ValueError(f"Volta {n} nao encontrada (ou sem tempo fechado).")
+            raise ValueError(f"Lap {n} not found (or no completed time).")
         # calibracao pela MELHOR da sessao de origem (estavel), como no build_lap_payload
         bb = A.best_lap(inf)
         signs = CAL.calibrate_signs(S.signals_from_laps(d, [bb], grid)) if bb is not None else None
         sig = S.signals_from_laps(d, [n], grid)
         sig = S.enrich(CAL.apply_signs(sig, signs) if signs is not None else sig)
         mesma = os.path.abspath(p) == os.path.abspath(path)
-        sub = f"V{n}" if mesma else f"V{n} · outra sessão"
-        return sig, float(info.lap_time), "Você", sub
+        sub = f"L{n}" if mesma else f"L{n} · other session"
+        return sig, float(info.lap_time), "You", sub
 
     def _resolve(desc: dict, lado: str):
         t = (desc or {}).get("type")
         if t == "media":
             if df is None:
-                raise ValueError("Sessao do Garage61 nao tem media — escolha uma volta.")
+                raise ValueError("A Garage61 session has no average — pick a lap.")
             if not limpas:
-                raise ValueError("A sessao base nao tem voltas limpas p/ compor a media.")
+                raise ValueError("The base session has no clean laps to build the average.")
             sig_best = S.signals_from_laps(df, [best], grid)
             signs = CAL.calibrate_signs(sig_best)
             sig = S.enrich(CAL.apply_signs(S.signals_from_laps(df, limpas, grid), signs))
             ttd = sig["time_to_dist"]
-            return sig, float(ttd[-1]), f"Média ({len(limpas)} voltas)", "média"
+            return sig, float(ttd[-1]), f"Average ({len(limpas)} laps)", "avg"
         if t == "local":
             return _local(desc)
         if t == "g61":
@@ -414,9 +414,9 @@ def _assemble_payload(path, sessao, resumo, df, infos, best, limpas,
             "arquivo": os.path.basename(path),
             "suaMelhor": labels["suaMelhor"],
             "referencia": labels["referencia"],
-            "refName": labels.get("refName", "Sua melhor"),
+            "refName": labels.get("refName", "Your best"),
             "refSub": labels.get("refSub", "ref"),
-            "compSub": labels.get("compSub", "média"),
+            "compSub": labels.get("compSub", "avg"),
             "deltaTotal": f"{float(delta[-1]):+.2f}s",
             "voltasGravadas": len(infos), "voltasValidas": len([i for i in infos if i.valid]),
             "voltasLimpas": len(limpas), "cornersSrc": corners_src,
@@ -479,7 +479,7 @@ def build_lap_payload(path: str, lap_n: int) -> dict:
     lap_n = int(lap_n)
     info = next((i for i in infos if i.lap == lap_n), None)
     if info is None or not (np.isfinite(info.lap_time) and info.lap_time > 0):
-        raise ValueError(f"Volta {lap_n} não encontrada (ou sem tempo fechado).")
+        raise ValueError(f"Lap {lap_n} not found (or no completed time).")
     grid = A.GRID
 
     # Sinais da volta; calibração de sinais (volante etc.) pela MELHOR da sessão,

@@ -37,4 +37,4 @@ def apex_pcts(model: dict) -> list[float]:
 def corner_names(model: dict) -> list[str]:
     """Rotulos das curvas: usa 'name' se houver, senao 'Curva N'."""
     cs = sorted(model.get("corners", []), key=lambda c: c.get("n", 0))
-    return [c.get("name") or f"Curva {c.get('n')}" for c in cs]
+    return [c.get("name") or f"T{c.get('n')}" for c in cs]

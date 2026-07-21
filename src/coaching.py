@@ -10,48 +10,48 @@ from __future__ import annotations
 
 # Correcao (piloto) + validacao por CAUSA — ancorado nos SIG-*/U-* do documento.
 _RX = {
-    "lockup": ("alivie a pressão no pico (threshold) e reduza o freio conforme adiciona "
-               "volante; não freie no pico já em curva (SIG-07)",
-               "a roda não colapsa mais abaixo de Speed na frenagem; sem travamento"),
-    "abs": ("freie logo ABAIXO do ponto em que o ABS dispara constantemente — use-o "
-            "como rede, não como muleta (GT3-04)",
-            "BrakeABSactive só em toques curtos no pico, não por trechos longos"),
-    "understeer": ("freie um pouco mais cedo/menos e segure mais o freio no turn-in (trail) "
-                   "para carregar a dianteira; NÃO adicione volante — passa do pico e piora (SIG-01)",
-                   "LatAccel volta a subir no turn-in com MENOS volante; índice de subesterço cai"),
-    "early_apex": ("atrase o turn-in e mire um apex mais TARDE; entre mais por fora e mais "
-                   "reto, abrindo o raio da saída (SIG-10 / U-LINE-03)",
-                   "V-min ocorre mais tarde; o volante ABRE na saída sem precisar aumentar"),
-    "wheelspin": ("progrida o acelerador mais suave e mais tarde; espere o carro apontar "
-                  "antes de pisar fundo (SIG-09 / U-ACC-01)",
-                  "roda traseira acompanha Speed (sem patinar); Δt da saída vira ≥0"),
-    "countersteer": ("reduza o que solta a traseira (menos trail na entrada / acelerador menos "
-                     "brusco) e devolva o volante assim que ela segurar (SIG-04/05)",
-                     "β e o contra-esterço somem nesse trecho; YawRate dentro do comandado"),
-    "lift_coast": ("espelhe a saída do freio com a entrada do volante e toque o acelerador "
-                   "mais cedo no apex — elimine o hiato (SIG-12 / U-INP-04)",
-                   "sem janela com Brake≈0 E Throttle≈0; o buraco do G-G na transição fecha"),
-    "offtrack": ("refaça a linha dentro dos limites — provável apex cedo ou velocidade de "
-                 "entrada alta demais para o raio",
-                 "PlayerTrackSurface = pista o trecho inteiro; sem perda de grip na grama"),
-    "v_min_low": ("carregue mais velocidade na entrada (frear menos / mais tarde) e confie no "
-                  "grip lateral; minimize o volante (SIG-11 / U-LINE-06)",
-                  "V-min alguns km/h maior e sustentado; uso do círculo de atrito perto de 1"),
-    "exit_slow": ("priorize a tração de saída: resolva a rotação no apex e progrida o "
-                  "acelerador cedo e linear (U-LINE-04 / U-YAW-02)",
-                  "Speed maior no fim da reta seguinte; Δt fica ≥0 depois do apex"),
-    "line_tight": ("abra o raio da curva — entre mais por fora, deixe o carro correr até o "
-                   "apex e use toda a largura na saída; linha apertada esfrega o pneu (U-LINE-02)",
-                   "raio efetivo maior / V-min sustentada maior; offset lateral vs referência cai"),
-    "line_wide": ("você correu mais aberto que a referência — provável apex cedo ou correr "
-                  "largo na saída; mire o apex no ponto e feche menos depois (U-LINE-03)",
-                  "linha mais próxima da referência; sem precisar fechar o volante na saída"),
-    "grip_mesa": ("use mais o grip disponível — frear mais tarde/forte ou carregar mais "
-                  "V-min; o vetor está dentro do círculo de atrito (U-INP-03)",
-                  "uso do círculo sobe para perto de 1 no trecho; Δt do trecho cai"),
-    "_generico": ("estabeleça referências fixas (ponto de frenagem, turn-in, apex) e treine o "
-                  "trecho buscando repetibilidade (SIG-16)",
-                  "Δt do trecho fica ≥0 de forma consistente entre voltas"),
+    "lockup": ("ease off peak pressure (threshold) and bleed the brake as you add "
+               "steering; don't brake at the peak while already turning (SIG-07)",
+               "the wheel no longer collapses below Speed under braking; no lockup"),
+    "abs": ("brake just BELOW the point where ABS fires constantly — use it as a "
+            "safety net, not a crutch (GT3-04)",
+            "BrakeABSactive only in short taps at the peak, not for long stretches"),
+    "understeer": ("brake a touch earlier/less and hold more brake into the turn-in (trail) "
+                   "to load the front; DON'T add steering — past the peak it gets worse (SIG-01)",
+                   "LatAccel rises again at turn-in with LESS steering; understeer index drops"),
+    "early_apex": ("delay the turn-in and aim for a LATER apex; enter wider and straighter, "
+                   "opening the exit radius (SIG-10 / U-LINE-03)",
+                   "V-min happens later; the wheel OPENS on exit without adding lock"),
+    "wheelspin": ("feed the throttle smoother and later; wait for the car to point "
+                  "before flooring it (SIG-09 / U-ACC-01)",
+                  "rear wheel tracks Speed (no spin); exit Δt turns ≥0"),
+    "countersteer": ("cut what lets the rear go (less trail on entry / less abrupt throttle) "
+                     "and unwind the wheel as soon as it hooks up (SIG-04/05)",
+                     "β and the countersteer vanish in that section; YawRate within command"),
+    "lift_coast": ("mirror the brake release with the steering input and get to throttle "
+                   "earlier at the apex — kill the gap (SIG-12 / U-INP-04)",
+                   "no window with Brake≈0 AND Throttle≈0; the G-G hole in the transition closes"),
+    "offtrack": ("redo the line within track limits — likely early apex or entry speed "
+                 "too high for the radius",
+                 "PlayerTrackSurface = track the whole section; no grip loss on the grass"),
+    "v_min_low": ("carry more entry speed (brake less / later) and trust the lateral "
+                  "grip; minimize steering (SIG-11 / U-LINE-06)",
+                  "V-min a few km/h higher and sustained; friction-circle use near 1"),
+    "exit_slow": ("prioritize exit traction: settle the rotation at the apex and feed the "
+                  "throttle early and linear (U-LINE-04 / U-YAW-02)",
+                  "higher Speed at the end of the next straight; Δt turns ≥0 after the apex"),
+    "line_tight": ("open the corner radius — enter wider, let the car run to the apex "
+                   "and use the full width on exit; a tight line scrubs the tyre (U-LINE-02)",
+                   "larger effective radius / higher sustained V-min; lateral offset vs reference drops"),
+    "line_wide": ("you ran wider than the reference — likely early apex or running wide "
+                  "on exit; hit the apex on the mark and close less afterward (U-LINE-03)",
+                  "line closer to the reference; no need to wind the wheel on exit"),
+    "grip_mesa": ("use more of the available grip — brake later/harder or carry more "
+                  "V-min; the vector is inside the friction circle (U-INP-03)",
+                  "circle use rises toward 1 in the section; the section Δt drops"),
+    "_generico": ("set fixed references (braking point, turn-in, apex) and drill the "
+                  "section for repeatability (SIG-16)",
+                  "the section Δt stays ≥0 consistently between laps"),
 }
 
 
@@ -111,12 +111,12 @@ def build_insights(rows: list[dict], regions: list, length_m: float | None = Non
             gap = max(0.0, 1.0 - r.exit_pct)
         straight_m = gap * total_len
         weight = 1.0 + (straight_m / total_len) * 3.0     # reta longa pesa mais (DIAG-05)
-        fase = "entrada" if row["dt_entry"] >= row["dt_exit"] else "saída"
+        fase = "entry" if row["dt_entry"] >= row["dt_exit"] else "exit"
         cause = _dominant_cause(row)
         fix, val = _RX.get(cause, _RX["_generico"])
         out.append({
             "corner": row["name"], "apex_pct": row["apex_pct"], "phase": fase,
-            "what": f"Perde {dt:.2f}s na {fase} da {row['name']}",
+            "what": f"Losing {dt:.2f}s on {row['name']} {fase}",
             "why": row["coach"],
             "cost_s": dt, "cost_weighted": dt * weight, "straight_m": straight_m,
             "fix": fix, "validate": val, "flags": row.get("flags", []),
