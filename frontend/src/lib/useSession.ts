@@ -15,6 +15,11 @@ let state: State = { sessions: [], payload: null, current: null, compare: null, 
 const subs = new Set<() => void>()
 function set(patch: Partial<State>) { state = { ...state, ...patch }; subs.forEach(f => f()) }
 
+// Guarda de geração (CODEX B4): cada operação que troca o estado pega um token
+// novo (++gen); ao voltar do await, só comita se ainda for a MAIS recente. Impede
+// que uma resposta antiga (troca rápida de sessão/comparação) vença a mais nova.
+let gen = 0
+
 // Escolha do usuário lembrada só nesta aba (sessionStorage): reabrir o app
 // volta ao padrão "mais recente utilizável".
 const STORE_KEY = 'pw_session'
@@ -23,8 +28,10 @@ let booted = false
 async function boot() {
   if (booted) return
   booted = true
+  const g = ++gen
   try {
     const s = await getSessions()
+    if (g !== gen) return  // usuário já escolheu uma sessão antes do boot terminar
     set({ sessions: s })
     const saved = (() => { try { return sessionStorage.getItem(STORE_KEY) } catch { return null } })()
     const order = [...(saved ? s.filter(x => x.path === saved) : []), ...s]
@@ -37,6 +44,7 @@ async function boot() {
     for (const x of locais) {
       try {
         const p = await getSession(x.path)
+        if (g !== gen) return
         carregadas.set(x.path, p)
         if ((p.contexto.voltasLimpas || 0) >= 2) { set({ payload: p, current: x.path, loading: false }); return }
       } catch { /* tenta a próxima */ }
@@ -44,36 +52,41 @@ async function boot() {
     // Fallback 1: qualquer local válida (reusa o que já foi carregado acima).
     for (const x of locais) {
       const p = carregadas.get(x.path)
-      if (p) { set({ payload: p, current: x.path, loading: false }); return }
+      if (p) { if (g !== gen) return; set({ payload: p, current: x.path, loading: false }); return }
     }
     // Fallback 2: 1ª sessão virtual do Garage61 que carregar.
     for (const x of virtuais) {
-      try { const p = await getSession(x.path); set({ payload: p, current: x.path, loading: false }); return } catch { /* */ }
+      try { const p = await getSession(x.path); if (g !== gen) return; set({ payload: p, current: x.path, loading: false }); return } catch { /* */ }
     }
+    if (g !== gen) return
     set({ error: 'No session with valid laps yet. Record 2–3 clean laps in iRacing (Alt+L to log telemetry), or add a Garage61 token in secrets.toml to open your Garage61 laps.', loading: false })
-  } catch (e: any) { set({ error: e?.message || 'Error listing sessions', loading: false }) }
+  } catch (e: any) { if (g === gen) set({ error: e?.message || 'Error listing sessions', loading: false }) }
 }
 
 export async function loadSession(path: string) {
   if (state.current === path && state.payload && !state.compare) return
+  const g = ++gen
   set({ loading: true, error: null })
   try {
     const p = await getSession(path)
+    if (g !== gen) return  // uma troca mais nova já assumiu — não sobrescreve
     try { sessionStorage.setItem(STORE_KEY, path) } catch { /* ignore */ }
     set({ payload: p, current: path, compare: null, loading: false })
-  } catch (e: any) { set({ error: e?.message || 'Error loading session', loading: false }) }
+  } catch (e: any) { if (g === gen) set({ error: e?.message || 'Error loading session', loading: false }) }
 }
 
 // Comparação livre dos pods A/B: re-analisa o par no backend e troca o payload
 // inteiro (delta, setores, coaching…) — todas as telas atualizam juntas.
 export async function setCompare(a: CompareDesc, b: CompareDesc) {
   if (!state.current) return
+  const g = ++gen
   set({ loading: true, error: null })
   try {
     const p = await getCompare(state.current, a, b)
+    if (g !== gen) return  // comparação/sessão mais nova já assumiu
     set({ payload: p, compare: { a, b }, loading: false })
   } catch (e: any) {
-    set({ loading: false, error: null })
+    if (g === gen) set({ loading: false, error: null })
     throw e // quem abriu o picker mostra o erro sem derrubar a tela atual
   }
 }
@@ -100,11 +113,13 @@ export async function applyPodPick(side: 'A' | 'B', desc: CompareDesc | null) {
 // Volta ao padrão da sessão (sua melhor vs média).
 export async function resetCompare() {
   if (!state.current || !state.compare) return
+  const g = ++gen
   set({ loading: true, error: null })
   try {
     const p = await getSession(state.current)
+    if (g !== gen) return
     set({ payload: p, compare: null, loading: false })
-  } catch (e: any) { set({ error: e?.message || 'Error reloading session', loading: false }) }
+  } catch (e: any) { if (g === gen) set({ error: e?.message || 'Error reloading session', loading: false }) }
 }
 
 export function useSession() {

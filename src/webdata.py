@@ -161,7 +161,7 @@ def _laps_rows(df, infos, best, limpas, setores, grid=None) -> list[dict]:
             continue  # sem tempo fechado (ex.: ultima volta parcial)
         entry = {
             "n": int(i.lap), "t": round(float(i.lap_time), 3),
-            "valid": bool(i.valid), "pit": bool(i.on_pit),
+            "valid": bool(i.valid), "pit": bool(i.on_pit), "off": bool(i.off_track),
             "clean": i.lap in limpas, "best": i.lap == best, "s": [], "fuel": None,
         }
         try:
@@ -299,6 +299,38 @@ def build_compare_payload(path: str, a: dict, b: dict, max_off: float = 1.07) ->
             sig, meta = G61.lap_signals(desc["lapId"])
             return sig, float(meta["lapTime"]), meta["driver"] or "Garage61", "Garage61"
         raise ValueError(f"Descritor invalido no lado {lado}: {desc!r}")
+
+    # A3: compatibilidade — comparar so na MESMA pista/layout (regra travada do
+    # projeto: alinhamento por distancia so faz sentido no mesmo circuito). Carro
+    # DIFERENTE e permitido de proposito (feature dos pods). Se um dos lados nao
+    # resolve o trackId, nao bloqueia (nao da p/ provar que sao incompativeis).
+    base_tid = resumo.get("track_id")
+    base_tname = resumo.get("track")
+
+    def _desc_track(desc: dict):
+        t = (desc or {}).get("type")
+        if t == "media":
+            return base_tid, base_tname
+        if t == "g61":
+            s = G61.session_summary_for_lap(desc.get("lapId"))
+            return s.get("track_id"), s.get("track")
+        if t == "local":
+            p = str(desc.get("path") or path)
+            if p.startswith("g61:"):
+                s = G61.session_summary_for_lap(p[4:])
+                return s.get("track_id"), s.get("track")
+            try:
+                _, s = _load(p)
+                r = ibt_reader.session_summary(s)
+                return r.get("track_id"), r.get("track")
+            except Exception:
+                return None, None
+        return None, None
+
+    (ta, na), (tb, nb) = _desc_track(a), _desc_track(b)
+    if ta is not None and tb is not None and int(ta) != int(tb):
+        raise ValueError(
+            f"Pick laps from the same circuit — A is at {na or ta} and B is at {nb or tb}.")
 
     sig_a, t_a, nome_a, sub_a = _resolve(a, "A")
     sig_b, _t_b, nome_b, sub_b = _resolve(b, "B")

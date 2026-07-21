@@ -15,6 +15,7 @@ export interface TyreSet { lf: TyreData; rf: TyreData; lr: TyreData; rr: TyreDat
 export interface Corner { n: number; name: string; apex_pct: number }
 export interface LapRow {
   n: number; t: number; valid: boolean; pit: boolean; clean: boolean; best: boolean
+  off?: boolean   // teve excursão relevante p/ fora da pista (não vira referência/média)
   s: number[]; fuel: number | null
 }
 export interface Insight {

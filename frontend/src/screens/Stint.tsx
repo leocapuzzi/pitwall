@@ -68,6 +68,7 @@ function buildModel(p: Payload): Model | null {
 function lapTip(l: LapRow, isBest: boolean) {
   const parts = [l.valid ? 'valid' : 'invalid']
   if (l.clean) parts.push('clean')
+  if (l.off) parts.push('off-track (not used as reference/average)')
   if (l.pit) parts.push('pit/out lap')
   if (isBest) parts.push('best of stint')
   if (l.fuel != null) parts.push(l.fuel.toFixed(2) + ' L')
@@ -111,7 +112,7 @@ export function LapTable({ laps, bestN, bestT, bestSec, nSec, withFuel, sel, hov
                   ? <span className="num dd">00.000</span>
                   : <span className="num dd redt">{fmtDelta(l.t - bestT)}</span>}
               {withFuel && <span className="num fu">{l.fuel != null ? l.fuel.toFixed(2) + ' L' : '—'}</span>}
-              <span className="ic ii" title={lapTip(l, isBest)}><Icon n="info" s={14} sw={2} /></span>
+              <span className="ic ii" title={lapTip(l, isBest)} style={l.off ? { color: 'var(--amber)' } : undefined}><Icon n="info" s={14} sw={2} /></span>
               {Array.from({ length: nSec }, (_, si) => {
                 const v = l.s?.[si]
                 if (v == null) return <span key={si} className="num ss dim">—</span>

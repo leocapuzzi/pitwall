@@ -39,6 +39,12 @@ class LapInfo:
     complete: bool          # volta inteira capturada (inicio + fim)
     on_pit: bool            # passou pelo pit lane
     valid: bool             # candidata a analise (completa, fora do pit)
+    off_track: bool = False  # teve excursao relevante p/ fora da pista (PlayerTrackSurface)
+
+
+# Fracao MINIMA da volta fora da pista para marcar excursao (evita ruido de 1-2
+# amostras/zebra). ~0.5% ≈ 0,4-0,5 s numa volta tipica — uma saida de verdade.
+_OFF_TRACK_FRAC = 0.005
 
 
 # --------------------------------------------------------------------------- #
@@ -75,6 +81,16 @@ def split_laps(df: pd.DataFrame) -> list[LapInfo]:
         if "OnPitRoad" in seg.columns:
             on_pit = bool(seg["OnPitRoad"].max() >= 0.5)
 
+        # Excursao para fora da pista: PlayerTrackSurface 0 = OffTrack, -1 = NotInWorld
+        # (reset/tow); 1 = pit, 3 = OnTrack. So conta se a fracao passar do limiar
+        # (uma tocada de 1-2 amostras nao invalida). Canal ausente (ex.: CSV do
+        # Garage61) -> nao ha como saber -> nao marca.
+        off_track = False
+        if "PlayerTrackSurface" in seg.columns and len(seg):
+            surf = pd.to_numeric(seg["PlayerTrackSurface"], errors="coerce").to_numpy()
+            off = int(np.count_nonzero(surf < 0.5))
+            off_track = bool(off / len(surf) > _OFF_TRACK_FRAC)
+
         # Volta completa = cruzou a linha de chegada na ENTRADA e na SAIDA.
         # So sabemos que cruzamos a entrada se a volta anterior tambem foi gravada
         # (senao o arquivo comecou no meio da volta, ex.: largada parada na grade).
@@ -89,7 +105,7 @@ def split_laps(df: pd.DataFrame) -> list[LapInfo]:
         infos.append(LapInfo(
             lap=lap, lap_time=lap_time, n_samples=len(seg),
             pct_min=pct_min, pct_max=pct_max,
-            complete=complete, on_pit=on_pit, valid=valid,
+            complete=complete, on_pit=on_pit, valid=valid, off_track=off_track,
         ))
     return infos
 
@@ -102,24 +118,29 @@ def laps_table(infos: list[LapInfo]) -> pd.DataFrame:
 def clean_laps(infos: list[LapInfo], max_pct_off_best: float = 1.07) -> list[int]:
     """Seleciona voltas 'limpas' para compor a media (ritmo representativo).
 
-    Regras: volta valida (completa, fora do pit) e tempo dentro de
-    `max_pct_off_best` x melhor tempo valido. Default 1.07 = ate 7% mais lenta
-    que a sua melhor (descarta erros grosseiros, mantem variacao normal).
+    Regras: volta valida (completa, fora do pit), SEM excursao para fora da pista,
+    e tempo dentro de `max_pct_off_best` x a melhor volta limpa. Default 1.07 = ate
+    7% mais lenta (descarta erros grosseiros, mantem variacao normal). Se TODAS as
+    voltas validas tiveram excursao, cai de volta nas validas para nao zerar a media.
     """
     valid = [i for i in infos if i.valid]
     if not valid:
         return []
-    best = min(i.lap_time for i in valid)
-    keep = [i.lap for i in valid if i.lap_time <= best * max_pct_off_best]
+    pool = [i for i in valid if not i.off_track] or valid
+    best = min(i.lap_time for i in pool)
+    keep = [i.lap for i in pool if i.lap_time <= best * max_pct_off_best]
     return sorted(keep)
 
 
 def best_lap(infos: list[LapInfo]) -> int | None:
-    """Numero da volta mais rapida valida."""
+    """Numero da volta de REFERENCIA: a mais rapida valida e SEM excursao para fora
+    da pista (uma volta com saida/corte nao deve virar referencia). So cai numa
+    volta com excursao se nao houver nenhuma limpa."""
     valid = [i for i in infos if i.valid]
     if not valid:
         return None
-    return min(valid, key=lambda i: i.lap_time).lap
+    pool = [i for i in valid if not i.off_track] or valid
+    return min(pool, key=lambda i: i.lap_time).lap
 
 
 # --------------------------------------------------------------------------- #

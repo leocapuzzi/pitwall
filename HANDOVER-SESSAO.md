@@ -34,6 +34,32 @@
   seguem na raiz (referências vivas).
 
 ## 1. ✅ CONCLUÍDO (e APROVADO pelo usuário)
+**Sessão 2026-07-21 — BLOCO 2 do CODEX REVIEW "Confiança do motor":**
+Continuação do plano (ver `CODEX REVIEW/` + parte 7 abaixo). Implementado e verificado
+(backend por smoke test/API; frontend por build + DOM, sem erros de console):
+- ✅ **A2 — validade de volta considera FORA-DE-PISTA.** `analysis.py`: `LapInfo` ganhou
+  **`off_track`** (fração de amostras com `PlayerTrackSurface < 0.5` — 0=OffTrack/-1=NotInWorld —
+  acima de `_OFF_TRACK_FRAC=0.5%`; canal ausente, ex.: CSV do G61, não marca). **`best_lap`**
+  (referência) e **`clean_laps`** (média) agora PREFEREM voltas sem excursão, com **fallback**
+  para as válidas se TODAS tiveram excursão (não zera a média). `webdata`: linha do stint ganhou
+  **`off`**; `Stint.tsx`: tooltip "off-track (not used as reference/average)" + ícone âmbar na volta.
+  Efeito: uma volta com saída/corte não vira mais a referência. Verificado nos samples (off_track
+  computa sem crash). ⚠️ efeito pleno só aparece com sessão LOCAL de voltas válidas (a máquina de
+  teste só tem G61 virtual + samples inválidos).
+- ✅ **A3 — comparação só na MESMA pista.** `webdata.build_compare_payload`: resolve o trackId de
+  cada lado (local via `ibt_reader.session_summary`; G61 via `session_summary_for_lap`) e **rejeita**
+  pista/layout diferente com mensagem clara ("Pick laps from the same circuit — A is at … and B is
+  at …"). **Carro DIFERENTE segue permitido** (feature dos pods). Se um lado não resolve o trackId,
+  não bloqueia. Verificado no `/api/compare`: Rudskogen×Winton → 400; Rudskogen×Rudskogen → OK.
+  O erro sobe pro picker sem derrubar a tela (o `setCompare` do useSession já trata).
+- ✅ **B4 — dado velho não vence mais.** `useSession.ts`: contador de geração **`gen`** — cada
+  `boot`/`loadSession`/`setCompare`/`resetCompare` pega `++gen` e só comita `set(payload)` se ainda
+  for a geração mais recente (troca rápida de sessão/comparação não deixa a resposta antiga sobrescrever
+  a nova). Verificado: boot OK, sem erros.
+- 🔜 Falta do plano: **Bloco 3** (rede de segurança leve) — smoke test do sample, lint substantivo,
+  guard loopback + limites de arquivo/chat, `.bat` PID-aware, comprimir assets. E o passe de strings
+  PT sobrando na AI Engineer ("Tempo morto", "Raio-X das perdas", "s / volta").
+
 **Sessão 2026-07-20 (parte 7) — CODEX REVIEW triado + BLOCO 1 "Honestidade" implantado:**
 Um review externo (pasta `CODEX REVIEW/` na raiz — 01-FULL-AUDIT / 02-VALIDATION-EVIDENCE /
 03-PRIORITIZED-ROADMAP, read-only) foi verificado ponto a ponto contra o código atual. Plano
@@ -409,7 +435,7 @@ morreu). Design original mantido: IA = só a VOZ; o motor determinístico mede t
   corners[{n,name,apex_pct}], setores[], sectorTimes{labels,ref,media,genericos},
   scorecard{brake_aggression,trail_overlap,circle_use,rotation_eff,coasting_total_s},
   insights[{corner,phase,cost_s,...,what,why,fix,validate}],
-  laps[{n,t,valid,pit,clean,best,s[],fuel}],
+  laps[{n,t,valid,pit,off(excursão fora-de-pista),clean,best,s[],fuel}],
   analise_curvas[{name,dt,dt_entry,dt_exit,v_min,flags,coach}] }
 ```
 - Canais normalizados 0..1 no front (`build()` das telas). `t` = fração de DISTÂNCIA → posição
