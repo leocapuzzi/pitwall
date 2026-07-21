@@ -503,7 +503,7 @@ export default function AIEngineer() {
   }, [payload, m, skillSel])
 
   if (loading) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>Loading session…</div>
-  if (error || !payload || !m) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'Sem dados'}</div>
+  if (error || !payload || !m) return <div className="card pad" style={{ display: 'grid', placeItems: 'center', minHeight: 340, color: 'var(--ink-3)' }}>{error || 'No data'}</div>
 
   const ctx = payload.contexto
   const cur = m.opps[pin] || m.opps[0] || null
@@ -618,7 +618,7 @@ export default function AIEngineer() {
           </div>
           <div className="pw-statpill pw-glass2">
             <span className="pw-kico" style={{ ['--c' as string]: 'var(--amber)' }}><Icon n="spark" s={16} /></span>
-            <div><span className="kl">Tempo morto</span><b className="kv num amber">{m.coastS.toFixed(1)}s</b><span className="ks">coasting por volta</span></div>
+            <div><span className="kl">Dead time</span><b className="kv num amber">{m.coastS.toFixed(1)}s</b><span className="ks">coasting per lap</span></div>
           </div>
         </div>
       </div>
@@ -640,7 +640,7 @@ export default function AIEngineer() {
               </p>
             </div>
           ) : (<>
-          <div className="pw-aidelta redt">+<em ref={bigRef}>0.00</em><i>s / volta</i></div>
+          <div className="pw-aidelta redt">+<em ref={bigRef}>0.00</em><i>s / lap</i></div>
           <span className="ks" style={{ color: 'var(--ink-3)', fontSize: 11 }}>what the average leaves on track vs your best lap</span>
           <div className="pw-aibar">
             {m.opps.map((o, i) => (
@@ -650,7 +650,7 @@ export default function AIEngineer() {
           </div>
           <div className="pw-aileg">
             {m.opps.map((o, i) => <span key={o.rank}><i style={{ background: OPP_COLORS[i] }} />{o.insight.corner} +{o.cost.toFixed(2)}s</span>)}
-            {outros > 0.005 && <span><i style={{ background: 'var(--surface-3)' }} />resto da volta +{outros.toFixed(2)}s</span>}
+            {outros > 0.005 && <span><i style={{ background: 'var(--surface-3)' }} />rest of the lap +{outros.toFixed(2)}s</span>}
           </div>
           <div style={{ marginTop: 10, minHeight: 0, overflowY: 'auto' }}>
             {m.opps.map((o, i) => (
@@ -664,7 +664,7 @@ export default function AIEngineer() {
           </div>
           {m.opps.length > 0 && (
             <div className="pw-aiplanfoot">
-              <Icon n="spark" s={13} /> Zerando as {m.opps.length} maiores: <b className="num green">−{Math.min(m.topSum, m.perda).toFixed(2)}s por volta</b>
+              <Icon n="spark" s={13} /> Erasing the top {m.opps.length}: <b className="num green">−{Math.min(m.topSum, m.perda).toFixed(2)}s per lap</b>
               {m.avgClean != null && <> → projected average <b className="num green">{fmtClock(Math.max(m.bestT ?? 0, m.avgClean - m.topSum))}</b></>}
             </div>
           )}
@@ -674,7 +674,7 @@ export default function AIEngineer() {
         {/* raio-X das perdas: replay fantasma da curva fixada + evidência nos canais */}
         <div className="pw-aimap pw-glass2">
           <div className="row between center" style={{ flex: 'none' }}>
-            <span className="lbl">Raio-X das perdas</span>
+            <span className="lbl">Loss X-ray</span>
             <button className="chip" style={{ padding: '3px 10px', fontSize: 10.5 }} onClick={() => window.dispatchEvent(new CustomEvent('pw:go', { detail: 'lap' }))}>
               <Icon n="ext" s={11} /> Lap Analysis
             </button>
@@ -700,9 +700,9 @@ export default function AIEngineer() {
                 <div ref={dotB} className="pw-xdot" style={{ background: '#aab1bb' }} aria-hidden />
                 <div ref={dotA} className="pw-xdot" style={{ background: 'var(--accent)' }} aria-hidden />
                 <div className="pw-aixzoom">
-                  <button onClick={() => zoomXray(1.35)} title="Aproximar (ou roda do mouse)">+</button>
-                  <button onClick={() => zoomXray(1 / 1.35)} title="Afastar">−</button>
-                  {xz > 1.01 && <button onClick={resetXzoom} title="Reenquadrar a curva"><Icon n="refresh" s={11} /></button>}
+                  <button onClick={() => zoomXray(1.35)} title="Zoom in (or mouse wheel)">+</button>
+                  <button onClick={() => zoomXray(1 / 1.35)} title="Zoom out">−</button>
+                  {xz > 1.01 && <button onClick={resetXzoom} title="Reframe the corner"><Icon n="refresh" s={11} /></button>}
                 </div>
                 {/* inset de contexto: pista inteira + pins (dentro do SVG = sem desalinhamento) */}
                 <svg className="pw-aixinset" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet">
@@ -717,7 +717,7 @@ export default function AIEngineer() {
                   ))}
                 </svg>
                 <span className="pw-aixgap"><i>avg gap</i> <b className="num" data-xgap>—</b></span>
-                <button className="pw-aixplay" onClick={() => setXplay(v => !v)} title={xplay ? 'Pausar replay' : 'Replay'}>
+                <button className="pw-aixplay" onClick={() => setXplay(v => !v)} title={xplay ? 'Pause replay' : 'Replay'}>
                   {xplay
                     ? <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.2" /><rect x="14" y="5" width="4" height="14" rx="1.2" /></svg>
                     : <Icon n="play" s={10} fill="currentColor" />}
@@ -727,7 +727,7 @@ export default function AIEngineer() {
                 {xray.dIn != null && <span className="chip">entry <b className={'num ' + (xray.dIn > 0 ? 'redt' : 'green')}>{sign2(xray.dIn)}</b></span>}
                 {xray.dOut != null && <span className="chip">exit <b className={'num ' + (xray.dOut > 0 ? 'redt' : 'green')}>{sign2(xray.dOut)}</b></span>}
                 {xray.vmin != null && <span className="chip">vmin <b className="num">{Math.round(xray.vmin)} km/h</b></span>}
-                <span className="chip">fase: <b>{cur.insight.phase}</b></span>
+                <span className="chip">phase: <b>{cur.insight.phase}</b></span>
               </div>
               <div className="pw-aixray">
                 {xray.charts.map(c => (
@@ -747,9 +747,9 @@ export default function AIEngineer() {
                 <p style={{ margin: '0 0 9px' }}>
                   <b style={{ color: 'var(--ink-2)' }}>What:</b> {cur.insight.what}<br />
                   <b style={{ color: 'var(--ink-2)' }}>Why:</b> {cur.insight.why}<br />
-                  <b style={{ color: 'var(--ink-2)' }}>Corrigir:</b> {cur.insight.fix}<br />
-                  <b style={{ color: 'var(--ink-2)' }}>Validar:</b> {cur.insight.validate}</p>
-                <button className="chip" onClick={() => openInTelemetry(cur)}><Icon n="telem" s={12} /> Abrir trecho na Telemetry</button>
+                  <b style={{ color: 'var(--ink-2)' }}>Fix:</b> {cur.insight.fix}<br />
+                  <b style={{ color: 'var(--ink-2)' }}>Validate:</b> {cur.insight.validate}</p>
+                <button className="chip" onClick={() => openInTelemetry(cur)}><Icon n="telem" s={12} /> Open section in Telemetry</button>
               </div>
             </div>
           ) : (
