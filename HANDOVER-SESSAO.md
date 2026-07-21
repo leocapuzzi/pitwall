@@ -34,6 +34,28 @@
   seguem na raiz (referências vivas).
 
 ## 1. ✅ CONCLUÍDO (e APROVADO pelo usuário)
+**Sessão 2026-07-21 — BLOCO 3 do CODEX REVIEW "Rede de segurança leve" (fecha o plano):**
+- ✅ **Suíte de testes (pytest)** em `tests/` (isolada dos `src/test_*.py` antigos via `pytest.ini`
+  `testpaths=tests`): invariantes do motor (ttd monotônico; soma dos setores = tempo da volta) +
+  lógica do Bloco 2 (volta off-track não vira referência; fallback da média) + smoke dos samples
+  (leitor não quebra). `requirements-dev.txt` (+pytest). Rodar: `.venv/Scripts/python -m pytest -q` (6 ok).
+- ✅ **Limites de segurança na API.** `webdata._load` (choke point de session/laps/lap/compare) só lê
+  `.ibt` dentro de raízes aprovadas (telemetria/samples) e < 512 MB → bloqueia leitura de arquivo
+  arbitrário/traversal mesmo se o servidor for exposto além do loopback. `/api/chat`: cap de 300 KB
+  nos facts. Verificado: arquivo fora da raiz → "Path not allowed"; g61/samples → passam.
+- ✅ **`.bat` PID-aware:** mata a instância da 8600 só se o processo for python (uvicorn do PitWall).
+- ✅ **Lint verde (0 erros).** As regras do React Compiler que batem na arquitetura IMPERATIVA
+  intencional (refs no render, memo manual, set-state-in-effect, exhaustive-deps, purity) + `no-explicit-any`
+  + react-refresh viraram **warn** no `eslint.config.js` (com comentário → DESIGN-UI.md) — NÃO reescrevi
+  o render tunado/aprovado. Corrigi os 2 `no-unused-expressions` reais (InteractiveTrack `fn && fn()`→`fn?.()`).
+  Resultado: **0 errors / 63 warnings** (backlog visível). Build verde, mapas renderizam, console limpo.
+- ✅ **Dedupe de assets:** `frontend/src/assets/` (NÃO importado; duplicata de `public/assets` + sobras
+  do scaffold Vite) REMOVIDO (−4,3 MB no repo; build byte-idêntico). Fonte única = `public/assets`.
+  Compressão das imagens *servidas* (logo 1,5 MB etc.) ADIADA: precisa de ferramenta de imagem, mexe no
+  visual aprovado, e em localhost o ganho é irrelevante.
+- 🏁 **Os 3 blocos do plano do CODEX REVIEW estão feitos.** Pendente: push (não pedido); features
+  novas (histórico por pista/carro, plano de treino, etc.) só se/quando o Leo quiser (ver `CODEX REVIEW/`).
+
 **Sessão 2026-07-21 — BLOCO 2 do CODEX REVIEW "Confiança do motor":**
 Continuação do plano (ver `CODEX REVIEW/` + parte 7 abaixo). Implementado e verificado
 (backend por smoke test/API; frontend por build + DOM, sem erros de console):
@@ -60,8 +82,7 @@ Continuação do plano (ver `CODEX REVIEW/` + parte 7 abaixo). Implementado e ve
   perdas"→Loss X-ray, "s / volta"→s / lap, "Zerando as N maiores"→Erasing the top N, "resto da volta"→
   rest of the lap, titles de zoom/replay, "fase:"→phase:, "Corrigir/Validar"→Fix/Validate, "Abrir
   trecho na Telemetry"→Open section in Telemetry, "Sem dados"→No data. Comentários de código seguem PT.
-- 🔜 Falta do plano: **Bloco 3** (rede de segurança leve) — smoke test do sample, lint substantivo,
-  guard loopback + limites de arquivo/chat, `.bat` PID-aware, comprimir assets.
+- ✅ Bloco 3 (rede de segurança leve) FEITO — ver entrada acima.
 
 **Sessão 2026-07-20 (parte 7) — CODEX REVIEW triado + BLOCO 1 "Honestidade" implantado:**
 Um review externo (pasta `CODEX REVIEW/` na raiz — 01-FULL-AUDIT / 02-VALIDATION-EVIDENCE /

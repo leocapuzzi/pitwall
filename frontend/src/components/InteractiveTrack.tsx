@@ -265,7 +265,7 @@ const InteractiveTrack = forwardRef<TrackHandle, {
         <div ref={dotsWrapRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
           {dots.map(d => (
             <div key={d.n} className={'pw-bal' + (activeCorner === d.n ? ' on' : '')} data-bx={d.x} data-by={d.y}
-              onPointerDown={(e) => { e.stopPropagation(); onPickCorner && onPickCorner(d.n) }}>{d.n}</div>
+              onPointerDown={(e) => { e.stopPropagation(); onPickCorner?.(d.n) }}>{d.n}</div>
           ))}
         </div>
       )}
@@ -298,7 +298,7 @@ const InteractiveTrack = forwardRef<TrackHandle, {
           <div className="tp-zoom">
             <button onClick={() => zoomAt(1.4, 500, 320)} aria-label="Zoom in"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></button>
             <button onClick={() => zoomAt(1 / 1.4, 500, 320)} aria-label="Zoom out"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M5 12h14" /></svg></button>
-            <button className={'tp-zreset' + (zoomed ? ' show' : '')} onClick={() => { applyVp({ z: 1, x: 0, y: 0 }); renderAll(); onPickCorner && onPickCorner(null) }} aria-label="Reset view"><Icon n="refresh" s={13} /></button>
+            <button className={'tp-zreset' + (zoomed ? ' show' : '')} onClick={() => { applyVp({ z: 1, x: 0, y: 0 }); renderAll(); onPickCorner?.(null) }} aria-label="Reset view"><Icon n="refresh" s={13} /></button>
           </div>
           <div className="tp-zoomhint">{follow ? 'Zoom aproxima no carro · roda do mouse' : 'Scroll to zoom · drag to pan'}</div>
         </>
