@@ -26,6 +26,32 @@ TELEMETRY_DIR = os.environ.get("PITWALL_TELEMETRY_DIR") or os.path.join(
 # Amostras versionadas (GitHub), usadas quando nao ha telemetria real.
 _SAMPLES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "samples")
 
+# Raizes APROVADAS para leitura de .ibt. Mesmo que o servidor um dia seja exposto
+# alem do loopback, so le telemetria dessas pastas (nunca arquivo arbitrario do
+# disco por path traversal). g61:<id> nao e arquivo — nao passa por aqui.
+_ALLOWED_ROOTS = [os.path.realpath(TELEMETRY_DIR), os.path.realpath(_SAMPLES_DIR)]
+# Teto de tamanho do .ibt (um .ibt de sessao longa tem dezenas de MB; 512 MB e
+# folgado e evita apontar p/ um arquivo gigante e estourar memoria/CPU).
+MAX_IBT_BYTES = 512 * 1024 * 1024
+
+
+def is_allowed_path(path: str) -> bool:
+    """True se `path` for um .ibt DENTRO de uma raiz aprovada (telemetria/samples),
+    sem escapar por '..'/symlink. Base da protecao de leitura de arquivos."""
+    try:
+        rp = os.path.realpath(path)
+    except Exception:
+        return False
+    if not rp.lower().endswith(".ibt"):
+        return False
+    for root in _ALLOWED_ROOTS:
+        try:
+            if os.path.commonpath([rp, root]) == root:
+                return True
+        except ValueError:
+            continue  # drives diferentes no Windows -> nao pertence a esta raiz
+    return False
+
 
 def _arr(a, dec=2):
     """numpy -> lista de floats arredondados (None vira [])."""
@@ -45,6 +71,15 @@ def _load_cached(path: str, mtime: float):
 
 
 def _load(path: str):
+    # Choke point de TODA leitura local (session/laps/lap/compare passam por aqui):
+    # so le .ibt dentro das raizes aprovadas e abaixo do teto de tamanho.
+    if not is_allowed_path(path):
+        raise ValueError("Path not allowed — telemetry must be a .ibt inside the "
+                         "telemetry or samples folder.")
+    sz = os.path.getsize(path)
+    if sz > MAX_IBT_BYTES:
+        raise ValueError(f"Telemetry file too large ({sz // (1024 * 1024)} MB > "
+                         f"{MAX_IBT_BYTES // (1024 * 1024)} MB).")
     return _load_cached(os.path.abspath(path), os.path.getmtime(path))
 
 

@@ -1,0 +1,4 @@
+# Dependências só de desenvolvimento (não vão para o app rodando).
+# Instalar: .venv/Scripts/pip install -r requirements-dev.txt
+# Rodar a suíte: .venv/Scripts/python -m pytest -q
+pytest

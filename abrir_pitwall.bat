@@ -10,9 +10,15 @@ if not exist "frontend\dist\index.html" (
     exit /b 1
 )
 
-REM Fecha qualquer PitWall antigo ainda rodando na porta 8600 (evita instancias
-REM "zumbis" empilhadas, que fazem o navegador abrir uma versao velha do app).
-for /f "tokens=5" %%P in ('netstat -ano ^| findstr ":8600 " ^| findstr LISTENING') do taskkill /F /PID %%P >nul 2>&1
+REM Fecha um PitWall antigo na porta 8600 (evita instancias "zumbis" servindo
+REM codigo velho). Mata SO se o processo na porta for python.exe (o uvicorn do
+REM PitWall) — assim nao derruba um programa alheio que por acaso use a 8600.
+for /f "tokens=5" %%P in ('netstat -ano ^| findstr ":8600 " ^| findstr LISTENING') do (
+    for /f "delims=" %%K in ('tasklist /FI "PID eq %%P" /NH /FO CSV 2^>nul ^| findstr /I "python"') do (
+        echo [PitWall] Encerrando instancia antiga na porta 8600.
+        taskkill /F /PID %%P >nul 2>&1
+    )
+)
 
 REM Abre o navegador apos 2s (da tempo do servidor subir).
 start "" cmd /c "timeout /t 2 /nobreak >nul & start http://localhost:8600"

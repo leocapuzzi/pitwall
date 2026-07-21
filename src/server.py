@@ -193,6 +193,11 @@ def api_chat(body: ChatBody):
         return JSONResponse({"error": "Sem chave do Grok em secrets.toml (grok_api_key)."},
                             status_code=400)
     try:
+        import json
+        # Limita o tamanho dos FATOS (o front monta esse dict; sem teto, uma sessao
+        # longa poderia mandar um payload enorme p/ a API do Grok).
+        if len(json.dumps(body.facts)) > 300_000:
+            return JSONResponse({"error": "Session facts too large."}, status_code=413)
         msgs = [{"role": m["role"], "content": str(m.get("content", ""))[:4000]}
                 for m in body.messages
                 if m.get("role") in ("user", "assistant") and m.get("content")]
