@@ -56,9 +56,12 @@ Continuação do plano (ver `CODEX REVIEW/` + parte 7 abaixo). Implementado e ve
   `boot`/`loadSession`/`setCompare`/`resetCompare` pega `++gen` e só comita `set(payload)` se ainda
   for a geração mais recente (troca rápida de sessão/comparação não deixa a resposta antiga sobrescrever
   a nova). Verificado: boot OK, sem erros.
+- ✅ **Passe de strings PT** na AI Engineer (app 100% inglês): "Tempo morto"→Dead time, "Raio-X das
+  perdas"→Loss X-ray, "s / volta"→s / lap, "Zerando as N maiores"→Erasing the top N, "resto da volta"→
+  rest of the lap, titles de zoom/replay, "fase:"→phase:, "Corrigir/Validar"→Fix/Validate, "Abrir
+  trecho na Telemetry"→Open section in Telemetry, "Sem dados"→No data. Comentários de código seguem PT.
 - 🔜 Falta do plano: **Bloco 3** (rede de segurança leve) — smoke test do sample, lint substantivo,
-  guard loopback + limites de arquivo/chat, `.bat` PID-aware, comprimir assets. E o passe de strings
-  PT sobrando na AI Engineer ("Tempo morto", "Raio-X das perdas", "s / volta").
+  guard loopback + limites de arquivo/chat, `.bat` PID-aware, comprimir assets.
 
 **Sessão 2026-07-20 (parte 7) — CODEX REVIEW triado + BLOCO 1 "Honestidade" implantado:**
 Um review externo (pasta `CODEX REVIEW/` na raiz — 01-FULL-AUDIT / 02-VALIDATION-EVIDENCE /
